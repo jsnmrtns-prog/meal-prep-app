@@ -7,3 +7,6 @@ export * from "./recipe.ts";
 export * from "./preferences.ts";
 export * from "./calculate.ts";
 export * from "./audit.ts";
+export * from "./yields.ts";
+export * from "./packages.ts";
+export * from "./shopping.ts";

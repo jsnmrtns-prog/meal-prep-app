@@ -7,13 +7,24 @@
  *  2. Nutrition audit    — every line recomputed with exact scaled-integer arithmetic
  *  3. Recipe audit       — lines sum to batch totals; batch weight adds up
  *  4. Portion audit      — batch ÷ portions = per portion, both directions
- *  5. Consistency audit  — instructions and shopping quantities (milestone M3; reported as pending)
+ *  5. Consistency audit  — steps use every ingredient; purchases, packages and cooked weights reconcile
  */
 import { screenAllergens } from "./allergens.ts";
 import { type CalcResult, recipeInputsHash } from "./calculate.ts";
 import type { FoodDb } from "./fooddb.ts";
 import { preferenceMatches } from "./preferences.ts";
 import { NUTRIENT_KEYS, type IngredientLine, type NutrientKey, type Recipe, type UserProfile } from "./recipe.ts";
+import type { PackageEntry } from "./packages.ts";
+import type { Portioning, ShoppingList } from "./shopping.ts";
+import type { YieldDb } from "./yields.ts";
+
+/** Everything audit 5 needs; without it audit 5 is reported as pending. */
+export interface PlanForAudit {
+  yields: YieldDb;
+  packages: PackageEntry[];
+  shopping: ShoppingList;
+  portioning: Portioning;
+}
 
 export type AuditStatus = "pass" | "warn" | "fail" | "pending";
 
@@ -60,14 +71,17 @@ export function auditRecipe(
   calc: CalcResult,
   db: FoodDb,
   profile: UserProfile,
-  now: Date = new Date(),
+  options: { now?: Date; plan?: PlanForAudit } = {},
 ): AuditReport {
+  const now = options.now ?? new Date();
   const audits: AuditResult[] = [
     ingredientAudit(recipe, calc, db, profile),
     nutritionAudit(recipe, calc, db),
     recipeTotalsAudit(calc),
     portionAudit(recipe, calc),
-    { id: 5, name: "Consistency audit", status: "pending", findings: ["Instructions and shopping quantities are checked from milestone M3 onward."] },
+    options.plan
+      ? consistencyAudit(recipe, calc, db, options.plan)
+      : { id: 5, name: "Consistency audit", status: "pending", findings: ["Shopping and cooked-weight plan not provided."] },
   ];
 
   if (calc.inputsHash !== recipeInputsHash(recipe, db.version)) {
@@ -269,4 +283,123 @@ function portionAudit(recipe: Recipe, calc: CalcResult): AuditResult {
     if (calc.perPortion[key].complete !== calc.batch[key].complete) fails.push(`${key}: completeness differs between batch and portion.`);
   }
   return { id: 4, name: "Portion audit", status: fails.length ? "fail" : "pass", findings: fails };
+}
+
+// ---------- 5. Consistency audit ----------
+const STOP_WORDS = new Set(["and", "the", "with", "for", "fresh", "minced", "diced", "chopped", "sliced", "drizzle", "large", "small", "medium", "packet"]);
+
+function significantWords(name: string): string[] {
+  return name
+    .toLowerCase()
+    .replace(/\(.*?\)/g, " ")
+    .replace(/[^a-z0-9%]+/g, " ")
+    .split(" ")
+    .filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
+}
+
+function mentions(stepText: string, word: string): boolean {
+  const text = ` ${stepText.toLowerCase().replace(/[^a-z0-9%]+/g, " ")} `;
+  const stem = word.endsWith("es") && word.length > 4 ? word.slice(0, -2) : word.endsWith("s") && word.length > 3 ? word.slice(0, -1) : word;
+  return text.includes(` ${word} `) || new RegExp(` ${stem}(s|es)? `).test(text);
+}
+
+function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: PlanForAudit): AuditResult {
+  const fails: string[] = [];
+  const warns: string[] = [];
+  const eps = 1e-6;
+
+  // a) Every ingredient is used in the instructions (or is optional).
+  recipe.lines.forEach((line) => {
+    if (line.optional) return;
+    const steps = line.usedInSteps ?? [];
+    if (steps.length === 0) {
+      fails.push(`"${line.name}" isn't linked to any instruction step.`);
+      return;
+    }
+    for (const n of steps) {
+      const step = recipe.steps[n - 1];
+      if (!step) {
+        fails.push(`"${line.name}" points to step ${n}, which doesn't exist.`);
+        continue;
+      }
+      const words = significantWords(line.name);
+      if (words.length > 0 && !words.some((w) => mentions(step.text, w))) {
+        fails.push(`Step ${n} doesn't mention "${line.name}".`);
+      }
+    }
+  });
+
+  // b) Nothing is missing from, or duplicated in, the shopping list.
+  const shopped = new Map<string, number>();
+  for (const item of plan.shopping.items) for (const id of item.lineIds) shopped.set(id, (shopped.get(id) ?? 0) + 1);
+  recipe.lines.forEach((line) => {
+    const isWater = line.food.kind === "builtin" && line.food.id === "water";
+    const count = shopped.get(line.id) ?? 0;
+    if (!isWater && count !== 1) fails.push(`"${line.name}" appears ${count} times in the shopping list (expected once).`);
+    if (isWater && count !== 0) fails.push(`Water shouldn't be on the shopping list.`);
+  });
+
+  // c) Purchase amounts cover usable amounts, recomputed from the yields here.
+  const calcGrams = new Map(calc.lines.map((l) => [l.lineId, l.grams]));
+  for (const p of plan.shopping.purchase) {
+    const line = recipe.lines.find((l) => l.id === p.lineId);
+    if (!line) {
+      fails.push(`Purchase line ${p.lineId} has no ingredient.`);
+      continue;
+    }
+    let kept = 1;
+    if (line.prep?.boneYieldId) {
+      const y = plan.yields.get(line.prep.boneYieldId);
+      if (y.kind !== "bone") fails.push(`"${line.name}": ${y.id} isn't a bone-removal yield.`);
+      kept *= y.percent / 100;
+    }
+    if (line.prep?.trimKeptPercent !== undefined) kept *= line.prep.trimKeptPercent / 100;
+    const usable = calcGrams.get(line.id) ?? Number.NaN;
+    if (Math.abs(p.usableGrams - usable) > eps) fails.push(`"${line.name}": shopping uses ${p.usableGrams} g, recipe uses ${usable} g.`);
+    if (Math.abs(p.purchaseGrams * kept - usable) > eps * 10) {
+      fails.push(`"${line.name}": buying ${p.purchaseGrams} g at ${kept * 100}% usable doesn't give ${usable} g.`);
+    }
+  }
+
+  // d) Items add up, and packages cover what's needed without an extra package.
+  for (const item of plan.shopping.items) {
+    const usable = item.lineIds.reduce((s, id) => s + (calcGrams.get(id) ?? 0), 0);
+    if (Math.abs(item.usableGrams - usable) > eps * item.lineIds.length) fails.push(`"${item.name}": item total ${item.usableGrams} g, ingredients ${usable} g.`);
+    const purchase = plan.shopping.purchase.filter((p) => item.lineIds.includes(p.lineId)).reduce((s, p) => s + p.purchaseGrams, 0);
+    if (Math.abs(item.purchaseGrams - purchase) > eps * item.lineIds.length) fails.push(`"${item.name}": purchase total doesn't add up.`);
+    const b = item.buy;
+    if (b.kind === "package") {
+      if (b.count * b.packageGrams < item.purchaseGrams - eps) fails.push(`"${item.name}": ${b.count} × ${b.label} doesn't cover ${item.purchaseGrams} g.`);
+      if ((b.count - 1) * b.packageGrams >= item.purchaseGrams - eps) fails.push(`"${item.name}": one package fewer would be enough.`);
+      if (Math.abs(b.totalGrams - b.count * b.packageGrams) > eps) fails.push(`"${item.name}": package total is wrong.`);
+      if (!b.verified) warns.push(`"${item.name}": package size (${b.label}) is a typical size, not verified for your store.`);
+    } else if (b.kind === "each") {
+      if (b.count * b.eachGrams < item.purchaseGrams - eps) fails.push(`"${item.name}": ${b.count} × ${b.label} doesn't cover ${item.purchaseGrams} g.`);
+    } else if (b.kind === "by_weight" || b.kind === "pantry" || b.kind === "unknown_package") {
+      if (Math.abs(b.grams - item.purchaseGrams) > eps) fails.push(`"${item.name}": amount to buy doesn't match the purchase total.`);
+      if (b.kind === "unknown_package") warns.push(`"${item.name}": no package size set.`);
+    }
+  }
+
+  // e) Cooked weights reconcile.
+  const por = plan.portioning;
+  if (por.lines.length !== recipe.lines.length) fails.push("Cooked-weight lines don't match the ingredients.");
+  let sum = 0;
+  por.lines.forEach((l, i) => {
+    sum += l.cookedGrams;
+    if (Math.abs(l.rawGrams - (calc.lines[i]?.grams ?? Number.NaN)) > eps) fails.push(`"${l.name}": cooked plan starts from the wrong raw weight.`);
+    const line = recipe.lines[i];
+    const cook = line?.cook;
+    if (cook?.kind === "yield") {
+      const y = plan.yields.get(cook.yieldId);
+      if (Math.abs(l.cookedGrams - (l.rawGrams * y.percent) / 100) > eps) fails.push(`"${l.name}": cooked weight doesn't match its yield.`);
+      if (cook.match === "closest") warns.push(`"${l.name}": cooked weight uses the closest USDA yield (${y.description}, ${y.method}).`);
+    }
+  });
+  if (Math.abs(sum - por.batchCookedGrams) > eps * por.lines.length) fails.push(`Cooked batch ${por.batchCookedGrams} g doesn't equal the sum of ingredients (${sum} g).`);
+  const batch = recipe.measuredCookedBatchGrams ?? por.batchCookedGrams;
+  if (Math.abs(por.perContainerGrams * recipe.portions - batch) > 1e-6) fails.push(`Container weight × ${recipe.portions} doesn't equal the batch weight.`);
+  if (!por.measured && por.assumptions.length > 0) warns.push("Container weights are estimates: weigh the finished batch and divide by the number of containers.");
+
+  return { id: 5, name: "Consistency audit", status: fails.length ? "fail" : warns.length ? "warn" : "pass", findings: [...fails, ...warns] };
 }

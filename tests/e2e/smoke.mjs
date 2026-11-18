@@ -160,9 +160,25 @@ await check("nutrition report shows status, printed comparison, sources and chec
   await page.getByText(/Stand-in: Alcoholic beverage, rice \(sake\) for mirin/).waitFor();
   await page.getByText("Kept 50%: 3 → 1.5").waitFor();
   for (const id of [2, 3, 4]) assert.equal(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Passed");
-  assert.equal(await page.getByTestId("audit-5").locator(".badge").textContent(), "Coming in M3");
+  assert.equal(await page.getByTestId("audit-5").locator(".badge").textContent(), "Passed, notes");
+  const shop = page.getByTestId("shopping");
+  await shop.getByText("1 × 2 lb bag").waitFor();
+  await shop.getByText("1 lb 9.0 oz by weight").waitFor();
+  await shop.getByText("1 × dozen large eggs").waitFor();
+  await shop.getByText("Pantry: check you have these").waitFor();
+  assert.equal(await shop.getByText("cold water").count(), 0);
+  await page.getByTestId("per-container").getByText("15.1 oz (428 g)").waitFor();
   assert.equal(await page.locator(".tab--active").textContent(), "My Recipes");
   await page.screenshot({ path: join(outDir, "report.png"), animations: "disabled", fullPage: true });
+});
+
+await check("taco shopping list buys whole items and one 1 lb package of beef", async () => {
+  await page.goto(`${url}#/recipes/taco-mac-n-cheese`);
+  const shop = page.getByTestId("shopping");
+  await shop.getByText("1 × 1 lb package").waitFor();
+  assert.equal(await shop.getByText("2 large peppers").count(), 2);
+  await shop.getByText("1 medium onion").waitFor();
+  await page.screenshot({ path: join(outDir, "shopping.png"), animations: "disabled", fullPage: true });
 });
 
 await check("manifest is valid for Home Screen install", async () => {

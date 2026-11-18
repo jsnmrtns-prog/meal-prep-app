@@ -1,42 +1,420 @@
 {
-  "recipe": {
-    "id": "teriyaki-chicken-fried-rice",
-    "name": "Teriyaki Chicken Fried Rice",
-    "portions": 5,
-    "printedPerServing": { "kcal": 515, "protein": 40, "carbs": 57, "fat": 14 },
-    "notes": [
-      "The marinade's 30 g of teriyaki sauce comes from the homemade sauce below; the whole batch of sauce is counted as eaten (marinade plus glaze), so it isn't added twice.",
-      "Egg whites use USDA's pasteurized liquid egg white record (sold frozen or refrigerated)."
-    ],
-    "lines": [
-      { "id": "garlic", "group": "Teriyaki Sauce", "name": "garlic cloves, minced", "food": { "kind": "usda", "fdcId": 169230 }, "quantity": { "kind": "count", "amount": 3, "portionLabel": "clove" }, "state": "raw", "role": "seasoning", "assumptions": ["Clove size not given; USDA's 3 g clove used."] },
-      { "id": "soy-sauce", "group": "Teriyaki Sauce", "name": "soy sauce", "food": { "kind": "usda", "fdcId": 174277 }, "quantity": { "kind": "mass", "amount": 60, "unit": "g" }, "state": "as_packaged", "role": "sauce" },
-      { "id": "brown-sugar", "group": "Teriyaki Sauce", "name": "zero-calorie brown sugar", "food": { "kind": "builtin", "id": "zero_calorie_sweetener" }, "quantity": { "kind": "mass", "amount": 24, "unit": "g" }, "state": "as_packaged", "role": "sauce" },
-      { "id": "mirin", "group": "Teriyaki Sauce", "name": "mirin", "food": { "kind": "usda", "fdcId": 167723 }, "substituteFor": "mirin", "quantity": { "kind": "mass", "amount": 60, "unit": "g" }, "state": "as_packaged", "role": "sauce", "note": "Sake stands in for mirin; it understates mirin's sugar." },
-      { "id": "ginger", "group": "Teriyaki Sauce", "name": "minced ginger", "optional": true, "food": { "kind": "usda", "fdcId": 169231 }, "quantity": { "kind": "volume", "amount": 1, "unit": "tsp" }, "state": "raw", "role": "seasoning" },
-      { "id": "cornstarch", "group": "Teriyaki Sauce", "name": "cornstarch", "food": { "kind": "usda", "fdcId": 169698 }, "quantity": { "kind": "mass", "amount": 8, "unit": "g" }, "state": "dry", "role": "sauce" },
-      { "id": "slurry-water", "group": "Teriyaki Sauce", "name": "cold water", "food": { "kind": "builtin", "id": "water" }, "quantity": { "kind": "mass", "amount": 15, "unit": "g" }, "state": "as_packaged", "role": "other" },
-      { "id": "chicken", "group": "Teriyaki Chicken", "name": "boneless skinless chicken thighs", "food": { "kind": "usda", "fdcId": 2646171 }, "quantity": { "kind": "mass", "amount": 710, "unit": "g" }, "state": "raw", "role": "protein" },
-      { "id": "fish-sauce", "group": "Teriyaki Chicken", "name": "fish sauce", "food": { "kind": "usda", "fdcId": 174531 }, "quantity": { "kind": "mass", "amount": 5, "unit": "g" }, "state": "as_packaged", "role": "sauce" },
-      { "id": "avocado-oil", "group": "Teriyaki Chicken", "name": "avocado oil", "food": { "kind": "usda", "fdcId": 173573 }, "quantity": { "kind": "mass", "amount": 15, "unit": "g" }, "state": "as_packaged", "role": "fat" },
-      { "id": "rice", "group": "Fried Rice", "name": "white rice", "food": { "kind": "usda", "fdcId": 168877 }, "quantity": { "kind": "mass", "amount": 300, "unit": "g" }, "state": "dry", "role": "carb" },
-      { "id": "veggies", "group": "Fried Rice", "name": "mixed frozen vegetables", "food": { "kind": "usda", "fdcId": 170471 }, "quantity": { "kind": "mass", "amount": 300, "unit": "g" }, "state": "frozen", "role": "vegetable" },
-      { "id": "eggs", "group": "Fried Rice", "name": "eggs", "food": { "kind": "usda", "fdcId": 171287 }, "quantity": { "kind": "count", "amount": 2, "portionLabel": "large" }, "state": "raw", "role": "protein", "assumptions": ["Egg size not given; large eggs (50 g each) assumed."] },
-      { "id": "egg-whites", "group": "Fried Rice", "name": "egg whites", "food": { "kind": "usda", "fdcId": 323697 }, "quantity": { "kind": "mass", "amount": 200, "unit": "g" }, "state": "raw", "role": "protein" },
-      { "id": "sesame-oil", "group": "Fried Rice", "name": "sesame oil (drizzle)", "food": { "kind": "usda", "fdcId": 171016 }, "quantity": { "kind": "volume", "amount": 1, "unit": "tsp" }, "state": "as_packaged", "role": "fat", "assumptions": ["Recipe says \"drizzle\"; 1 tsp assumed."] },
-      { "id": "soy-drizzle", "group": "Fried Rice", "name": "soy sauce (drizzle)", "food": { "kind": "usda", "fdcId": 174277 }, "quantity": { "kind": "volume", "amount": 1, "unit": "tbsp" }, "state": "as_packaged", "role": "sauce", "assumptions": ["Recipe says \"drizzle\"; 1 Tbsp assumed."] }
-    ],
-    "steps": [
-      { "text": "In a small saucepan over medium heat, combine minced garlic cloves, soy sauce, zero-calorie brown sugar, mirin, and (optional) minced ginger. Simmer for 3–4 minutes. In a separate bowl, whisk cornstarch with cold water to create a slurry. Slowly stir slurry into the sauce. Cook until thickened. Set aside." },
-      { "text": "In a bowl, combine chicken thighs with teriyaki sauce, fish sauce, and avocado oil. Mix well and marinate for at least 1 hour or overnight." },
-      { "text": "Heat a skillet over high heat. Cook chicken until browned on both sides and fully cooked through. Glaze with extra teriyaki sauce in the final minute. Set aside to rest, then slice." },
-      { "text": "Cook dry white rice according to package instructions." },
-      { "text": "In the skillet the chicken was cooked in, add frozen vegetables and cook until tender. Push veggies to the side and crack in eggs and pour in egg whites. Scramble and cook until set. Add cooked rice and mix everything together. Drizzle with sesame oil and soy sauce. Stir well to combine and heat through." },
-      { "text": "Top the fried rice with sliced teriyaki chicken. Divide into 5 servings and enjoy!" }
-    ]
+ "recipe": {
+  "id": "teriyaki-chicken-fried-rice",
+  "name": "Teriyaki Chicken Fried Rice",
+  "portions": 5,
+  "printedPerServing": {
+   "kcal": 515,
+   "protein": 40,
+   "carbs": 57,
+   "fat": 14
   },
-  "expectedAfterPreferences": {
-    "removed": ["ginger"],
-    "amounts": { "garlic": 1.5 }
+  "notes": [
+   "The marinade's 30 g of teriyaki sauce comes from the homemade sauce below; the whole batch of sauce is counted as eaten (marinade plus glaze), so it isn't added twice.",
+   "Egg whites use USDA's pasteurized liquid egg white record (sold frozen or refrigerated)."
+  ],
+  "lines": [
+   {
+    "id": "garlic",
+    "group": "Teriyaki Sauce",
+    "name": "garlic cloves, minced",
+    "food": {
+     "kind": "usda",
+     "fdcId": 169230
+    },
+    "quantity": {
+     "kind": "count",
+     "amount": 3,
+     "portionLabel": "clove"
+    },
+    "state": "raw",
+    "role": "seasoning",
+    "assumptions": [
+     "Clove size not given; USDA's 3 g clove used."
+    ],
+    "usedInSteps": [
+     1
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "soy-sauce",
+    "group": "Teriyaki Sauce",
+    "name": "soy sauce",
+    "food": {
+     "kind": "usda",
+     "fdcId": 174277
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 60,
+     "unit": "g"
+    },
+    "state": "as_packaged",
+    "role": "sauce",
+    "usedInSteps": [
+     1
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "brown-sugar",
+    "group": "Teriyaki Sauce",
+    "name": "zero-calorie brown sugar",
+    "food": {
+     "kind": "builtin",
+     "id": "zero_calorie_sweetener"
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 24,
+     "unit": "g"
+    },
+    "state": "as_packaged",
+    "role": "sauce",
+    "usedInSteps": [
+     1
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "mirin",
+    "group": "Teriyaki Sauce",
+    "name": "mirin",
+    "food": {
+     "kind": "usda",
+     "fdcId": 167723
+    },
+    "substituteFor": "mirin",
+    "quantity": {
+     "kind": "mass",
+     "amount": 60,
+     "unit": "g"
+    },
+    "state": "as_packaged",
+    "role": "sauce",
+    "note": "Sake stands in for mirin; it understates mirin's sugar.",
+    "usedInSteps": [
+     1
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "ginger",
+    "group": "Teriyaki Sauce",
+    "name": "minced ginger",
+    "optional": true,
+    "food": {
+     "kind": "usda",
+     "fdcId": 169231
+    },
+    "quantity": {
+     "kind": "volume",
+     "amount": 1,
+     "unit": "tsp"
+    },
+    "state": "raw",
+    "role": "seasoning",
+    "usedInSteps": [
+     1
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "cornstarch",
+    "group": "Teriyaki Sauce",
+    "name": "cornstarch",
+    "food": {
+     "kind": "usda",
+     "fdcId": 169698
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 8,
+     "unit": "g"
+    },
+    "state": "dry",
+    "role": "sauce",
+    "usedInSteps": [
+     1
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "slurry-water",
+    "group": "Teriyaki Sauce",
+    "name": "cold water",
+    "food": {
+     "kind": "builtin",
+     "id": "water"
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 15,
+     "unit": "g"
+    },
+    "state": "as_packaged",
+    "role": "other",
+    "usedInSteps": [
+     1
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "chicken",
+    "group": "Teriyaki Chicken",
+    "name": "boneless skinless chicken thighs",
+    "food": {
+     "kind": "usda",
+     "fdcId": 2646171
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 710,
+     "unit": "g"
+    },
+    "state": "raw",
+    "role": "protein",
+    "usedInSteps": [
+     2,
+     3
+    ],
+    "cook": {
+     "kind": "yield",
+     "yieldId": "cook-5094",
+     "match": "closest"
+    }
+   },
+   {
+    "id": "fish-sauce",
+    "group": "Teriyaki Chicken",
+    "name": "fish sauce",
+    "food": {
+     "kind": "usda",
+     "fdcId": 174531
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 5,
+     "unit": "g"
+    },
+    "state": "as_packaged",
+    "role": "sauce",
+    "usedInSteps": [
+     2
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "avocado-oil",
+    "group": "Teriyaki Chicken",
+    "name": "avocado oil",
+    "food": {
+     "kind": "usda",
+     "fdcId": 173573
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 15,
+     "unit": "g"
+    },
+    "state": "as_packaged",
+    "role": "fat",
+    "usedInSteps": [
+     2
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "rice",
+    "group": "Fried Rice",
+    "name": "white rice",
+    "food": {
+     "kind": "usda",
+     "fdcId": 168877
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 300,
+     "unit": "g"
+    },
+    "state": "dry",
+    "role": "carb",
+    "usedInSteps": [
+     4,
+     5
+    ],
+    "cook": {
+     "kind": "yield",
+     "yieldId": "hydrate-rice-white-long-grain",
+     "match": "exact"
+    }
+   },
+   {
+    "id": "veggies",
+    "group": "Fried Rice",
+    "name": "mixed frozen vegetables",
+    "food": {
+     "kind": "usda",
+     "fdcId": 170471
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 300,
+     "unit": "g"
+    },
+    "state": "frozen",
+    "role": "vegetable",
+    "usedInSteps": [
+     5
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "eggs",
+    "group": "Fried Rice",
+    "name": "eggs",
+    "food": {
+     "kind": "usda",
+     "fdcId": 171287
+    },
+    "quantity": {
+     "kind": "count",
+     "amount": 2,
+     "portionLabel": "large"
+    },
+    "state": "raw",
+    "role": "protein",
+    "assumptions": [
+     "Egg size not given; large eggs (50 g each) assumed."
+    ],
+    "usedInSteps": [
+     5
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "egg-whites",
+    "group": "Fried Rice",
+    "name": "egg whites",
+    "food": {
+     "kind": "usda",
+     "fdcId": 323697
+    },
+    "quantity": {
+     "kind": "mass",
+     "amount": 200,
+     "unit": "g"
+    },
+    "state": "raw",
+    "role": "protein",
+    "usedInSteps": [
+     5
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "sesame-oil",
+    "group": "Fried Rice",
+    "name": "sesame oil (drizzle)",
+    "food": {
+     "kind": "usda",
+     "fdcId": 171016
+    },
+    "quantity": {
+     "kind": "volume",
+     "amount": 1,
+     "unit": "tsp"
+    },
+    "state": "as_packaged",
+    "role": "fat",
+    "assumptions": [
+     "Recipe says \"drizzle\"; 1 tsp assumed."
+    ],
+    "usedInSteps": [
+     5
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   },
+   {
+    "id": "soy-drizzle",
+    "group": "Fried Rice",
+    "name": "soy sauce (drizzle)",
+    "food": {
+     "kind": "usda",
+     "fdcId": 174277
+    },
+    "quantity": {
+     "kind": "volume",
+     "amount": 1,
+     "unit": "tbsp"
+    },
+    "state": "as_packaged",
+    "role": "sauce",
+    "assumptions": [
+     "Recipe says \"drizzle\"; 1 Tbsp assumed."
+    ],
+    "usedInSteps": [
+     5
+    ],
+    "cook": {
+     "kind": "unchanged"
+    }
+   }
+  ],
+  "steps": [
+   {
+    "text": "In a small saucepan over medium heat, combine minced garlic cloves, soy sauce, zero-calorie brown sugar, mirin, and (optional) minced ginger. Simmer for 3–4 minutes. In a separate bowl, whisk cornstarch with cold water to create a slurry. Slowly stir slurry into the sauce. Cook until thickened. Set aside."
+   },
+   {
+    "text": "In a bowl, combine chicken thighs with teriyaki sauce, fish sauce, and avocado oil. Mix well and marinate for at least 1 hour or overnight."
+   },
+   {
+    "text": "Heat a skillet over high heat. Cook chicken until browned on both sides and fully cooked through. Glaze with extra teriyaki sauce in the final minute. Set aside to rest, then slice."
+   },
+   {
+    "text": "Cook dry white rice according to package instructions."
+   },
+   {
+    "text": "In the skillet the chicken was cooked in, add frozen vegetables and cook until tender. Push veggies to the side and crack in eggs and pour in egg whites. Scramble and cook until set. Add cooked rice and mix everything together. Drizzle with sesame oil and soy sauce. Stir well to combine and heat through."
+   },
+   {
+    "text": "Top the fried rice with sliced teriyaki chicken. Divide into 5 servings and enjoy!"
+   }
+  ]
+ },
+ "expectedAfterPreferences": {
+  "removed": [
+   "ginger"
+  ],
+  "amounts": {
+   "garlic": 1.5
   }
+ }
 }

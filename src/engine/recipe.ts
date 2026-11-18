@@ -71,7 +71,30 @@ export interface IngredientLine {
   /** Set when the nutrition comes from a stand-in food, e.g. "mirin" estimated with sake. */
   substituteFor?: string;
   note?: string;
+  /** How the purchased product becomes the usable raw quantity (bone removal, trimming). */
+  prep?: LinePrep;
+  /** How the usable quantity changes weight when cooked (for container weights only). */
+  cook?: LineCook;
+  /** Step numbers (1-based) that use this ingredient. Required unless optional. */
+  usedInSteps?: number[];
+  /** Overrides the package-size table for this line. */
+  packageKey?: string;
 }
+
+export interface LinePrep {
+  /** USDA bone-removal yield (Handbook 102) for bone-in cuts. */
+  boneYieldId?: string;
+  /** Percent of the purchased weight kept after trimming fat, as measured by you. */
+  trimKeptPercent?: number;
+}
+
+export type LineCook =
+  /** A USDA cooking or hydration yield. `match` says how closely the entry fits this ingredient. */
+  | { kind: "yield"; yieldId: string; match: "exact" | "closest" }
+  /** Weight assumed unchanged by cooking (sauces, vegetables, eggs); flagged as an assumption. */
+  | { kind: "unchanged" }
+  /** Cooked in water that's discarded or absorbed elsewhere; adds no weight to the batch. */
+  | { kind: "absorbed" };
 
 export interface RecipeStep {
   /** Original wording. `{{qty:lineId}}` and `{{name:lineId}}` placeholders render from the ingredient list. */
@@ -94,6 +117,8 @@ export interface Recipe {
   notes?: string[];
   /** What the source recipe claims per serving, for comparison only. */
   printedPerServing?: PrintedNutrition;
+  /** The finished batch's weight, if you weighed it. Container weights then use this. */
+  measuredCookedBatchGrams?: number;
 }
 
 export type PreferenceMode = "exclude" | "reduce" | "allow";

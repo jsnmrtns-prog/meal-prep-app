@@ -41,7 +41,10 @@ def load():
     for f in json.loads(FOUNDATION_JSON.read_text())["FoundationFoods"]:
         nums = {str(n["nutrient"]["number"]): float(n["amount"]) for n in f.get("foodNutrients", []) if n.get("amount") is not None}
         foods[f["fdcId"]] = (f["description"], nutrient_row(nums))
-        portions[f["fdcId"]] = []
+        portions[f["fdcId"]] = [
+            (float(p.get("amount") or 1), p.get("measureUnit", {}).get("name", ""), float(p["gramWeight"]))
+            for p in f.get("foodPortions", []) if p.get("gramWeight")
+        ]
     with open(SR_DIR / "nutrient.csv", newline="") as fh:
         number_by_id = {r["id"]: r["nutrient_nbr"] for r in csv.DictReader(fh)}
     sr_desc, sr_nums = {}, {}
@@ -79,8 +82,76 @@ def grams_for(line, portions):
     return q["amount"] * grams / amount
 
 
+# --- independent purchase / package / cooked-weight references ---
+OZ, LB = 28.349523125, 453.59237
+# fdcId -> (rule, grams per package or item). Typical sizes, mirroring the app's seed table.
+PACKAGES = {
+    2646171: ("by_weight", None), 173110: ("package", LB), 168877: ("package", 2 * LB),
+    169736: ("package", 16 * OZ), 170471: ("package", 12 * OZ), 323697: ("package", 16 * OZ),
+    328841: ("package", 16 * OZ), 171292: ("package", 8 * OZ), 172243: ("package", 30.0),
+}
+PORTION_PACKAGES = {  # (rule, USDA portion label, multiplier)
+    171287: ("package", "large", 12), 746772: ("package", "cup", 8), 174074: ("package", "can", 1),
+    169383: ("each", 'pepper, large (3-3/4" long, 3" dia)', 1),
+    170108: ("each", 'large (2-1/4 per pound, approx 3-3/4" long, 3" dia.)', 1),
+    170000: ("each", 'medium (2-1/2" dia)', 1),
+}
+
+
+def cook_factors():
+    import openpyxl  # a different reader from the app's build script, on purpose
+    ws = openpyxl.load_workbook(RAW / "USDA_CookingYields_MeatPoultry02.xlsx", read_only=True).worksheets[0]
+    cook = {f"cook-{int(r[1])}": float(r[4]) / 100 for r in list(ws.iter_rows(values_only=True))[1:] if r[1]}
+    water = {}
+    with open(SR_DIR / "nutrient.csv", newline="") as fh:
+        nid = {r["id"]: r["nutrient_nbr"] for r in csv.DictReader(fh)}
+    with open(SR_DIR / "food_nutrient.csv", newline="") as fh:
+        for r in csv.DictReader(fh):
+            if nid.get(r["nutrient_id"]) == "255" and int(r["fdc_id"]) in (168877, 168878, 169736, 169737):
+                water[int(r["fdc_id"])] = float(r["amount"])
+    cook["hydrate-rice-white-long-grain"] = (100 - water[168877]) / (100 - water[168878])
+    cook["hydrate-pasta-enriched"] = (100 - water[169736]) / (100 - water[169737])
+    return cook
+
+
+def plan(recipe_lines, grams_by_id, portions, cook):
+    items = {}
+    for line in recipe_lines:
+        food = line["food"]
+        if food["kind"] == "builtin" and food["id"] == "water":
+            continue
+        key = f"usda-{food['fdcId']}" if food["kind"] == "usda" else f"line-{line['id']}"
+        it = items.setdefault(key, {"grams": 0.0, "lines": []})
+        it["grams"] += grams_by_id[line["id"]]
+        it["lines"].append(line["id"])
+    for key, it in items.items():
+        fid = int(key.split("-")[1]) if key.startswith("usda-") else None
+        if fid in PACKAGES:
+            rule, size = PACKAGES[fid]
+        elif fid in PORTION_PACKAGES:
+            rule, label, mult = PORTION_PACKAGES[fid]
+            (amt, _, g), = [p for p in portions[fid] if p[1] == label]
+            size = mult * g / amt
+        else:
+            rule, size = "other", None
+        it["rule"] = rule
+        if size:
+            n = 1
+            while n * size < it["grams"] - 1e-9:
+                n += 1
+            it["count"] = n
+            it["unitGrams"] = size
+    cooked = 0.0
+    for line in recipe_lines:
+        c = line.get("cook", {"kind": "unchanged"})
+        g = grams_by_id[line["id"]]
+        cooked += g * (cook[c["yieldId"]] if c["kind"] == "yield" else 0.0 if c["kind"] == "absorbed" else 1.0)
+    return items, cooked
+
+
 def main():
     foods, portions = load()
+    cook = cook_factors()
     result = {"source": "scripts/golden_recipes.py (independent of the TypeScript engine)", "recipes": {}}
     for path in sorted(FIXTURES.glob("*.json")):
         fx = json.loads(path.read_text())
@@ -109,7 +180,13 @@ def main():
                     batch[k] += contrib[k]
             lines_out.append({"id": line["id"], "description": desc, "grams": grams, "nutrients": contrib})
         n = recipe["portions"]
+        kept = [l for l in recipe["lines"] if l["id"] not in after["removed"]]
+        items, cooked = plan(kept, {l["id"]: l["grams"] for l in lines_out}, portions, cook)
+        result["recipes"].setdefault(recipe["id"], {})
         result["recipes"][recipe["id"]] = {
+            "shopping": items,
+            "cookedBatchGrams": cooked,
+            "perContainerGrams": cooked / n,
             "portions": n,
             "lines": lines_out,
             "batch": batch,

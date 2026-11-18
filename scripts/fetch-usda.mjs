@@ -32,6 +32,20 @@ for (const [name, ds] of Object.entries(sources.datasets)) {
   console.log(`ok ${name} ${ds.release} (sha256 verified)`);
 }
 
+for (const [name, f] of Object.entries(sources.extraFiles ?? {})) {
+  const path = join(rawDir, f.file);
+  let bytes = existsSync(path) ? await readFile(path) : null;
+  if (!bytes || sha256(bytes) !== f.sha256) {
+    console.log(`Downloading ${name}: ${f.url}`);
+    const res = await fetch(f.url);
+    if (!res.ok) throw new Error(`Download failed (${res.status}) for ${f.url}`);
+    bytes = Buffer.from(await res.arrayBuffer());
+    await writeFile(path, bytes);
+  }
+  if (sha256(bytes) !== f.sha256) throw new Error(`Checksum mismatch for ${f.file}`);
+  console.log(`ok ${name} (sha256 verified)`);
+}
+
 function sha256(buf) {
   return createHash("sha256").update(buf).digest("hex");
 }

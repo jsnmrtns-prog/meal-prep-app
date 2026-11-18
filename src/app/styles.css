@@ -384,10 +384,21 @@ a.row-button {
 .ingredient { padding: 12px 16px; }
 .ingredient + .ingredient { border-top: 0.5px solid var(--separator); }
 .ingredient__top { display: flex; justify-content: space-between; gap: 12px; }
-.ingredient__grams { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ingredient__grams { font-variant-numeric: tabular-nums; text-align: right; max-width: 55%; flex: 0 0 auto; }
+.ingredient__top > span:first-child { min-width: 0; }
 .ingredient__meta { font-size: 14px; color: var(--text-2); margin-top: 2px; font-variant-numeric: tabular-nums; }
 .ingredient__source { font-size: 12px; color: var(--text-2); margin-top: 2px; }
 .ingredient__assumption { font-size: 12px; color: #8a560c; margin-top: 2px; }
 @media (prefers-color-scheme: dark) { .ingredient__assumption { color: #f0bd6e; } }
 .note { margin: 0 0 8px !important; font-size: 15px; }
 .note:last-child { margin-bottom: 0 !important; }
+
+.list-head {
+  padding: 10px 16px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+  border-top: 0.5px solid var(--separator);
+}
+.card > div:first-child > .list-head,
+.card > .list-head:first-child { border-top: 0; }

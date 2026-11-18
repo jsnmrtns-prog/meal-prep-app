@@ -3,7 +3,7 @@
 Scale recipes to your macro targets, verify nutrition against USDA data, and build grocery lists. It runs as a Home Screen web app on iPhone.
 
 - **Plan:** "Meal Prep App — Product Development Plan v1" (Claude doc)
-- **Status:** milestone M1 (USDA food database, lookup, allergen screen)
+- **Status:** milestone M3 (recipe nutrition, audits 1–5, purchase amounts, shopping list, container weights)
 
 ## How it fits together
 
@@ -37,7 +37,13 @@ The app bundles `public/data/fooddb.json`, built from pinned USDA FoodData Centr
 npm run usda:fetch   # downloads and verifies the USDA files into data-raw/
 npm run usda:build   # writes public/data/fooddb.json
 npm run usda:golden  # independent Python check values → tests/fixtures/golden-foods.json
+npm run usda:yields  # writes public/data/yields.json (cooking, bone and grain yields)
+npm run golden:recipes  # independent Python totals for the reference recipes
 ```
+
+Yield sources: USDA Table of Cooking Yields for Meat and Poultry, Release 2; USDA Agriculture
+Handbook No. 102 (1975), bone-removal yields transcribed by hand from page 14; grain hydration
+derived from USDA SR Legacy raw/cooked pairs.
 
 Source: U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2026.
 fdc.nal.usda.gov. Public domain (CC0).

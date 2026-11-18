@@ -2,6 +2,128 @@
  "source": "scripts/golden_recipes.py (independent of the TypeScript engine)",
  "recipes": {
   "taco-mac-n-cheese": {
+   "shopping": {
+    "usda-169383": {
+     "grams": 372.0,
+     "lines": [
+      "yellow-peppers"
+     ],
+     "rule": "each",
+     "count": 2,
+     "unitGrams": 186.0
+    },
+    "usda-170108": {
+     "grams": 328.0,
+     "lines": [
+      "red-peppers"
+     ],
+     "rule": "each",
+     "count": 2,
+     "unitGrams": 164.0
+    },
+    "usda-170000": {
+     "grams": 110.0,
+     "lines": [
+      "onion"
+     ],
+     "rule": "each",
+     "count": 1,
+     "unitGrams": 110.0
+    },
+    "usda-173110": {
+     "grams": 453.59237,
+     "lines": [
+      "beef"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 453.59237
+    },
+    "usda-172243": {
+     "grams": 30.0,
+     "lines": [
+      "taco-seasoning"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 30.0
+    },
+    "usda-174074": {
+     "grams": 50.0,
+     "lines": [
+      "enchilada-sauce"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 283.0
+    },
+    "usda-171319": {
+     "grams": 2.7,
+     "lines": [
+      "chili-powder"
+     ],
+     "rule": "other"
+    },
+    "usda-171325": {
+     "grams": 1.55,
+     "lines": [
+      "garlic-powder"
+     ],
+     "rule": "other"
+    },
+    "usda-169736": {
+     "grams": 330.0,
+     "lines": [
+      "pasta"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 453.59237
+    },
+    "usda-328841": {
+     "grams": 350.0,
+     "lines": [
+      "cottage-cheese"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 453.59237
+    },
+    "usda-171584": {
+     "grams": 25.0,
+     "lines": [
+      "cheddar-powder"
+     ],
+     "rule": "other"
+    },
+    "usda-171292": {
+     "grams": 50.0,
+     "lines": [
+      "cheddar"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 226.796185
+    },
+    "usda-175043": {
+     "grams": 10.0,
+     "lines": [
+      "nutritional-yeast"
+     ],
+     "rule": "other"
+    },
+    "usda-746772": {
+     "grams": 50.0,
+     "lines": [
+      "milk"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 1968.0
+    }
+   },
+   "cookedBatchGrams": 2477.3620862374173,
+   "perContainerGrams": 495.47241724748346,
    "portions": 5,
    "lines": [
     {
@@ -52,16 +174,16 @@
     {
      "id": "beef",
      "description": "Beef, ground, 93% lean meat / 7% fat, raw",
-     "grams": 454.0,
+     "grams": 453.59237,
      "nutrients": {
-      "kcal": 690.08,
-      "protein": 94.65900000000002,
-      "fat": 31.78,
+      "kcal": 689.4604024,
+      "protein": 94.57400914500002,
+      "fat": 31.751465900000003,
       "carbs": 0.0,
       "fiber": 0.0,
       "sugars": 0.0,
-      "sodium": 299.64,
-      "satFat": 13.066120000000002
+      "sodium": 299.3709642,
+      "satFat": 13.0543884086
      }
     },
     {
@@ -216,14 +338,14 @@
     }
    ],
    "batch": {
-    "kcal": 2883.9445,
-    "protein": 207.977145,
-    "fat": 63.563575,
+    "kcal": 2883.3249024,
+    "protein": 207.892154145,
+    "fat": 63.5350409,
     "carbs": 360.540015,
     "fiber": 30.925100000000004,
     "sugars": 51.171794999999996,
-    "sodium": 5119.7390000000005,
-    "satFat": 27.666193500000002
+    "sodium": 5119.4699642000005,
+    "satFat": 27.654461908600002
    },
    "complete": {
     "kcal": true,
@@ -236,18 +358,122 @@
     "satFat": true
    },
    "perPortion": {
-    "kcal": 576.7889,
-    "protein": 41.595429,
-    "fat": 12.712715,
+    "kcal": 576.66498048,
+    "protein": 41.578430829,
+    "fat": 12.707008179999999,
     "carbs": 72.108003,
     "fiber": 6.185020000000001,
     "sugars": 10.234359,
-    "sodium": 1023.9478000000001,
-    "satFat": 5.5332387
+    "sodium": 1023.8939928400001,
+    "satFat": 5.53089238172
    },
-   "batchGrams": 2163.25
+   "batchGrams": 2162.84237
   },
   "teriyaki-chicken-fried-rice": {
+   "shopping": {
+    "usda-169230": {
+     "grams": 4.5,
+     "lines": [
+      "garlic"
+     ],
+     "rule": "other"
+    },
+    "usda-174277": {
+     "grams": 76.0,
+     "lines": [
+      "soy-sauce",
+      "soy-drizzle"
+     ],
+     "rule": "other"
+    },
+    "line-brown-sugar": {
+     "grams": 24.0,
+     "lines": [
+      "brown-sugar"
+     ],
+     "rule": "other"
+    },
+    "usda-167723": {
+     "grams": 60.0,
+     "lines": [
+      "mirin"
+     ],
+     "rule": "other"
+    },
+    "usda-169698": {
+     "grams": 8.0,
+     "lines": [
+      "cornstarch"
+     ],
+     "rule": "other"
+    },
+    "usda-2646171": {
+     "grams": 710.0,
+     "lines": [
+      "chicken"
+     ],
+     "rule": "by_weight"
+    },
+    "usda-174531": {
+     "grams": 5.0,
+     "lines": [
+      "fish-sauce"
+     ],
+     "rule": "other"
+    },
+    "usda-173573": {
+     "grams": 15.0,
+     "lines": [
+      "avocado-oil"
+     ],
+     "rule": "other"
+    },
+    "usda-168877": {
+     "grams": 300.0,
+     "lines": [
+      "rice"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 907.18474
+    },
+    "usda-170471": {
+     "grams": 300.0,
+     "lines": [
+      "veggies"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 340.1942775
+    },
+    "usda-171287": {
+     "grams": 100.0,
+     "lines": [
+      "eggs"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 600.0
+    },
+    "usda-323697": {
+     "grams": 200.0,
+     "lines": [
+      "egg-whites"
+     ],
+     "rule": "package",
+     "count": 1,
+     "unitGrams": 453.59237
+    },
+    "usda-171016": {
+     "grams": 4.5,
+     "lines": [
+      "sesame-oil"
+     ],
+     "rule": "other"
+    }
+   },
+   "cookedBatchGrams": 2142.0140684410644,
+   "perContainerGrams": 428.40281368821286,
    "portions": 5,
    "lines": [
     {

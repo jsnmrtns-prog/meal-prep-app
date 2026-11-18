@@ -16,5 +16,19 @@
       "sha256": "b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0",
       "entry": "FoodData_Central_sr_legacy_food_csv_2018-04/"
     }
+  },
+  "extraFiles": {
+    "cookingYields": {
+      "url": "https://www.ars.usda.gov/ARSUserFiles/80400535/Data/retn/USDA_CookingYields_MeatPoultry02.xlsx",
+      "file": "USDA_CookingYields_MeatPoultry02.xlsx",
+      "sha256": "13bd2cec633841867bf8532ed57114c81f3791b9bcd35a396dec6a1b960773ff",
+      "citation": "USDA Table of Cooking Yields for Meat and Poultry, Release 2. U.S. Department of Agriculture, Agricultural Research Service, Nutrient Data Laboratory."
+    },
+    "handbook102": {
+      "url": "https://www.ars.usda.gov/ARSUserFiles/80400525/Data/Classics/ah102.pdf",
+      "file": "ah102.pdf",
+      "sha256": "7fa4bebb0be5020e6a8bb696c86e149c32654aecf1768d40bee414367bebd23f",
+      "citation": "Matthews, R.H. and Garrison, Y.J. Food Yields Summarized by Different Stages of Preparation. Agriculture Handbook No. 102. U.S. Department of Agriculture, 1975."
+    }
   }
 }
