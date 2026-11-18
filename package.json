@@ -1,6 +1,6 @@
 {
   "name": "meal-prep-app",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "description": "Meal-prep recipe scaling, USDA nutrition verification and grocery lists, as a Home Screen web app.",
   "type": "module",
@@ -20,7 +20,8 @@
     "usda:build": "node scripts/build-fooddb.mjs",
     "usda:golden": "python3 -I scripts/golden_foods.py",
     "usda:yields": "python3 -I scripts/build_yields.py",
-    "golden:recipes": "python3 -I scripts/golden_recipes.py"
+    "golden:recipes": "python3 -I scripts/golden_recipes.py",
+    "golden:optimizer": "node scripts/export-optimized.ts && python3 -I scripts/golden_optimizer.py"
   },
   "dependencies": {
     "react": "^19.2.0",

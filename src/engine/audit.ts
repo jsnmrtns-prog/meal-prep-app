@@ -6,7 +6,8 @@
  *  1. Ingredient audit   — food records, units, grams, states, allergies, preferences
  *  2. Nutrition audit    — every line recomputed with exact scaled-integer arithmetic
  *  3. Recipe audit       — lines sum to batch totals; batch weight adds up
- *  4. Portion audit      — batch ÷ portions = per portion, both directions
+ *  4. Portion audit      — batch ÷ portions = per portion, both directions; with a
+ *                          preset, per-meal totals rebuilt from scratch meet every target
  *  5. Consistency audit  — steps use every ingredient; purchases, packages and cooked weights reconcile
  */
 import { screenAllergens } from "./allergens.ts";
@@ -17,6 +18,7 @@ import { NUTRIENT_KEYS, type IngredientLine, type NutrientKey, type Recipe, type
 import type { PackageEntry } from "./packages.ts";
 import type { Portioning, ShoppingList } from "./shopping.ts";
 import type { YieldDb } from "./yields.ts";
+import type { MacroPreset } from "./presets.ts";
 
 /** Everything audit 5 needs; without it audit 5 is reported as pending. */
 export interface PlanForAudit {
@@ -71,14 +73,14 @@ export function auditRecipe(
   calc: CalcResult,
   db: FoodDb,
   profile: UserProfile,
-  options: { now?: Date; plan?: PlanForAudit } = {},
+  options: { now?: Date; plan?: PlanForAudit; targets?: MacroPreset } = {},
 ): AuditReport {
   const now = options.now ?? new Date();
   const audits: AuditResult[] = [
     ingredientAudit(recipe, calc, db, profile),
     nutritionAudit(recipe, calc, db),
     recipeTotalsAudit(calc),
-    portionAudit(recipe, calc),
+    portionAudit(recipe, calc, db, options.targets),
     options.plan
       ? consistencyAudit(recipe, calc, db, options.plan)
       : { id: 5, name: "Consistency audit", status: "pending", findings: ["Shopping and cooked-weight plan not provided."] },
@@ -272,8 +274,9 @@ function recipeTotalsAudit(calc: CalcResult): AuditResult {
 }
 
 // ---------- 4. Portion audit ----------
-function portionAudit(recipe: Recipe, calc: CalcResult): AuditResult {
+function portionAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, targets?: MacroPreset): AuditResult {
   const fails: string[] = [];
+  if (targets) fails.push(...targetFindings(recipe, db, targets));
   if (calc.portions !== recipe.portions) fails.push(`Portion count: recipe ${recipe.portions}, calculation ${calc.portions}.`);
   for (const key of NUTRIENT_KEYS) {
     const batch = calc.batch[key].value;
@@ -283,6 +286,41 @@ function portionAudit(recipe: Recipe, calc: CalcResult): AuditResult {
     if (calc.perPortion[key].complete !== calc.batch[key].complete) fails.push(`${key}: completeness differs between batch and portion.`);
   }
   return { id: 4, name: "Portion audit", status: fails.length ? "fail" : "pass", findings: fails };
+}
+
+/**
+ * Per-meal totals rebuilt from the recipe alone (audit grams × USDA values,
+ * scaled-integer sums), then compared with the preset's ranges, which are
+ * also worked out here rather than taken from presets.ts.
+ */
+function targetFindings(recipe: Recipe, db: FoodDb, t: MacroPreset): string[] {
+  const fails: string[] = [];
+  if (recipe.portions !== t.meals) fails.push(`The recipe makes ${recipe.portions} portions; the preset asks for ${t.meals} meals.`);
+  const totals: Record<"kcal" | "protein" | "carbs" | "fat", bigint> = { kcal: 0n, protein: 0n, carbs: 0n, fat: 0n };
+  for (const line of recipe.lines) {
+    const grams = independentGrams(line, db);
+    if (grams === null) return [...fails, `"${line.name}": no basis for grams, so targets can't be checked.`];
+    for (const key of ["kcal", "protein", "carbs", "fat"] as const) {
+      const per100 = per100From(line, db, key);
+      if (per100 === null) return [...fails, `"${line.name}": ${key} unknown, so targets can't be checked.`];
+      totals[key] += microContribution(grams, per100);
+    }
+  }
+  const perMeal = (key: keyof typeof totals) => Number(totals[key]) / 1_000_000 / recipe.portions;
+  const check = (label: string, value: number, lo: number, hi: number, unit: string) => {
+    if (value < lo - 1e-9 || value > hi + 1e-9) fails.push(`${label}: ${value.toFixed(2)} ${unit} per meal is outside ${lo.toFixed(2)}–${hi.toFixed(2)} ${unit}.`);
+  };
+  const kd = (t.kcal * t.kcalTolerancePct) / 100;
+  check("Calories", perMeal("kcal"), t.kcal - kd, t.kcal + kd, "kcal");
+  const p = t.protein;
+  if (p.mode === "minimum") check("Protein", perMeal("protein"), p.grams, p.grams + 5, "g");
+  else {
+    const pd = (p.grams * (p.tolerancePct ?? t.kcalTolerancePct)) / 100;
+    check("Protein", perMeal("protein"), p.grams - pd, p.grams + pd, "g");
+  }
+  if (t.carbs) check("Carbs", perMeal("carbs"), t.carbs.grams * (1 - t.carbs.tolerancePct / 100), t.carbs.grams * (1 + t.carbs.tolerancePct / 100), "g");
+  if (t.fat) check("Fat", perMeal("fat"), t.fat.grams * (1 - t.fat.tolerancePct / 100), t.fat.grams * (1 + t.fat.tolerancePct / 100), "g");
+  return fails;
 }
 
 // ---------- 5. Consistency audit ----------

@@ -10,3 +10,6 @@ export * from "./audit.ts";
 export * from "./yields.ts";
 export * from "./packages.ts";
 export * from "./shopping.ts";
+export * from "./presets.ts";
+export * from "./swaps.ts";
+export * from "./optimizer.ts";

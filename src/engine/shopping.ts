@@ -246,7 +246,7 @@ export function cookedLine(line: IngredientLine, rawGrams: number, yields: Yield
     cookedGrams: rawGrams * f,
     low: rawGrams * ((y.min ?? y.percent) / 100),
     high: rawGrams * ((y.max ?? y.percent) / 100),
-    basis: `${y.kind === "hydration" ? "Grows" : "Cooks down"} to ${y.percent}%${y.min !== null && y.max !== null ? ` (${y.min}–${y.max}%)` : ""}: ${y.description}, ${y.method}${cook.match === "closest" ? " (closest USDA match)" : ""}`,
+    basis: `${y.kind === "hydration" ? "Grows" : "Cooks down"} to ${pct(y.percent)}${y.min !== null && y.max !== null ? ` (${pct(y.min)}–${pct(y.max)})` : ""}: ${y.description}, ${y.method}${cook.match === "closest" ? " (closest USDA match)" : ""}`,
     assumed: cook.match === "closest",
   };
 }

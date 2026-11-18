@@ -221,3 +221,10 @@ test("container weights divide evenly for 5, 6 and 7 portions", () => {
     assert.notEqual(audit().audits[4]!.status, "fail");
   }
 });
+
+test("yield percentages are rounded for display only", () => {
+  const { portioning } = full(fixtures[0]!);
+  const rice = portioning.lines.find((l) => l.lineId === "rice")!;
+  assert.match(rice.basis, /^Grows to 280% \(265\.1%–280%\)/);
+  close(rice.cookedGrams, 300 * yields.get("hydrate-rice-white-long-grain").percent / 100, "rice cooked stays exact");
+});

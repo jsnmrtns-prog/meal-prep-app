@@ -181,6 +181,45 @@ await check("taco shopping list buys whole items and one 1 lb package of beef", 
   await page.screenshot({ path: join(outDir, "shopping.png"), animations: "disabled", fullPage: true });
 });
 
+await check("home lists the two macro presets", async () => {
+  await page.goto(`${url}#/home`);
+  await page.getByText("750 kcal · at least 75 g protein · 6 meals · ±2%").waitFor();
+  await page.getByText("850 kcal · at least 75 g protein · 6 meals · ±2%").waitFor();
+});
+
+await check("teriyaki scaled to 750 kcal meets the targets and offers the leaner swap", async () => {
+  await page.goto(`${url}#/recipes/teriyaki-chicken-fried-rice`);
+  await page.getByTestId("preset-picker").getByRole("link", { name: "750 kcal" }).click();
+  await page.getByTestId("preset-line").getByText(/Standard Meal Prep/).waitFor();
+  assert.equal(await page.getByTestId("target-kcal").locator(".badge").textContent(), "Met");
+  assert.equal(await page.getByTestId("target-protein").locator(".badge").textContent(), "Met");
+  await page.getByTestId("big-change").waitFor();
+  await page.getByTestId("step-notes").getByText("Divide into 6 containers (the original recipe makes 5 servings).").waitFor();
+  assert.equal(await page.getByTestId("audit-4").locator(".badge").textContent(), "Passed");
+  for (const id of [1, 2, 3, 4, 5]) assert.notEqual(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Failed");
+  assert.equal(await page.locator('.seg__item--active').textContent(), "750 kcal");
+  await page.screenshot({ path: join(outDir, "scaled-750.png"), animations: "disabled", fullPage: true });
+  await page.getByTestId("options").getByRole("button", { name: /Use chicken breast instead of thighs/ }).click();
+  await page.getByTestId("picked-option").getByText("Option: Use chicken breast instead of thighs").waitFor();
+  assert.equal(await page.getByTestId("target-protein").locator(".badge").textContent(), "Met");
+  assert.equal(await page.getByTestId("big-change").count(), 0);
+  await page.getByTestId("step-notes").getByText(/chicken breast wherever the steps say/).waitFor();
+  await page.getByTestId("ingredients").getByText("Chicken, breast, boneless, skinless, raw", { exact: false }).first().waitFor();
+  await page.screenshot({ path: join(outDir, "scaled-750-breast.png"), animations: "disabled", fullPage: true });
+  await page.getByRole("button", { name: "‹ Back to the main plan" }).click();
+  await page.getByTestId("big-change").waitFor();
+});
+
+await check("taco scaled to 850 kcal meets the targets", async () => {
+  await page.goto(`${url}#/recipes/taco-mac-n-cheese/higher-850`);
+  assert.equal(await page.getByTestId("target-kcal").locator(".badge").textContent(), "Met");
+  assert.equal(await page.getByTestId("target-protein").locator(".badge").textContent(), "Met");
+  await page.getByTestId("changes").getByText("93% lean ground beef").waitFor();
+  await page.getByTestId("changes").getByText("2% cottage cheese").waitFor();
+  assert.equal(await page.getByTestId("audit-4").locator(".badge").textContent(), "Passed");
+  await page.screenshot({ path: join(outDir, "scaled-850-taco.png"), animations: "disabled", fullPage: true });
+});
+
 await check("manifest is valid for Home Screen install", async () => {
   const res = await page.request.get(`${url}manifest.webmanifest`);
   assert.equal(res.status(), 200);

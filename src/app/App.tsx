@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement, type ReactNode } from "react";
-import { ENGINE_VERSION } from "../engine/index.ts";
+import { DEFAULT_PRESETS, ENGINE_VERSION, describePreset } from "../engine/index.ts";
 import { HomeIcon, ImportIcon, RecipesIcon, SettingsIcon, ShoppingIcon } from "./icons.tsx";
 import { FoodDetailScreen, FoodSearchScreen } from "./FoodLookup.tsx";
 import { loadFoodDb } from "./foodData.ts";
@@ -26,7 +26,7 @@ const TABS: ReadonlyArray<{ id: TabId; label: string; title: string; Icon: () =>
 
 type Route =
   | { tab: TabId; screen: "tab" }
-  | { tab: "recipes"; screen: "recipe"; recipeId: string }
+  | { tab: "recipes"; screen: "recipe"; recipeId: string; presetId: string | null }
   | { tab: "settings"; screen: "foods" }
   | { tab: "settings"; screen: "food"; fdcId: number };
 
@@ -36,7 +36,9 @@ function routeFromHash(): Route {
     const id = Number(parts[1]);
     return parts[1] && Number.isInteger(id) ? { tab: "settings", screen: "food", fdcId: id } : { tab: "settings", screen: "foods" };
   }
-  if (parts[0] === "recipes" && parts[1]) return { tab: "recipes", screen: "recipe", recipeId: decodeURIComponent(parts[1]) };
+  if (parts[0] === "recipes" && parts[1]) {
+    return { tab: "recipes", screen: "recipe", recipeId: decodeURIComponent(parts[1]), presetId: parts[2] ? decodeURIComponent(parts[2]) : null };
+  }
   const id = parts[0] ?? "";
   return { tab: TABS.some((t) => t.id === id) ? (id as TabId) : "home", screen: "tab" };
 }
@@ -79,7 +81,7 @@ export function App(): ReactElement {
         </h1>
         {route.screen === "foods" && <FoodSearchScreen />}
         {route.screen === "food" && <FoodDetailScreen fdcId={route.fdcId} />}
-        {route.screen === "recipe" && <RecipeReportScreen id={route.recipeId} />}
+        {route.screen === "recipe" && <RecipeReportScreen key={`${route.recipeId}/${route.presetId ?? ""}`} id={route.recipeId} presetId={route.presetId} />}
         {route.screen === "tab" && tab === "home" && <HomeScreen onNavigate={go} />}
         {route.screen === "tab" && tab === "import" && <ImportScreen />}
         {route.screen === "tab" && tab === "recipes" && <RecipesScreen />}
@@ -147,7 +149,13 @@ function HomeScreen({ onNavigate }: { onNavigate: (id: TabId) => void }): ReactE
         <Empty milestone="M5">Recipes you save will show up here.</Empty>
       </Section>
       <Section title="Macro presets">
-        <Empty milestone="M5">Your presets, such as 750 kcal · 75 g protein · 6 meals.</Empty>
+        {DEFAULT_PRESETS.map((p) => (
+          <div key={p.id} className="row">
+            <span className="row__label">{p.name}</span>
+            <span className="row__value row__value--small">{describePreset(p)} · ±{p.kcalTolerancePct}%</span>
+          </div>
+        ))}
+        <Empty milestone="M5">Creating and editing your own presets.</Empty>
       </Section>
       <Section title="Current shopping list">
         <Empty milestone="M7">Your latest shopping list will show up here.</Empty>
@@ -159,17 +167,18 @@ function HomeScreen({ onNavigate }: { onNavigate: (id: TabId) => void }): ReactE
 function ImportScreen(): ReactElement {
   return (
     <>
-      <p className="lead">Your ChatGPT or Claude app reads the recipe. This app does all the math.</p>
+      <p className="lead">The app reads recipes itself and does all the math. No AI app needed.</p>
       <Section title="How import will work">
         <ol className="steps">
-          <li>Tap the button below. The app copies a prompt and opens your AI app.</li>
-          <li>Paste the prompt there and attach the recipe photo, PDF or text.</li>
-          <li>Copy the AI's reply and paste it back here to review.</li>
+          <li>Paste the recipe text (copy it from a photo with Live Text, a website or notes), or open a PDF.</li>
+          <li>The app splits out each amount and ingredient and flags anything unclear.</li>
+          <li>You review it, confirm the USDA food for each ingredient, and save.</li>
         </ol>
       </Section>
       <button className="primary-action" disabled>
-        Copy prompt and open AI app
+        Paste or open a recipe
       </button>
+      <p className="footnote">Optional shortcut: have ChatGPT or Claude format a recipe, then paste the result here.</p>
       <p className="footnote">Arrives in milestone M6. Manual entry arrives in M5.</p>
     </>
   );
