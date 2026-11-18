@@ -13,3 +13,4 @@ export * from "./shopping.ts";
 export * from "./presets.ts";
 export * from "./swaps.ts";
 export * from "./optimizer.ts";
+export * from "./userdata.ts";

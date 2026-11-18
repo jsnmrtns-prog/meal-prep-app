@@ -75,7 +75,14 @@ async function check(name, fn) {
 await mkdir(outDir, { recursive: true });
 await page.goto(url);
 
-await check("home screen renders with title and import button", async () => {
+await check("first run shows setup, then the home screen", async () => {
+  await page.getByTestId("onboarding").waitFor();
+  await page.screenshot({ path: join(outDir, "onboarding.png"), animations: "disabled" });
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByText("Any food allergies?").waitFor();
+  await page.getByRole("button", { name: "No allergies, next" }).click();
+  await page.getByText("Light garlic", { exact: false }).waitFor();
+  await page.getByRole("button", { name: "Start using the app" }).click();
   await page.getByRole("heading", { level: 1, name: "Meal Prep" }).waitFor();
   await page.getByRole("button", { name: "Import a recipe" }).waitFor();
   await page.screenshot({ path: join(outDir, "home.png"), animations: "disabled" });
@@ -218,6 +225,119 @@ await check("taco scaled to 850 kcal meets the targets", async () => {
   await page.getByTestId("changes").getByText("2% cottage cheese").waitFor();
   assert.equal(await page.getByTestId("audit-4").locator(".badge").textContent(), "Passed");
   await page.screenshot({ path: join(outDir, "scaled-850-taco.png"), animations: "disabled", fullPage: true });
+});
+
+await check("M5 gate: a typed-in recipe is verified and still there after reopening", async () => {
+  await page.goto(`${url}#/recipes`);
+  await page.getByRole("button", { name: "New recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "New Recipe" }).waitFor();
+  await page.getByLabel("Recipe name").fill("Chicken and Rice Bowl");
+  await page.getByLabel("Servings").fill("4");
+  await page.getByLabel("Step 1").fill("Cook the white rice according to the package.");
+  await page.getByRole("button", { name: "Add a step" }).click();
+  await page.getByLabel("Step 2").fill("Season and grill the chicken breast, then slice it and serve over the rice.");
+
+  const addIngredient = async (name, query, result, amount, step) => {
+    await page.getByRole("button", { name: "Add an ingredient" }).click();
+    const form = page.getByTestId("ingredient-form");
+    await form.getByLabel("Ingredient name").fill(name);
+    await form.getByLabel("Search USDA foods").fill(query);
+    await form.getByRole("button", { name: new RegExp(`^${result}`) }).first().click();
+    await form.getByTestId("picked-food").getByText(result).waitFor();
+    await form.getByLabel("Amount").fill(String(amount));
+    await form.getByLabel(new RegExp(`^Step ${step}`)).check();
+    if (step === 2) await form.screenshot({ path: join(outDir, "ingredient-form.png"), animations: "disabled" });
+    await form.getByRole("button", { name: "Done" }).click();
+  };
+  await addIngredient("chicken breast", "chicken breast boneless skinless raw", "Chicken, breast, boneless, skinless, raw", 900, 2);
+  await addIngredient("white rice", "white rice long grain raw", "Rice, white, long-grain, regular, raw, enriched", 300, 1);
+  const status = page.getByTestId("editor-status");
+  await status.waitFor();
+  assert.match(await status.locator("strong").textContent(), /^Verified/);
+  await page.screenshot({ path: join(outDir, "editor.png"), animations: "disabled", fullPage: true });
+  await page.getByRole("button", { name: "Save recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByRole("heading", { name: "Chicken and Rice Bowl" }).waitFor();
+  assert.match(await page.getByTestId("recipe-status").locator("strong").textContent(), /^Verified/);
+  for (const id of [1, 2, 3, 4, 5]) assert.notEqual(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Failed");
+
+  // Close and reopen: the recipe comes back from the phone's storage.
+  await page.goto("about:blank");
+  await page.goto(`${url}#/recipes`);
+  await page.getByTestId("library").getByRole("link", { name: /Chicken and Rice Bowl.*Verified/ }).waitFor();
+  await page.screenshot({ path: join(outDir, "library.png"), animations: "disabled" });
+});
+
+await check("editing keeps the previous version, and it can be restored", async () => {
+  await page.getByTestId("library").getByRole("link", { name: /Chicken and Rice Bowl/ }).click();
+  await page.getByTestId("recipe-actions").getByRole("link", { name: "Edit" }).click();
+  await page.getByLabel("Servings").fill("5");
+  await page.getByRole("button", { name: "Save recipe" }).click();
+  await page.getByTestId("recipe-actions").getByRole("link", { name: "Versions (1)" }).click();
+  await page.getByText("4 servings", { exact: false }).waitFor();
+  await page.getByRole("button", { name: "Restore" }).click();
+  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByText("4 servings ·", { exact: false }).waitFor();
+});
+
+await check("a new preset can be made and used to scale a recipe", async () => {
+  await page.goto(`${url}#/settings/presets`);
+  await page.getByRole("button", { name: "New preset" }).click();
+  await page.getByRole("heading", { level: 1, name: "Edit Preset" }).waitFor();
+  await page.getByLabel("Preset name").fill("Lean cut");
+  await page.getByLabel("Calories per meal").fill("600");
+  await page.getByLabel("Protein grams").fill("60");
+  await page.getByLabel("Meals").fill("5");
+  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByText("Saved on this phone.").waitFor();
+  await page.goto(`${url}#/recipes/chicken-and-rice-bowl`);
+  await page.getByTestId("preset-picker").locator("select").selectOption({ label: "Lean cut (600 kcal)" });
+  await page.getByTestId("preset-line").getByText(/Lean cut: 600 kcal · at least 60 g protein · 5 meals/).waitFor();
+  assert.equal(await page.getByTestId("target-kcal").locator(".badge").textContent(), "Met");
+  assert.equal(await page.getByTestId("target-protein").locator(".badge").textContent(), "Met");
+  await page.screenshot({ path: join(outDir, "scaled-custom.png"), animations: "disabled", fullPage: true });
+});
+
+await check("a food to avoid flags recipes that contain it", async () => {
+  await page.goto(`${url}#/settings/allergies`);
+  await page.getByRole("button", { name: "Add a food to avoid" }).click();
+  await page.getByLabel("Avoid item 1 name").fill("Rice");
+  await page.getByLabel("Avoid item 1 words").fill("rice");
+  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByText("Saved on this phone.").waitFor();
+  await page.goto(`${url}#/recipes/chicken-and-rice-bowl`);
+  await page.getByTestId("recipe-status").getByText("Needs review").waitFor();
+  await page.getByText(/which is on your avoid list \(Rice\)/).first().waitFor();
+  await page.goto(`${url}#/settings/allergies`);
+  await page.getByRole("button", { name: "Remove" }).click();
+  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByText("Saved on this phone.").waitFor();
+});
+
+await check("backup exports, a damaged file is refused, and restore brings data back", async () => {
+  await page.goto(`${url}#/settings/backup`);
+  const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("button", { name: /Export a backup/ }).click()]);
+  const file = join(outDir, "backup.json");
+  await download.saveAs(file);
+  const backup = JSON.parse(await readFile(file, "utf8"));
+  assert.equal(backup.app, "meal-prep-app");
+  assert.ok(backup.recipes.some((r) => r.id === "chicken-and-rice-bowl"));
+
+  await page.getByLabel("Backup file").setInputFiles({ name: "bad.json", mimeType: "application/json", buffer: Buffer.from('{"app":"meal-prep-app","schema":1}') });
+  await page.getByTestId("backup-problems").getByText("Can't restore this file:").waitFor();
+
+  // Delete the recipe, then restore it from the backup.
+  await page.goto(`${url}#/recipes/chicken-and-rice-bowl`);
+  page.once("dialog", (d) => d.accept());
+  await page.getByTestId("recipe-actions").getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("library").waitFor();
+  assert.equal(await page.getByTestId("library").getByRole("link", { name: /Chicken and Rice Bowl/ }).count(), 0);
+  await page.goto(`${url}#/settings/backup`);
+  await page.getByLabel("Backup file").setInputFiles(file);
+  await page.getByTestId("backup-preview").getByRole("button", { name: "Replace everything with this backup" }).click();
+  await page.getByText("Restored.", { exact: false }).waitFor();
+  await page.goto(`${url}#/recipes`);
+  await page.getByTestId("library").getByRole("link", { name: /Chicken and Rice Bowl/ }).waitFor();
 });
 
 await check("manifest is valid for Home Screen install", async () => {

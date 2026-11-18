@@ -135,7 +135,16 @@ export interface IngredientPreference {
   keepPercent?: number;
 }
 
+/** An allergen or food you avoid that isn't one of the nine major allergens (e.g. mollusks). */
+export interface CustomAllergen {
+  /** Shown to the user, e.g. "Mollusks (clams, oysters, scallops)". */
+  label: string;
+  /** Whole words or phrases matched against ingredient names and food descriptions. */
+  matches: string[];
+}
+
 export interface UserProfile {
   allergies: Allergen[];
+  customAllergens?: CustomAllergen[];
   preferences: IngredientPreference[];
 }

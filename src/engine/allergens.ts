@@ -10,6 +10,7 @@
  *  - Cross-contact ("may contain") can never be verified from USDA data.
  */
 import type { Food } from "./fooddb.ts";
+import type { CustomAllergen } from "./recipe.ts";
 
 /** The nine major food allergens defined by U.S. law (FALCPA as amended by the FASTER Act). */
 export const MAJOR_ALLERGENS = [
@@ -162,4 +163,16 @@ export function screenAllergens(food: Pick<Food, "description" | "category">): A
     needsLabelCheck,
     reasons: allergens.map((a) => `${a}: ${found.get(a)!}`),
   };
+}
+
+/** The phrase of a custom allergen found in `text` (an ingredient name or food description), if any. */
+export function customAllergenHit(text: string, allergen: CustomAllergen): string | null {
+  const t = normalise(text);
+  for (const m of allergen.matches) {
+    const phrase = normalise(m).trim();
+    if (!phrase) continue;
+    // Allow a plain plural: "clam" also matches "clams".
+    if (containsPhrase(t, phrase) || containsPhrase(t, `${phrase}s`) || containsPhrase(t, `${phrase}es`)) return m;
+  }
+  return null;
 }

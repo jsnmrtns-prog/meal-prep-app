@@ -10,7 +10,7 @@
  *                          preset, per-meal totals rebuilt from scratch meet every target
  *  5. Consistency audit  — steps use every ingredient; purchases, packages and cooked weights reconcile
  */
-import { screenAllergens } from "./allergens.ts";
+import { customAllergenHit, screenAllergens } from "./allergens.ts";
 import { type CalcResult, recipeInputsHash } from "./calculate.ts";
 import type { FoodDb } from "./fooddb.ts";
 import { preferenceMatches } from "./preferences.ts";
@@ -160,6 +160,11 @@ function ingredientAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, profile: 
       warns.push(`"${line.name}": allergens can't be verified from this source; check the label.`);
     }
 
+    for (const ca of profile.customAllergens ?? []) {
+      const texts = [line.name, calcLine.food.description, line.substituteFor ?? ""];
+      const hit = texts.map((t) => customAllergenHit(t, ca)).find((h) => h !== null);
+      if (hit) fails.push(`"${line.name}" matches "${hit}", which is on your avoid list (${ca.label}).`);
+    }
     if (line.substituteFor) warns.push(`"${line.name}": nutrition estimated from ${calcLine.food.description} (stand-in for ${line.substituteFor}).`);
     for (const a of line.assumptions ?? []) warns.push(`"${line.name}": ${a}`);
 

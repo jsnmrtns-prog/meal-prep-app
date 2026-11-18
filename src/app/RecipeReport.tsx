@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import {
   BIG_CHANGE,
-  DEFAULT_PRESETS,
-  SEED_PACKAGES,
   applyPreferences,
   auditRecipe,
   buildShoppingList,
@@ -12,7 +10,6 @@ import {
   portionRecipe,
   type AuditReport,
   type CalcResult,
-  type FoodDb,
   type MacroPreset,
   type OptimizedPlan,
   type Portioning,
@@ -20,46 +17,24 @@ import {
   type Quantity,
   type Recipe,
   type RecipeStatus,
+  type SavedRecipe,
+  type Settings,
   type ShoppingItem,
   type ShoppingList,
   type TargetResult,
   type TradeoffOption,
-  type UserProfile,
-  type YieldDb,
 } from "../engine/index.ts";
-import { loadFoodDb, loadYields } from "./foodData.ts";
 import { grams, imperial, weight } from "./format.ts";
-import teriyaki from "../../tests/fixtures/recipes/teriyaki-fried-rice.json";
-import taco from "../../tests/fixtures/recipes/taco-mac-and-cheese.json";
-import testProfile from "../../tests/fixtures/profile.json";
-
-/** Reference recipes used to check the math (M2). Real saved recipes arrive in M5. */
-export const SAMPLE_RECIPES = [teriyaki.recipe, taco.recipe] as unknown as Recipe[];
-const PROFILE = testProfile as unknown as UserProfile;
+import { useUserData } from "./store.tsx";
+import { BackLink, go, useEngine, type Engine } from "./ui.tsx";
 
 export const STATUS_TEXT: Record<RecipeStatus, { label: string; tone: "good" | "ok" | "warn" | "bad"; detail: string }> = {
   verified: { label: "Verified", tone: "good", detail: "Every check passed with no assumptions." },
-  verified_with_assumptions: { label: "Verified with assumptions", tone: "ok", detail: "Every check passed; some amounts are assumed (listed below)." },
+  verified_with_assumptions: { label: "Verified with assumptions", tone: "ok", detail: "Every check passed; some amounts or sizes are assumed (listed below)." },
   checks_pending: { label: "Checks pending", tone: "ok", detail: "Nothing failed, but not every check has run yet." },
   estimate: { label: "Estimate", tone: "warn", detail: "Some ingredients use stand-in foods, so the totals can't be verified. Add product labels to fix this." },
   needs_review: { label: "Needs review", tone: "bad", detail: "A check failed. See the findings below." },
 };
-
-interface Engine {
-  db: FoodDb;
-  yields: YieldDb;
-}
-
-function useEngine(): { engine: Engine | null; error: string | null } {
-  const [engine, setEngine] = useState<Engine | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    Promise.all([loadFoodDb(), loadYields()])
-      .then(([db, yields]) => setEngine({ db, yields }))
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
-  }, []);
-  return { engine, error };
-}
 
 interface Computed {
   recipe: Recipe;
@@ -69,16 +44,27 @@ interface Computed {
   portioning: Portioning;
 }
 
-function analyse(recipe: Recipe, { db, yields }: Engine, targets?: MacroPreset, calc = calculateRecipe(recipe, db)): Computed {
-  const shopping = buildShoppingList(recipe, calc, db, yields, SEED_PACKAGES);
+export function analyse(recipe: Recipe, { db, yields }: Engine, settings: Settings, targets?: MacroPreset, calc = calculateRecipe(recipe, db)): Computed {
+  const shopping = buildShoppingList(recipe, calc, db, yields, settings.packages);
   const portioning = portionRecipe(recipe, calc, yields);
-  const plan = { yields, packages: SEED_PACKAGES, shopping, portioning };
-  const report = auditRecipe(recipe, calc, db, PROFILE, targets ? { plan, targets } : { plan });
+  const plan = { yields, packages: settings.packages, shopping, portioning };
+  const report = auditRecipe(recipe, calc, db, settings.profile, targets ? { plan, targets } : { plan });
   return { recipe, calc, report, shopping, portioning };
 }
 
-function prepared(recipe: Recipe): { recipe: Recipe; changes: PreferenceChange[] } {
-  return applyPreferences(recipe, PROFILE.preferences);
+export function prepared(recipe: Recipe, settings: Settings): { recipe: Recipe; changes: PreferenceChange[] } {
+  return applyPreferences(recipe, settings.profile.preferences);
+}
+
+/** Status and per-serving values for a library row; null while loading or if it can't be calculated. */
+export function quickSummary(recipe: Recipe, engine: Engine, settings: Settings): { status: RecipeStatus; kcal: number; protein: number; carbs: number; fat: number } | null {
+  try {
+    const c = analyse(prepared(recipe, settings).recipe, engine, settings);
+    const pp = c.calc.perPortion;
+    return { status: c.report.status, kcal: pp.kcal.value, protein: pp.protein.value, carbs: pp.carbs.value, fat: pp.fat.value };
+  } catch {
+    return null;
+  }
 }
 
 const r1 = (v: number) => Math.round(v * 10) / 10;
@@ -103,44 +89,62 @@ function quantityText(q: Quantity, g: number): string {
   return `${amountText(q.amount)} ${label}`;
 }
 
-export function SampleRecipeList(): ReactElement {
+export function RecipeLibrary(): ReactElement {
+  const { recipes, settings } = useUserData();
+  const { engine } = useEngine();
   return (
-    <section className="section">
-      <h2 className="section__title">Reference recipes (math check)</h2>
-      <div className="card">
-        {SAMPLE_RECIPES.map((r) => <SampleRow key={r.id} recipe={r} />)}
-      </div>
-      <p className="footnote">Your two recipes at their original amounts, with your preferences applied. Open one and pick a preset to scale it to your macros.</p>
-    </section>
+    <>
+      <button className="primary-action" onClick={() => go("/recipes/new")}>New recipe</button>
+      <section className="section" data-testid="library">
+        <h2 className="section__title">Library</h2>
+        <div className="card">
+          {recipes.length === 0 && <div className="empty"><p>No recipes yet. Tap New recipe to add one.</p></div>}
+          {recipes.map((r) => <LibraryRow key={r.id} saved={r} engine={engine} settings={settings} />)}
+        </div>
+        <p className="footnote">Values are per serving at the recipe's own amounts, with your preferences applied. Open a recipe and pick a preset to scale it.</p>
+      </section>
+    </>
   );
 }
 
-function SampleRow({ recipe }: { recipe: Recipe }): ReactElement {
-  const { engine } = useEngine();
-  const data = useMemo(() => (engine ? analyse(prepared(recipe).recipe, engine) : null), [engine, recipe]);
-  const s = data ? STATUS_TEXT[data.report.status] : null;
+function LibraryRow({ saved, engine, settings }: { saved: SavedRecipe; engine: Engine | null; settings: Settings }): ReactElement {
+  const sum = useMemo(() => (engine ? quickSummary(saved.recipe, engine, settings) : null), [engine, saved, settings]);
+  const s = sum ? STATUS_TEXT[sum.status] : null;
   return (
-    <a className="food-row" href={`#/recipes/${recipe.id}`}>
-      <span className="food-row__name">{recipe.name}</span>
+    <a className="food-row" href={`#/recipes/${encodeURIComponent(saved.id)}`}>
+      <span className="food-row__name">{saved.favorite ? "★ " : ""}{saved.recipe.name}</span>
       <span className="food-row__meta">
-        {data
-          ? `${r0(data.calc.perPortion.kcal.value)} kcal · P ${r0(data.calc.perPortion.protein.value)} g · C ${r0(data.calc.perPortion.carbs.value)} g · F ${r0(data.calc.perPortion.fat.value)} g per serving · `
-          : "Calculating… "}
+        {sum
+          ? `${r0(sum.kcal)} kcal · P ${r0(sum.protein)} g · C ${r0(sum.carbs)} g · F ${r0(sum.fat)} g per serving · `
+          : engine ? "Can't calculate yet · " : "Calculating… "}
         {s && <span className={`badge badge--${s.tone}`}>{s.label}</span>}
+        {saved.origin === "reference" && <span className="badge badge--muted">Reference</span>}
       </span>
     </a>
   );
 }
 
-function PresetPicker({ recipeId, presetId }: { recipeId: string; presetId: string | null }): ReactElement {
-  const items = [{ id: null as string | null, label: "Original" }, ...DEFAULT_PRESETS.map((p) => ({ id: p.id as string | null, label: `${p.kcal} kcal` }))];
+function PresetPicker({ recipeId, presetId, presets }: { recipeId: string; presetId: string | null; presets: MacroPreset[] }): ReactElement {
+  const base = `#/recipes/${encodeURIComponent(recipeId)}`;
+  if (presets.length > 2) {
+    return (
+      <label className="field field--inline" data-testid="preset-picker">
+        <span className="field__label">Scale to</span>
+        <select className="input" value={presetId ?? ""} onChange={(e) => go(e.target.value ? `/recipes/${encodeURIComponent(recipeId)}/${e.target.value}` : `/recipes/${encodeURIComponent(recipeId)}`)}>
+          <option value="">Original amounts</option>
+          {presets.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.kcal} kcal)</option>)}
+        </select>
+      </label>
+    );
+  }
+  const items = [{ id: null as string | null, label: "Original" }, ...presets.map((p) => ({ id: p.id as string | null, label: `${p.kcal} kcal` }))];
   return (
     <nav className="seg" aria-label="Scale to a preset" data-testid="preset-picker">
       {items.map((it) => (
         <a
           key={it.id ?? "original"}
           className={`seg__item${it.id === presetId ? " seg__item--active" : ""}`}
-          href={`#/recipes/${recipeId}${it.id ? `/${it.id}` : ""}`}
+          href={`${base}${it.id ? `/${it.id}` : ""}`}
           aria-current={it.id === presetId ? "page" : undefined}
         >
           {it.label}
@@ -150,31 +154,80 @@ function PresetPicker({ recipeId, presetId }: { recipeId: string; presetId: stri
   );
 }
 
+function RecipeActions({ saved }: { saved: SavedRecipe }): ReactElement {
+  const { deleteRecipe, duplicateRecipe, toggleFavorite } = useUserData();
+  const id = encodeURIComponent(saved.id);
+  return (
+    <div className="actions" data-testid="recipe-actions">
+      <a className="action" href={`#/recipes/${id}/edit`}>Edit</a>
+      <button className="action" onClick={() => void duplicateRecipe(saved.id).then((nid) => go(`/recipes/${encodeURIComponent(nid)}/edit`))}>Duplicate</button>
+      <button className="action" onClick={() => void toggleFavorite(saved.id)}>{saved.favorite ? "★ Favorite" : "☆ Favorite"}</button>
+      {saved.versions.length > 0 && <a className="action" href={`#/recipes/${id}/versions`}>Versions ({saved.versions.length})</a>}
+      <button
+        className="action action--danger"
+        onClick={() => {
+          if (window.confirm(`Delete "${saved.recipe.name}"? This can't be undone (unless you have a backup).`)) void deleteRecipe(saved.id).then(() => go("/recipes"));
+        }}
+      >
+        Delete
+      </button>
+    </div>
+  );
+}
+
+export function RecipeVersionsScreen({ id }: { id: string }): ReactElement {
+  const { recipes, revertRecipe } = useUserData();
+  const saved = recipes.find((r) => r.id === id);
+  if (!saved) return <p className="lead">Recipe not found.</p>;
+  return (
+    <>
+      <BackLink href={`#/recipes/${encodeURIComponent(id)}`}>{saved.recipe.name}</BackLink>
+      <p className="lead">Earlier versions of this recipe, newest first. Restoring one keeps the current version here too.</p>
+      <section className="section">
+        <div className="card">
+          {saved.versions.map((v, i) => (
+            <div key={v.savedAt + i} className="row">
+              <span className="row__label">
+                {new Date(v.savedAt).toLocaleString()}
+                <span className="row__sub">{v.recipe.name} · {v.recipe.portions} servings · {v.recipe.lines.length} ingredients</span>
+              </span>
+              <button className="small-button" onClick={() => void revertRecipe(id, i).then(() => go(`/recipes/${encodeURIComponent(id)}`))}>Restore</button>
+            </div>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
 export function RecipeReportScreen({ id, presetId }: { id: string; presetId: string | null }): ReactElement {
-  const recipe = SAMPLE_RECIPES.find((r) => r.id === id);
+  const { recipes, settings } = useUserData();
+  const saved = recipes.find((r) => r.id === id);
+  const recipe = saved?.recipe;
   const { engine, error } = useEngine();
   const [choice, setChoice] = useState(-1);
-  const preset = presetId ? DEFAULT_PRESETS.find((p) => p.id === presetId) ?? null : null;
-  const prep = useMemo(() => (recipe ? prepared(recipe) : null), [recipe]);
+  const preset = presetId ? settings.presets.find((p) => p.id === presetId) ?? null : null;
+  const prep = useMemo(() => (recipe ? prepared(recipe, settings) : null), [recipe, settings]);
   const view = useMemo(() => {
     if (!engine || !prep) return null;
     try {
-      if (!preset) return { kind: "original" as const, data: analyse(prep.recipe, engine) };
-      return { kind: "scaled" as const, result: optimizeRecipe(prep.recipe, preset, engine.db) };
+      if (!preset) return { kind: "original" as const, data: analyse(prep.recipe, engine, settings) };
+      return { kind: "scaled" as const, result: optimizeRecipe(prep.recipe, preset, engine.db, { bounds: settings.bounds }) };
     } catch (e) {
       return { kind: "error" as const, message: e instanceof Error ? e.message : String(e) };
     }
-  }, [engine, prep, preset]);
+  }, [engine, prep, preset, settings]);
 
-  if (!recipe || !prep) return <p className="lead">Recipe not found.</p>;
+  if (!saved || !recipe || !prep) return <><BackLink href="#/recipes">My Recipes</BackLink><p className="lead">Recipe not found.</p></>;
   if (presetId && !preset) return <p className="lead">Preset not found.</p>;
   if (error) return <p className="warning">Couldn't load the nutrition data: {error}</p>;
 
   const header = (
     <>
-      <a className="back-link" href="#/recipes">‹ My Recipes</a>
-      <h2 className="food-title">{recipe.name}</h2>
-      <PresetPicker recipeId={recipe.id} presetId={presetId} />
+      <BackLink href="#/recipes">My Recipes</BackLink>
+      <h2 className="food-title">{saved.favorite ? "★ " : ""}{recipe.name}</h2>
+      <RecipeActions saved={saved} />
+      <PresetPicker recipeId={saved.id} presetId={presetId} presets={settings.presets} />
     </>
   );
   if (!view || !engine) return <>{header}<p className="lead">Calculating…</p></>;
@@ -189,6 +242,7 @@ export function RecipeReportScreen({ id, presetId }: { id: string; presetId: str
         <StatusCard report={data.report} />
         <PerPortion calc={data.calc} printed={recipe.printedPerServing} title="Per serving" />
         <PreferenceSection changes={prep.changes} />
+        <StepsSection recipe={prep.recipe} />
         <IngredientSection data={data} />
         <ShoppingSection shopping={data.shopping} />
         <ContainerSection portioning={data.portioning} />
@@ -243,7 +297,8 @@ export function RecipeReportScreen({ id, presetId }: { id: string; presetId: str
 }
 
 function PlanView({ plan, engine, recipe, options }: { plan: OptimizedPlan; engine: Engine; recipe: Recipe; options: ReactElement | null }): ReactElement {
-  const data = useMemo(() => analyse(plan.recipe, engine, plan.preset, plan.calc), [plan, engine]);
+  const { settings } = useUserData();
+  const data = useMemo(() => analyse(plan.recipe, engine, settings, plan.preset, plan.calc), [plan, engine, settings]);
   const moved = plan.changes.filter((c) => c.lever !== "fixed");
   const big = moved.filter((c) => c.factor < BIG_CHANGE.below || c.factor > BIG_CHANGE.above);
   return (
@@ -292,6 +347,7 @@ function PlanView({ plan, engine, recipe, options }: { plan: OptimizedPlan; engi
           <div className="card"><div className="empty">{plan.stepNotes.map((n) => <p key={n} className="note">{n}</p>)}</div></div>
         </section>
       )}
+      <StepsSection recipe={plan.recipe} />
       <IngredientSection data={data} title={`Ingredients (${plan.recipe.portions} meals)`} />
       <ShoppingSection shopping={data.shopping} />
       <ContainerSection portioning={data.portioning} />
@@ -436,6 +492,19 @@ function AuditSection({ report }: { report: AuditReport }): ReactElement {
         {report.audits.filter((a) => a.status === "fail").flatMap((a) => a.findings.map((f) => <div key={`${a.id}-${f}`} className="ingredient__assumption finding">{a.id}: {f}</div>))}
       </div>
       <p className="footnote">USDA data releases: Foundation Foods and SR Legacy · engine {report.engineVersion}</p>
+    </section>
+  );
+}
+
+function StepsSection({ recipe }: { recipe: Recipe }): ReactElement | null {
+  if (recipe.steps.length === 0) return null;
+  return (
+    <section className="section" data-testid="steps">
+      <h3 className="section__title">Instructions (original wording)</h3>
+      <div className="card">
+        <ol className="steps steps--card">{recipe.steps.map((st, i) => <li key={i}>{st.text}</li>)}</ol>
+      </div>
+      <p className="footnote">Scaled amounts will be written into the steps in M7.</p>
     </section>
   );
 }

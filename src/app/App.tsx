@@ -1,9 +1,25 @@
-import { useCallback, useEffect, useState, type ReactElement, type ReactNode } from "react";
-import { DEFAULT_PRESETS, ENGINE_VERSION, describePreset } from "../engine/index.ts";
+import { useCallback, useEffect, useState, type ReactElement } from "react";
+import { ENGINE_VERSION, MAJOR_ALLERGENS, describePreset, type Allergen } from "../engine/index.ts";
 import { HomeIcon, ImportIcon, RecipesIcon, SettingsIcon, ShoppingIcon } from "./icons.tsx";
 import { FoodDetailScreen, FoodSearchScreen } from "./FoodLookup.tsx";
 import { loadFoodDb } from "./foodData.ts";
-import { RecipeReportScreen, SampleRecipeList } from "./RecipeReport.tsx";
+import { RecipeEditorScreen } from "./RecipeEditor.tsx";
+import { RecipeLibrary, RecipeReportScreen, RecipeVersionsScreen } from "./RecipeReport.tsx";
+import {
+  ALLERGEN_LABEL,
+  AllergiesScreen,
+  BackupScreen,
+  LabelFoodEditorScreen,
+  LabelFoodsScreen,
+  LimitsScreen,
+  PackagesScreen,
+  PreferencesScreen,
+  PresetEditorScreen,
+  PresetsScreen,
+  SettingsMenu,
+} from "./SettingsScreens.tsx";
+import { UserDataProvider, useUserData } from "./store.tsx";
+import { Empty, LinkRow, Row, Section, go } from "./ui.tsx";
 import {
   formatBytes,
   getStorageStatus,
@@ -24,33 +40,79 @@ const TABS: ReadonlyArray<{ id: TabId; label: string; title: string; Icon: () =>
   { id: "settings", label: "Settings", title: "Settings", Icon: SettingsIcon },
 ];
 
-type Route =
-  | { tab: TabId; screen: "tab" }
-  | { tab: "recipes"; screen: "recipe"; recipeId: string; presetId: string | null }
-  | { tab: "settings"; screen: "foods" }
-  | { tab: "settings"; screen: "food"; fdcId: number };
+type Screen =
+  | { kind: "tab" }
+  | { kind: "foods" }
+  | { kind: "food"; fdcId: number }
+  | { kind: "recipe"; id: string; presetId: string | null }
+  | { kind: "recipe-edit"; id: string | null }
+  | { kind: "recipe-versions"; id: string }
+  | { kind: "settings"; page: string; id: string | null };
 
-function routeFromHash(): Route {
-  const parts = window.location.hash.replace(/^#\/?/, "").split("/");
-  if (parts[0] === "foods") {
-    const id = Number(parts[1]);
-    return parts[1] && Number.isInteger(id) ? { tab: "settings", screen: "food", fdcId: id } : { tab: "settings", screen: "foods" };
+interface Route {
+  tab: TabId;
+  screen: Screen;
+}
+
+const SETTINGS_PAGES: Record<string, string> = {
+  allergies: "Allergies",
+  preferences: "Preferences",
+  presets: "Macro Presets",
+  limits: "Adjustment Limits",
+  packages: "Package Sizes",
+  labels: "Label Foods",
+  backup: "Backup",
+};
+
+export function routeFromHash(hash: string): Route {
+  const parts = hash.replace(/^#\/?/, "").split("/").map((p) => decodeURIComponent(p));
+  const [a = "", b, c] = parts;
+  if (a === "foods") {
+    const id = Number(b);
+    return { tab: "settings", screen: b && Number.isInteger(id) ? { kind: "food", fdcId: id } : { kind: "foods" } };
   }
-  if (parts[0] === "recipes" && parts[1]) {
-    return { tab: "recipes", screen: "recipe", recipeId: decodeURIComponent(parts[1]), presetId: parts[2] ? decodeURIComponent(parts[2]) : null };
+  if (a === "recipes" && b) {
+    if (b === "new") return { tab: "recipes", screen: { kind: "recipe-edit", id: null } };
+    if (c === "edit") return { tab: "recipes", screen: { kind: "recipe-edit", id: b } };
+    if (c === "versions") return { tab: "recipes", screen: { kind: "recipe-versions", id: b } };
+    return { tab: "recipes", screen: { kind: "recipe", id: b, presetId: c ?? null } };
   }
-  const id = parts[0] ?? "";
-  return { tab: TABS.some((t) => t.id === id) ? (id as TabId) : "home", screen: "tab" };
+  if (a === "settings" && b && b in SETTINGS_PAGES) return { tab: "settings", screen: { kind: "settings", page: b, id: c ?? null } };
+  return { tab: TABS.some((t) => t.id === a) ? (a as TabId) : "home", screen: { kind: "tab" } };
+}
+
+function titleFor(route: Route): string {
+  const s = route.screen;
+  switch (s.kind) {
+    case "foods": return "Food Lookup";
+    case "food": return "Food Details";
+    case "recipe": return "Nutrition Report";
+    case "recipe-edit": return s.id ? "Edit Recipe" : "New Recipe";
+    case "recipe-versions": return "Versions";
+    case "settings":
+      if (s.page === "presets" && s.id) return "Edit Preset";
+      if (s.page === "labels" && s.id) return s.id === "new" ? "New Label Food" : "Edit Label Food";
+      return SETTINGS_PAGES[s.page] ?? "Settings";
+    case "tab": return TABS.find((t) => t.id === route.tab)!.title;
+  }
 }
 
 export function App(): ReactElement {
-  const [route, setRoute] = useState<Route>(routeFromHash);
+  return (
+    <UserDataProvider>
+      <Shell />
+    </UserDataProvider>
+  );
+}
+
+function Shell(): ReactElement {
+  const [route, setRoute] = useState<Route>(() => routeFromHash(window.location.hash));
   const [updateReady, setUpdateReady] = useState(false);
   const tab = route.tab;
 
   useEffect(() => {
     const onHash = () => {
-      setRoute(routeFromHash());
+      setRoute(routeFromHash(window.location.hash));
       window.scrollTo(0, 0);
     };
     window.addEventListener("hashchange", onHash);
@@ -58,15 +120,8 @@ export function App(): ReactElement {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  const go = useCallback((id: TabId) => {
-    window.location.hash = `/${id}`;
-    window.scrollTo(0, 0);
-  }, []);
-
-  const current = TABS.find((t) => t.id === tab) ?? TABS[0]!;
-  const title =
-    route.screen === "foods" ? "Food Lookup" : route.screen === "food" ? "Food Details" : route.screen === "recipe" ? "Nutrition Report" : current.title;
-
+  const s = route.screen;
+  const key = window.location.hash;
   return (
     <div className="app">
       {updateReady && (
@@ -77,16 +132,19 @@ export function App(): ReactElement {
       <InstallHint />
       <main className="screen" aria-labelledby="screen-title">
         <h1 id="screen-title" className="large-title">
-          {title}
+          {titleFor(route)}
         </h1>
-        {route.screen === "foods" && <FoodSearchScreen />}
-        {route.screen === "food" && <FoodDetailScreen fdcId={route.fdcId} />}
-        {route.screen === "recipe" && <RecipeReportScreen key={`${route.recipeId}/${route.presetId ?? ""}`} id={route.recipeId} presetId={route.presetId} />}
-        {route.screen === "tab" && tab === "home" && <HomeScreen onNavigate={go} />}
-        {route.screen === "tab" && tab === "import" && <ImportScreen />}
-        {route.screen === "tab" && tab === "recipes" && <RecipesScreen />}
-        {route.screen === "tab" && tab === "shopping" && <ShoppingScreen />}
-        {route.screen === "tab" && tab === "settings" && <SettingsScreen />}
+        {s.kind === "foods" && <FoodSearchScreen />}
+        {s.kind === "food" && <FoodDetailScreen fdcId={s.fdcId} />}
+        {s.kind === "recipe" && <RecipeReportScreen key={key} id={s.id} presetId={s.presetId} />}
+        {s.kind === "recipe-edit" && <RecipeEditorScreen key={key} id={s.id} />}
+        {s.kind === "recipe-versions" && <RecipeVersionsScreen key={key} id={s.id} />}
+        {s.kind === "settings" && <SettingsPage key={key} page={s.page} id={s.id} />}
+        {s.kind === "tab" && tab === "home" && <HomeScreen />}
+        {s.kind === "tab" && tab === "import" && <ImportScreen />}
+        {s.kind === "tab" && tab === "recipes" && <RecipeLibrary />}
+        {s.kind === "tab" && tab === "shopping" && <ShoppingScreen />}
+        {s.kind === "tab" && tab === "settings" && <SettingsScreen />}
       </main>
       <nav className="tab-bar" aria-label="Main">
         {TABS.map(({ id, label, Icon }) => (
@@ -105,6 +163,19 @@ export function App(): ReactElement {
   );
 }
 
+function SettingsPage({ page, id }: { page: string; id: string | null }): ReactElement {
+  switch (page) {
+    case "allergies": return <AllergiesScreen />;
+    case "preferences": return <PreferencesScreen />;
+    case "presets": return id ? <PresetEditorScreen id={id} /> : <PresetsScreen />;
+    case "limits": return <LimitsScreen />;
+    case "packages": return <PackagesScreen />;
+    case "labels": return id ? <LabelFoodEditorScreen id={id === "new" ? null : id} /> : <LabelFoodsScreen />;
+    case "backup": return <BackupScreen />;
+    default: return <SettingsMenu />;
+  }
+}
+
 function InstallHint(): ReactElement | null {
   const [hidden, setHidden] = useState(false);
   if (hidden || isStandalone() || !isIOS()) return null;
@@ -120,47 +191,80 @@ function InstallHint(): ReactElement | null {
   );
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }): ReactElement {
-  return (
-    <section className="section">
-      <h2 className="section__title">{title}</h2>
-      <div className="card">{children}</div>
-    </section>
-  );
-}
-
-function Empty({ children, milestone }: { children: ReactNode; milestone?: string }): ReactElement {
-  return (
-    <div className="empty">
-      <p>{children}</p>
-      {milestone && <p className="empty__note">Arrives in milestone {milestone}</p>}
-    </div>
-  );
-}
-
-function HomeScreen({ onNavigate }: { onNavigate: (id: TabId) => void }): ReactElement {
+function HomeScreen(): ReactElement {
+  const { settings, recipes } = useUserData();
+  if (!settings.onboarded) return <Onboarding />;
+  const recent = [...recipes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 3);
   return (
     <>
-      <button className="primary-action" onClick={() => onNavigate("import")}>
+      <button className="primary-action" onClick={() => go("/import")}>
         <ImportIcon />
         Import a recipe
       </button>
+      <button className="secondary-action" onClick={() => go("/recipes/new")}>Type in a recipe</button>
       <Section title="Recent recipes">
-        <Empty milestone="M5">Recipes you save will show up here.</Empty>
+        {recent.length === 0 ? <Empty>Recipes you save will show up here.</Empty> : recent.map((r) => <LinkRow key={r.id} href={`#/recipes/${encodeURIComponent(r.id)}`} label={r.recipe.name} />)}
       </Section>
       <Section title="Macro presets">
-        {DEFAULT_PRESETS.map((p) => (
-          <div key={p.id} className="row">
-            <span className="row__label">{p.name}</span>
-            <span className="row__value row__value--small">{describePreset(p)} · ±{p.kcalTolerancePct}%</span>
-          </div>
+        {settings.presets.map((p) => (
+          <LinkRow key={p.id} href={`#/settings/presets/${p.id}`} label={<>{p.name}<span className="row__sub">{describePreset(p)} · ±{p.kcalTolerancePct}%</span></>} />
         ))}
-        <Empty milestone="M5">Creating and editing your own presets.</Empty>
       </Section>
       <Section title="Current shopping list">
         <Empty milestone="M7">Your latest shopping list will show up here.</Empty>
       </Section>
     </>
+  );
+}
+
+function Onboarding(): ReactElement {
+  const { settings, saveSettings } = useUserData();
+  const [step, setStep] = useState(0);
+  const [allergies, setAllergies] = useState<Allergen[]>(settings.profile.allergies);
+  const finish = async () => {
+    await saveSettings({ ...settings, profile: { ...settings.profile, allergies }, onboarded: true });
+    void requestPersistentStorage();
+  };
+  return (
+    <div className="onboarding" data-testid="onboarding">
+      <p className="onboarding__step">Step {step + 1} of 3</p>
+      {step === 0 && (
+        <>
+          <h2 className="food-title">Welcome</h2>
+          <p className="lead">This app scales your meal-prep recipes to your calories and protein, checks every number against USDA data, and makes your shopping list.</p>
+          <p className="lead">Everything you enter stays on this phone. Nothing is sent anywhere, and there's no account.</p>
+          <button className="primary-action" onClick={() => setStep(1)}>Next</button>
+        </>
+      )}
+      {step === 1 && (
+        <>
+          <h2 className="food-title">Any food allergies?</h2>
+          <p className="lead">Recipes with a matching ingredient will be flagged. You can change this, and add other foods to avoid, in Settings.</p>
+          <div className="card">
+            {MAJOR_ALLERGENS.map((a) => (
+              <label key={a} className="check check--row">
+                <input type="checkbox" checked={allergies.includes(a)} onChange={(e) => setAllergies(e.target.checked ? [...allergies, a] : allergies.filter((x) => x !== a))} />
+                {ALLERGEN_LABEL[a]}
+              </label>
+            ))}
+          </div>
+          <button className="primary-action" onClick={() => setStep(2)}>{allergies.length === 0 ? "No allergies, next" : "Next"}</button>
+        </>
+      )}
+      {step === 2 && (
+        <>
+          <h2 className="food-title">Your starting setup</h2>
+          <Section title="Macro presets">
+            {settings.presets.map((p) => <Row key={p.id} label={p.name} value={`${describePreset(p)}`} small />)}
+          </Section>
+          <Section title="Ingredient preferences">
+            <div className="empty"><p className="empty__note">{settings.profile.preferences.map((p) => p.label).join(" · ")}</p></div>
+          </Section>
+          <p className="lead">All of these can be changed in Settings at any time.</p>
+          <button className="primary-action" onClick={() => void finish()}>Start using the app</button>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -180,17 +284,6 @@ function ImportScreen(): ReactElement {
       </button>
       <p className="footnote">Optional shortcut: have ChatGPT or Claude format a recipe, then paste the result here.</p>
       <p className="footnote">Arrives in milestone M6. Manual entry arrives in M5.</p>
-    </>
-  );
-}
-
-function RecipesScreen(): ReactElement {
-  return (
-    <>
-      <SampleRecipeList />
-      <Section title="Library">
-        <Empty milestone="M5">Saved recipes, categories, favorites and search.</Empty>
-      </Section>
     </>
   );
 }
@@ -220,9 +313,7 @@ function SettingsScreen(): ReactElement {
 
   return (
     <>
-      <Section title="Profile">
-        <Empty milestone="M5">Allergies, ingredient preferences, macro presets, units and stores.</Empty>
-      </Section>
+      <SettingsMenu />
       <Section title="This device">
         <Row label="Opened from" value={isStandalone() ? "Home Screen" : "Browser tab"} testId="opened-from" />
         <Row label="Storage protection" value={persistedLabel} testId="storage-protection" />
@@ -274,23 +365,3 @@ function NutritionDataSection(): ReactElement {
   );
 }
 
-function Row({
-  label,
-  value,
-  small = false,
-  testId,
-}: {
-  label: string;
-  value: string;
-  small?: boolean;
-  testId?: string;
-}): ReactElement {
-  return (
-    <div className="row">
-      <span className="row__label">{label}</span>
-      <span className={`row__value ${small ? "row__value--small" : ""}`} data-testid={testId}>
-        {value}
-      </span>
-    </div>
-  );
-}
