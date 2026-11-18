@@ -112,6 +112,38 @@ await check("settings shows engine version and device status", async () => {
   await page.screenshot({ path: join(outDir, "settings.png"), animations: "disabled" });
 });
 
+await check("settings shows the USDA database and citation", async () => {
+  await page.goto(`${url}#/settings`);
+  await page.getByTestId("food-count").getByText("8,217").waitFor();
+  await page.getByText("U.S. Department of Agriculture, Agricultural Research Service. FoodData Central").waitFor();
+});
+
+await check("food lookup finds chicken breast and shows USDA values", async () => {
+  await page.getByRole("link", { name: "Look up a food" }).click();
+  await page.getByRole("heading", { level: 1, name: "Food Lookup" }).waitFor();
+  await page.getByLabel("Search foods").fill("chicken breast boneless skinless raw");
+  await page.getByRole("link", { name: /Chicken, breast, boneless, skinless, raw/ }).first().waitFor();
+  await page.screenshot({ path: join(outDir, "food-search.png"), animations: "disabled" });
+  await page.getByRole("link", { name: /Chicken, breast, boneless, skinless, raw/ }).first().click();
+  await page.getByRole("heading", { level: 1, name: "Food Details" }).waitFor();
+  await page.getByText("112 kcal").waitFor();
+  await page.getByText("USDA Atwater (specific factors)").waitFor();
+  await page.screenshot({ path: join(outDir, "food-detail.png"), animations: "disabled", fullPage: true });
+  // Settings tab stays highlighted inside the lookup screens.
+  const active = await page.locator(".tab--active").textContent();
+  assert.equal(active, "Settings");
+});
+
+await check("incomplete USDA records are labelled unusable", async () => {
+  await page.goto(`${url}#/foods/748608`); // Foundation olive oil record without calories
+  await page.getByText("This USDA record is incomplete").waitFor();
+});
+
+await check("allergen screen shows on food details", async () => {
+  await page.goto(`${url}#/foods/173410`); // Butter, salted
+  await page.getByText("Milk", { exact: true }).waitFor();
+});
+
 await check("manifest is valid for Home Screen install", async () => {
   const res = await page.request.get(`${url}manifest.webmanifest`);
   assert.equal(res.status(), 200);
@@ -142,6 +174,8 @@ await check("service worker installs and the app opens offline", async () => {
   await page.getByRole("heading", { level: 1, name: "Meal Prep" }).waitFor({ timeout: 5000 });
   await page.goto(`${url}#/shopping`);
   await page.getByRole("heading", { level: 1, name: "Shopping Lists" }).waitFor({ timeout: 5000 });
+  await page.goto(`${url}#/foods/171077`);
+  await page.getByText("120 kcal").waitFor({ timeout: 5000 });
   await context.setOffline(false);
 });
 

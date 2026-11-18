@@ -3,3 +3,4 @@ dist/
 tests/e2e/output/
 *.log
 .DS_Store
+data-raw/

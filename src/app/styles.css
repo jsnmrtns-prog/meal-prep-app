@@ -163,10 +163,13 @@ button {
 }
 
 .row__label {
-  flex: none;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .row__value {
+  flex: 0 0 auto;
+  max-width: 60%;
   color: var(--text-2);
   text-align: right;
   overflow-wrap: anywhere;
@@ -264,4 +267,71 @@ button {
   .primary-action {
     transition: color 0.15s, opacity 0.15s;
   }
+}
+
+.back-link {
+  display: inline-block;
+  margin: -8px 0 12px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.search-field {
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.food-row {
+  display: block;
+  padding: 12px 16px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.food-row + .food-row {
+  border-top: 0.5px solid var(--separator);
+}
+
+.food-row__name {
+  display: block;
+}
+
+.food-row__meta {
+  display: block;
+  color: var(--text-2);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.food-title {
+  font-size: 22px;
+  line-height: 28px;
+  margin: 0 0 6px;
+}
+
+.warning {
+  background: var(--card);
+  border-left: 4px solid #c9821b;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 20px;
+}
+
+a.row-button {
+  border-top: 0.5px solid var(--separator);
+  text-decoration: none;
+}
+
+.empty__note {
+  overflow-wrap: anywhere;
 }

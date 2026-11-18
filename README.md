@@ -3,7 +3,7 @@
 Scale recipes to your macro targets, verify nutrition against USDA data, and build grocery lists. It runs as a Home Screen web app on iPhone.
 
 - **Plan:** "Meal Prep App — Product Development Plan v1" (Claude doc)
-- **Status:** milestone M0 (app shell, build, tests, deploy)
+- **Status:** milestone M1 (USDA food database, lookup, allergen screen)
 
 ## How it fits together
 
@@ -12,7 +12,9 @@ Scale recipes to your macro targets, verify nutrition against USDA data, and bui
 | `src/engine/` | MealPrepEngine: pure TypeScript with no UI, network or AI. Every number the app shows comes from here. |
 | `src/app/` | The web app (React), service worker template, styles |
 | `public/` | Static files: `index.html`, web manifest, icons |
-| `scripts/` | `build.mjs` (bundles into `dist/`), `make-icons.mjs` |
+| `scripts/` | `build.mjs` (bundles into `dist/`), USDA fetch/build/golden scripts, `make-icons.mjs` |
+| `public/data/` | Bundled USDA food database (generated) |
+| `tests/fixtures/` | Reference values from the independent Python check |
 | `tests/engine/` | Engine unit tests (`node:test`) |
 | `tests/e2e/` | Browser smoke test at iPhone size, served under a subpath like GitHub Pages |
 
@@ -25,6 +27,20 @@ npm run build        # builds dist/
 npm run test:e2e     # browser smoke test (run after build)
 npm run check        # all of the above
 ```
+
+### USDA food data
+
+The app bundles `public/data/fooddb.json`, built from pinned USDA FoodData Central releases
+(see `scripts/usda-sources.json` for files and SHA-256 checksums). To rebuild it:
+
+```sh
+npm run usda:fetch   # downloads and verifies the USDA files into data-raw/
+npm run usda:build   # writes public/data/fooddb.json
+npm run usda:golden  # independent Python check values → tests/fixtures/golden-foods.json
+```
+
+Source: U.S. Department of Agriculture, Agricultural Research Service. FoodData Central, 2026.
+fdc.nal.usda.gov. Public domain (CC0).
 
 The project requires Node 22.18 or later, which runs TypeScript test files directly.
 
