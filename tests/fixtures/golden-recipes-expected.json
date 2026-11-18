@@ -1,0 +1,512 @@
+{
+ "source": "scripts/golden_recipes.py (independent of the TypeScript engine)",
+ "recipes": {
+  "taco-mac-n-cheese": {
+   "portions": 5,
+   "lines": [
+    {
+     "id": "yellow-peppers",
+     "description": "Peppers, sweet, yellow, raw",
+     "grams": 372.0,
+     "nutrients": {
+      "kcal": 100.44,
+      "protein": 3.72,
+      "fat": 0.7811999999999999,
+      "carbs": 23.5104,
+      "fiber": 3.3480000000000003,
+      "sugars": null,
+      "sodium": 7.44,
+      "satFat": 0.11532
+     }
+    },
+    {
+     "id": "red-peppers",
+     "description": "Peppers, sweet, red, raw",
+     "grams": 328.0,
+     "nutrients": {
+      "kcal": 85.28,
+      "protein": 3.2472,
+      "fat": 0.9839999999999999,
+      "carbs": 19.7784,
+      "fiber": 6.888000000000001,
+      "sugars": 13.776000000000002,
+      "sodium": 13.12,
+      "satFat": 0.19352
+     }
+    },
+    {
+     "id": "onion",
+     "description": "Onions, raw",
+     "grams": 110.0,
+     "nutrients": {
+      "kcal": 44.0,
+      "protein": 1.2100000000000002,
+      "fat": 0.11,
+      "carbs": 10.274000000000001,
+      "fiber": 1.87,
+      "sugars": 4.664000000000001,
+      "sodium": 4.4,
+      "satFat": 0.0462
+     }
+    },
+    {
+     "id": "beef",
+     "description": "Beef, ground, 93% lean meat / 7% fat, raw",
+     "grams": 454.0,
+     "nutrients": {
+      "kcal": 690.08,
+      "protein": 94.65900000000002,
+      "fat": 31.78,
+      "carbs": 0.0,
+      "fiber": 0.0,
+      "sugars": 0.0,
+      "sodium": 299.64,
+      "satFat": 13.066120000000002
+     }
+    },
+    {
+     "id": "taco-seasoning",
+     "description": "Seasoning mix, dry, taco, original",
+     "grams": 30.0,
+     "nutrients": {
+      "kcal": 96.6,
+      "protein": 1.35,
+      "fat": 0.0,
+      "carbs": 17.4,
+      "fiber": 3.99,
+      "sugars": 3.2489999999999997,
+      "sodium": 2160.9,
+      "satFat": 0.0
+     }
+    },
+    {
+     "id": "enchilada-sauce",
+     "description": "Sauce, enchilada, red, mild, ready to serve",
+     "grams": 50.0,
+     "nutrients": {
+      "kcal": 15.0,
+      "protein": 0.31,
+      "fat": 0.455,
+      "carbs": 2.435,
+      "fiber": 0.25,
+      "sugars": 0.915,
+      "sodium": 273.5,
+      "satFat": 0.0555
+     }
+    },
+    {
+     "id": "chili-powder",
+     "description": "Spices, chili powder",
+     "grams": 2.7,
+     "nutrients": {
+      "kcal": 7.614000000000001,
+      "protein": 0.3634200000000001,
+      "fat": 0.38555999999999996,
+      "carbs": 1.3419000000000003,
+      "fiber": 0.9396,
+      "sugars": 0.19413000000000002,
+      "sodium": 77.409,
+      "satFat": 0.066474
+     }
+    },
+    {
+     "id": "garlic-powder",
+     "description": "Spices, garlic powder",
+     "grams": 1.55,
+     "nutrients": {
+      "kcal": 5.1305000000000005,
+      "protein": 0.25652500000000006,
+      "fat": 0.011314999999999999,
+      "carbs": 1.127315,
+      "fiber": 0.1395,
+      "sugars": 0.037665000000000004,
+      "sodium": 0.93,
+      "satFat": 0.0038595
+     }
+    },
+    {
+     "id": "pasta",
+     "description": "Pasta, dry, enriched",
+     "grams": 330.0,
+     "nutrients": {
+      "kcal": 1224.3,
+      "protein": 43.032,
+      "fat": 4.9830000000000005,
+      "carbs": 246.41100000000003,
+      "fiber": 10.56,
+      "sugars": 8.811,
+      "sodium": 19.8,
+      "satFat": 0.9141000000000001
+     }
+    },
+    {
+     "id": "cottage-cheese",
+     "description": "Cheese, cottage, lowfat, 2% milkfat",
+     "grams": 350.0,
+     "nutrients": {
+      "kcal": 294.0,
+      "protein": 38.5,
+      "fat": 8.049999999999999,
+      "carbs": 15.084999999999997,
+      "fiber": null,
+      "sugars": 14.349999999999998,
+      "sodium": 1123.5,
+      "satFat": 4.41
+     }
+    },
+    {
+     "id": "cheddar-powder",
+     "description": "Sauce, cheese sauce mix, dry",
+     "grams": 25.0,
+     "nutrients": {
+      "kcal": 109.5,
+      "protein": 1.92,
+      "fat": 4.5825,
+      "carbs": 15.13,
+      "fiber": 0.25,
+      "sugars": 2.565,
+      "sodium": 800.5,
+      "satFat": 2.11
+     }
+    },
+    {
+     "id": "cheddar",
+     "description": "Cheese, cheddar, reduced fat (Includes foods for USDA's Food Distribution Program)",
+     "grams": 50.0,
+     "nutrients": {
+      "kcal": 158.0,
+      "protein": 13.675,
+      "fat": 10.205,
+      "carbs": 1.335,
+      "fiber": 0.0,
+      "sugars": 0.13,
+      "sodium": 314.0,
+      "satFat": 6.301
+     }
+    },
+    {
+     "id": "nutritional-yeast",
+     "description": "Leavening agents, yeast, baker's, active dry",
+     "grams": 10.0,
+     "nutrients": {
+      "kcal": 32.5,
+      "protein": 4.044,
+      "fat": 0.7610000000000001,
+      "carbs": 4.122,
+      "fiber": 2.69,
+      "sugars": 0.0,
+      "sodium": 5.1,
+      "satFat": 0.10009999999999998
+     }
+    },
+    {
+     "id": "milk",
+     "description": "Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D",
+     "grams": 50.0,
+     "nutrients": {
+      "kcal": 21.5,
+      "protein": 1.69,
+      "fat": 0.475,
+      "carbs": 2.59,
+      "fiber": null,
+      "sugars": 2.48,
+      "sodium": 19.5,
+      "satFat": 0.284
+     }
+    }
+   ],
+   "batch": {
+    "kcal": 2883.9445,
+    "protein": 207.977145,
+    "fat": 63.563575,
+    "carbs": 360.540015,
+    "fiber": 30.925100000000004,
+    "sugars": 51.171794999999996,
+    "sodium": 5119.7390000000005,
+    "satFat": 27.666193500000002
+   },
+   "complete": {
+    "kcal": true,
+    "protein": true,
+    "fat": true,
+    "carbs": true,
+    "fiber": false,
+    "sugars": false,
+    "sodium": true,
+    "satFat": true
+   },
+   "perPortion": {
+    "kcal": 576.7889,
+    "protein": 41.595429,
+    "fat": 12.712715,
+    "carbs": 72.108003,
+    "fiber": 6.185020000000001,
+    "sugars": 10.234359,
+    "sodium": 1023.9478000000001,
+    "satFat": 5.5332387
+   },
+   "batchGrams": 2163.25
+  },
+  "teriyaki-chicken-fried-rice": {
+   "portions": 5,
+   "lines": [
+    {
+     "id": "garlic",
+     "description": "Garlic, raw",
+     "grams": 4.5,
+     "nutrients": {
+      "kcal": 6.705,
+      "protein": 0.2862,
+      "fat": 0.0225,
+      "carbs": 1.4877,
+      "fiber": 0.09450000000000001,
+      "sugars": 0.045,
+      "sodium": 0.765,
+      "satFat": 0.004005
+     }
+    },
+    {
+     "id": "soy-sauce",
+     "description": "Soy sauce made from soy and wheat (shoyu)",
+     "grams": 60.0,
+     "nutrients": {
+      "kcal": 31.8,
+      "protein": 4.884,
+      "fat": 0.34199999999999997,
+      "carbs": 2.9579999999999997,
+      "fiber": 0.48,
+      "sugars": 0.24,
+      "sodium": 3295.8,
+      "satFat": 0.0438
+     }
+    },
+    {
+     "id": "brown-sugar",
+     "description": "zero_calorie_sweetener",
+     "grams": 24.0,
+     "nutrients": {
+      "kcal": 0.0,
+      "protein": 0.0,
+      "fat": 0.0,
+      "carbs": 0.0,
+      "fiber": 0.0,
+      "sugars": 0.0,
+      "sodium": 0.0,
+      "satFat": 0.0
+     }
+    },
+    {
+     "id": "mirin",
+     "description": "Alcoholic beverage, rice (sake)",
+     "grams": 60.0,
+     "nutrients": {
+      "kcal": 80.4,
+      "protein": 0.3,
+      "fat": 0.0,
+      "carbs": 3.0,
+      "fiber": 0.0,
+      "sugars": 0.0,
+      "sodium": 1.2,
+      "satFat": 0.0
+     }
+    },
+    {
+     "id": "cornstarch",
+     "description": "Cornstarch",
+     "grams": 8.0,
+     "nutrients": {
+      "kcal": 30.48,
+      "protein": 0.0208,
+      "fat": 0.004,
+      "carbs": 7.3016,
+      "fiber": 0.07200000000000001,
+      "sugars": 0.0,
+      "sodium": 0.72,
+      "satFat": 0.0007199999999999999
+     }
+    },
+    {
+     "id": "slurry-water",
+     "description": "water",
+     "grams": 15.0,
+     "nutrients": {
+      "kcal": 0.0,
+      "protein": 0.0,
+      "fat": 0.0,
+      "carbs": 0.0,
+      "fiber": 0.0,
+      "sugars": 0.0,
+      "sodium": 0.0,
+      "satFat": 0.0
+     }
+    },
+    {
+     "id": "chicken",
+     "description": "Chicken, thigh, boneless, skinless, raw",
+     "grams": 710.0,
+     "nutrients": {
+      "kcal": 1057.9,
+      "protein": 132.06000000000003,
+      "fat": 56.232,
+      "carbs": 0.0,
+      "fiber": null,
+      "sugars": null,
+      "sodium": 442.33,
+      "satFat": 11.786
+     }
+    },
+    {
+     "id": "fish-sauce",
+     "description": "Sauce, fish, ready-to-serve",
+     "grams": 5.0,
+     "nutrients": {
+      "kcal": 1.75,
+      "protein": 0.25299999999999995,
+      "fat": 0.0005,
+      "carbs": 0.182,
+      "fiber": 0.0,
+      "sugars": 0.182,
+      "sodium": 392.55,
+      "satFat": 0.00015
+     }
+    },
+    {
+     "id": "avocado-oil",
+     "description": "Oil, avocado",
+     "grams": 15.0,
+     "nutrients": {
+      "kcal": 132.6,
+      "protein": 0.0,
+      "fat": 15.0,
+      "carbs": 0.0,
+      "fiber": 0.0,
+      "sugars": null,
+      "sodium": 0.0,
+      "satFat": 1.734
+     }
+    },
+    {
+     "id": "rice",
+     "description": "Rice, white, long-grain, regular, raw, enriched",
+     "grams": 300.0,
+     "nutrients": {
+      "kcal": 1095.0,
+      "protein": 21.39,
+      "fat": 1.98,
+      "carbs": 239.85,
+      "fiber": 3.9,
+      "sugars": 0.36,
+      "sodium": 15.0,
+      "satFat": 0.54
+     }
+    },
+    {
+     "id": "veggies",
+     "description": "Vegetables, mixed, frozen, unprepared",
+     "grams": 300.0,
+     "nutrients": {
+      "kcal": 216.0,
+      "protein": 9.99,
+      "fat": 1.56,
+      "carbs": 40.41,
+      "fiber": 12.0,
+      "sugars": null,
+      "sodium": 141.0,
+      "satFat": 0.29400000000000004
+     }
+    },
+    {
+     "id": "eggs",
+     "description": "Egg, whole, raw, fresh",
+     "grams": 100.0,
+     "nutrients": {
+      "kcal": 143.0,
+      "protein": 12.56,
+      "fat": 9.51,
+      "carbs": 0.72,
+      "fiber": 0.0,
+      "sugars": 0.37,
+      "sodium": 142.0,
+      "satFat": 3.1259999999999994
+     }
+    },
+    {
+     "id": "egg-whites",
+     "description": "Egg, white, raw, frozen, pasteurized",
+     "grams": 200.0,
+     "nutrients": {
+      "kcal": 96.0,
+      "protein": 20.2,
+      "fat": 0.32,
+      "carbs": 1.48,
+      "fiber": null,
+      "sugars": null,
+      "sodium": 288.0,
+      "satFat": null
+     }
+    },
+    {
+     "id": "sesame-oil",
+     "description": "Oil, sesame, salad or cooking",
+     "grams": 4.5,
+     "nutrients": {
+      "kcal": 39.78,
+      "protein": 0.0,
+      "fat": 4.5,
+      "carbs": 0.0,
+      "fiber": 0.0,
+      "sugars": 0.0,
+      "sodium": 0.0,
+      "satFat": 0.639
+     }
+    },
+    {
+     "id": "soy-drizzle",
+     "description": "Soy sauce made from soy and wheat (shoyu)",
+     "grams": 16.0,
+     "nutrients": {
+      "kcal": 8.48,
+      "protein": 1.3024,
+      "fat": 0.09119999999999999,
+      "carbs": 0.7888,
+      "fiber": 0.128,
+      "sugars": 0.064,
+      "sodium": 878.88,
+      "satFat": 0.01168
+     }
+    }
+   ],
+   "batch": {
+    "kcal": 2939.8950000000004,
+    "protein": 203.24640000000002,
+    "fat": 89.5622,
+    "carbs": 298.17810000000003,
+    "fiber": 16.674500000000002,
+    "sugars": 1.2610000000000001,
+    "sodium": 5598.245,
+    "satFat": 18.179354999999997
+   },
+   "complete": {
+    "kcal": true,
+    "protein": true,
+    "fat": true,
+    "carbs": true,
+    "fiber": false,
+    "sugars": false,
+    "sodium": true,
+    "satFat": false
+   },
+   "perPortion": {
+    "kcal": 587.979,
+    "protein": 40.649280000000005,
+    "fat": 17.91244,
+    "carbs": 59.63562,
+    "fiber": 3.3349,
+    "sugars": 0.25220000000000004,
+    "sodium": 1119.649,
+    "satFat": 3.6358709999999994
+   },
+   "batchGrams": 1822.0
+  }
+ }
+}

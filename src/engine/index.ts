@@ -3,3 +3,7 @@ export { ENGINE_VERSION } from "./version.ts";
 export * from "./units.ts";
 export * from "./fooddb.ts";
 export * from "./allergens.ts";
+export * from "./recipe.ts";
+export * from "./preferences.ts";
+export * from "./calculate.ts";
+export * from "./audit.ts";

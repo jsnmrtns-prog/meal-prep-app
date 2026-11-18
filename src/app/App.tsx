@@ -3,6 +3,7 @@ import { ENGINE_VERSION } from "../engine/index.ts";
 import { HomeIcon, ImportIcon, RecipesIcon, SettingsIcon, ShoppingIcon } from "./icons.tsx";
 import { FoodDetailScreen, FoodSearchScreen } from "./FoodLookup.tsx";
 import { loadFoodDb } from "./foodData.ts";
+import { RecipeReportScreen, SampleRecipeList } from "./RecipeReport.tsx";
 import {
   formatBytes,
   getStorageStatus,
@@ -25,6 +26,7 @@ const TABS: ReadonlyArray<{ id: TabId; label: string; title: string; Icon: () =>
 
 type Route =
   | { tab: TabId; screen: "tab" }
+  | { tab: "recipes"; screen: "recipe"; recipeId: string }
   | { tab: "settings"; screen: "foods" }
   | { tab: "settings"; screen: "food"; fdcId: number };
 
@@ -34,6 +36,7 @@ function routeFromHash(): Route {
     const id = Number(parts[1]);
     return parts[1] && Number.isInteger(id) ? { tab: "settings", screen: "food", fdcId: id } : { tab: "settings", screen: "foods" };
   }
+  if (parts[0] === "recipes" && parts[1]) return { tab: "recipes", screen: "recipe", recipeId: decodeURIComponent(parts[1]) };
   const id = parts[0] ?? "";
   return { tab: TABS.some((t) => t.id === id) ? (id as TabId) : "home", screen: "tab" };
 }
@@ -59,7 +62,8 @@ export function App(): ReactElement {
   }, []);
 
   const current = TABS.find((t) => t.id === tab) ?? TABS[0]!;
-  const title = route.screen === "foods" ? "Food Lookup" : route.screen === "food" ? "Food Details" : current.title;
+  const title =
+    route.screen === "foods" ? "Food Lookup" : route.screen === "food" ? "Food Details" : route.screen === "recipe" ? "Nutrition Report" : current.title;
 
   return (
     <div className="app">
@@ -75,6 +79,7 @@ export function App(): ReactElement {
         </h1>
         {route.screen === "foods" && <FoodSearchScreen />}
         {route.screen === "food" && <FoodDetailScreen fdcId={route.fdcId} />}
+        {route.screen === "recipe" && <RecipeReportScreen id={route.recipeId} />}
         {route.screen === "tab" && tab === "home" && <HomeScreen onNavigate={go} />}
         {route.screen === "tab" && tab === "import" && <ImportScreen />}
         {route.screen === "tab" && tab === "recipes" && <RecipesScreen />}
@@ -172,9 +177,12 @@ function ImportScreen(): ReactElement {
 
 function RecipesScreen(): ReactElement {
   return (
-    <Section title="Library">
-      <Empty milestone="M5">Saved recipes, categories, favorites and search.</Empty>
-    </Section>
+    <>
+      <SampleRecipeList />
+      <Section title="Library">
+        <Empty milestone="M5">Saved recipes, categories, favorites and search.</Empty>
+      </Section>
+    </>
   );
 }
 

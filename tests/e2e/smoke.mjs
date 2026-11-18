@@ -144,6 +144,27 @@ await check("allergen screen shows on food details", async () => {
   await page.getByText("Milk", { exact: true }).waitFor();
 });
 
+await check("My Recipes lists both reference recipes with calculated values", async () => {
+  await page.goto(`${url}#/recipes`);
+  await page.getByRole("link", { name: /Teriyaki Chicken Fried Rice.*588 kcal/ }).waitFor();
+  await page.getByRole("link", { name: /Taco Mac N Cheese.*577 kcal/ }).waitFor();
+  await page.screenshot({ path: join(outDir, "recipes.png"), animations: "disabled" });
+});
+
+await check("nutrition report shows status, printed comparison, sources and checks", async () => {
+  await page.getByRole("link", { name: /Teriyaki Chicken Fried Rice/ }).click();
+  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByTestId("recipe-status").getByText("Estimate").waitFor();
+  await page.getByText("515 kcal").waitFor(); // what the recipe says
+  await page.getByText("588 kcal").waitFor(); // calculated
+  await page.getByText(/Stand-in: Alcoholic beverage, rice \(sake\) for mirin/).waitFor();
+  await page.getByText("Kept 50%: 3 → 1.5").waitFor();
+  for (const id of [2, 3, 4]) assert.equal(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Passed");
+  assert.equal(await page.getByTestId("audit-5").locator(".badge").textContent(), "Coming in M3");
+  assert.equal(await page.locator(".tab--active").textContent(), "My Recipes");
+  await page.screenshot({ path: join(outDir, "report.png"), animations: "disabled", fullPage: true });
+});
+
 await check("manifest is valid for Home Screen install", async () => {
   const res = await page.request.get(`${url}manifest.webmanifest`);
   assert.equal(res.status(), 200);

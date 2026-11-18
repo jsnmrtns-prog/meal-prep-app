@@ -1,0 +1,16 @@
+{
+  "description": "Initial test profile from the product spec, section 20.",
+  "allergies": [],
+  "preferences": [
+    { "label": "No peanut butter", "matches": ["peanut butter"], "mode": "exclude" },
+    { "label": "No green onions", "matches": ["green onion", "green onions", "scallion", "scallions"], "mode": "exclude" },
+    { "label": "No cilantro", "matches": ["cilantro"], "mode": "exclude" },
+    { "label": "No smoked paprika", "matches": ["smoked paprika"], "mode": "exclude" },
+    { "label": "Avoid ginger", "matches": ["ginger"], "mode": "exclude" },
+    { "label": "Avoid shallots", "matches": ["shallot", "shallots"], "mode": "exclude" },
+    { "label": "Avoid quinoa", "matches": ["quinoa"], "mode": "exclude" },
+    { "label": "Light garlic", "matches": ["garlic"], "mode": "reduce", "keepPercent": 50 },
+    { "label": "Light paprika", "matches": ["paprika"], "unless": ["smoked paprika"], "mode": "reduce", "keepPercent": 50 },
+    { "label": "Light chili flakes", "matches": ["chili flakes", "red pepper flakes", "crushed red pepper"], "mode": "reduce", "keepPercent": 50 }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "recipe": {
+    "id": "taco-mac-n-cheese",
+    "name": "Taco Mac N Cheese",
+    "portions": 5,
+    "printedPerServing": { "kcal": 510, "protein": 41, "carbs": 62, "fat": 12 },
+    "notes": [
+      "Reduced fat cheddar is used instead of the Velveeta shreds option.",
+      "Salt in the pasta water, the splash of water and the optional hot sauce aren't counted."
+    ],
+    "lines": [
+      { "id": "yellow-peppers", "group": "Taco Mixture", "name": "yellow bell peppers", "food": { "kind": "usda", "fdcId": 169383 }, "quantity": { "kind": "count", "amount": 2, "portionLabel": "pepper, large (3-3/4\" long, 3\" dia)" }, "state": "raw", "role": "vegetable", "assumptions": ["Size not given; USDA large peppers (186 g each) assumed."] },
+      { "id": "red-peppers", "group": "Taco Mixture", "name": "red bell peppers", "food": { "kind": "usda", "fdcId": 170108 }, "quantity": { "kind": "count", "amount": 2, "portionLabel": "large (2-1/4 per pound, approx 3-3/4\" long, 3\" dia.)" }, "state": "raw", "role": "vegetable", "assumptions": ["Size not given; USDA large peppers (164 g each) assumed."] },
+      { "id": "onion", "group": "Taco Mixture", "name": "onion", "food": { "kind": "usda", "fdcId": 170000 }, "quantity": { "kind": "count", "amount": 1, "portionLabel": "medium (2-1/2\" dia)" }, "state": "raw", "role": "vegetable", "assumptions": ["Size not given; USDA medium onion (110 g) assumed."] },
+      { "id": "beef", "group": "Taco Mixture", "name": "93% lean ground beef", "food": { "kind": "usda", "fdcId": 173110 }, "quantity": { "kind": "mass", "amount": 454, "unit": "g" }, "state": "raw", "role": "protein" },
+      { "id": "taco-seasoning", "group": "Taco Mixture", "name": "taco seasoning (1 packet)", "food": { "kind": "usda", "fdcId": 172243 }, "quantity": { "kind": "mass", "amount": 30, "unit": "g" }, "state": "as_packaged", "role": "seasoning" },
+      { "id": "enchilada-sauce", "group": "Taco Mixture", "name": "red enchilada sauce", "food": { "kind": "usda", "fdcId": 174074 }, "quantity": { "kind": "mass", "amount": 50, "unit": "g" }, "state": "as_packaged", "role": "sauce" },
+      { "id": "chili-powder", "group": "Taco Mixture", "name": "chili powder", "food": { "kind": "usda", "fdcId": 171319 }, "quantity": { "kind": "volume", "amount": 1, "unit": "tsp" }, "state": "as_packaged", "role": "seasoning", "assumptions": ["Recipe says \"to taste\"; 1 tsp assumed."] },
+      { "id": "garlic-powder", "group": "Taco Mixture", "name": "garlic powder", "food": { "kind": "usda", "fdcId": 171325 }, "quantity": { "kind": "volume", "amount": 1, "unit": "tsp" }, "state": "as_packaged", "role": "seasoning", "assumptions": ["Recipe says \"to taste\"; 1 tsp assumed before your light-garlic reduction."] },
+      { "id": "pasta", "group": "Mac n' Cheese", "name": "pasta", "food": { "kind": "usda", "fdcId": 169736 }, "quantity": { "kind": "mass", "amount": 330, "unit": "g" }, "state": "dry", "role": "carb" },
+      { "id": "cottage-cheese", "group": "Mac n' Cheese", "name": "2% cottage cheese", "food": { "kind": "usda", "fdcId": 328841 }, "quantity": { "kind": "mass", "amount": 350, "unit": "g" }, "state": "as_packaged", "role": "dairy" },
+      { "id": "cheddar-powder", "group": "Mac n' Cheese", "name": "cheddar powder", "food": { "kind": "usda", "fdcId": 171584 }, "substituteFor": "cheddar powder", "quantity": { "kind": "mass", "amount": 25, "unit": "g" }, "state": "as_packaged", "role": "dairy", "note": "USDA dry cheese sauce mix stands in for cheddar powder." },
+      { "id": "cheddar", "group": "Mac n' Cheese", "name": "reduced fat cheddar", "food": { "kind": "usda", "fdcId": 171292 }, "quantity": { "kind": "mass", "amount": 50, "unit": "g" }, "state": "as_packaged", "role": "dairy" },
+      { "id": "nutritional-yeast", "group": "Mac n' Cheese", "name": "nutritional yeast", "food": { "kind": "usda", "fdcId": 175043 }, "substituteFor": "nutritional yeast", "quantity": { "kind": "mass", "amount": 10, "unit": "g" }, "state": "as_packaged", "role": "seasoning", "note": "USDA active dry yeast stands in for nutritional yeast." },
+      { "id": "milk", "group": "Mac n' Cheese", "name": "1% milk", "food": { "kind": "usda", "fdcId": 746772 }, "quantity": { "kind": "mass", "amount": 50, "unit": "g" }, "state": "as_packaged", "role": "dairy" }
+    ],
+    "steps": [
+      { "text": "Dice yellow bell peppers, red bell peppers, and an onion. Sauté in a large nonstick pan over medium heat for ~10 minutes or until softened. Remove from pan and set aside." },
+      { "text": "Bring a large pot of salted water to a boil. Add pasta and cook according to package directions. Drain and set aside." },
+      { "text": "In the same pan, cook 93% ground beef over medium-high heat until nearly cooked through. Add a taco seasoning packet, a splash of water, red enchilada sauce, and optional chili and garlic powder. Stir in the cooked pepper and onion mixture." },
+      { "text": "In a blender, combine 2% cottage cheese, cheddar powder, Velveeta cheddar shreds OR reduced-fat cheddar, nutritional yeast, and 1% milk. Blend for 60–90 seconds until completely smooth. Add hot sauce if desired." },
+      { "text": "In a large bowl or pot, mix the cooked pasta with the taco beef mixture. Pour over the cheese sauce and stir until evenly combined." }
+    ]
+  },
+  "expectedAfterPreferences": {
+    "removed": [],
+    "amounts": { "garlic-powder": 0.5 }
+  }
+}

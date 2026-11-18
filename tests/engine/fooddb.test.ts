@@ -90,3 +90,14 @@ test("calories rebuilt from macros are a comparison only", () => {
   assert.ok(Math.abs(rebuilt - (22.5 * 4.27 + 1.93 * 9.02 + 0 * 3.87)) < 1e-9);
   assert.equal(fChicken.per100g.kcal, 112); // reported value unchanged
 });
+
+test("USDA's weight for the exact unit is used even when other spoon sizes differ slightly", () => {
+  const garlicPowder = db.get(171325); // 1 tsp = 3.1 g, 1 tbsp = 9.7 g (slightly different densities)
+  const tsp = gramsForAmount(garlicPowder, 0.5, "tsp");
+  assert.ok(tsp.ok && tsp.grams === 1.55);
+  const tbsp = gramsForAmount(garlicPowder, 1, "tbsp");
+  assert.ok(tbsp.ok && tbsp.grams === 9.7);
+  // With no cup portion, converting through spoons would mix two densities: refuse.
+  const cup = gramsForAmount(garlicPowder, 1, "cup");
+  assert.ok(!cup.ok && cup.reason === "ambiguous");
+});

@@ -215,8 +215,13 @@ export function gramsForAmount(food: Food, amount: number, unit: string, portion
     (p): p is Portion & { unit: keyof typeof ML_PER_VOLUME_UNIT } =>
       p.unit !== null && isVolumeUnit(p.unit) && p.amount > 0 && p.grams > 0,
   );
-  const candidates = portionLabel === undefined ? volumePortions : volumePortions.filter((p) => p.label === portionLabel);
-  if (candidates.length === 0) return { ok: false, reason: "no_usda_basis" };
+  const named = portionLabel === undefined ? volumePortions : volumePortions.filter((p) => p.label === portionLabel);
+  if (named.length === 0) return { ok: false, reason: "no_usda_basis" };
+
+  // USDA's own weight for the exact unit wins; only fall back to converting
+  // through another volume unit when the food has no portion in this unit.
+  const sameUnit = named.filter((p) => p.unit === unit);
+  const candidates = sameUnit.length > 0 ? sameUnit : named;
 
   const density = (p: (typeof candidates)[number]) => p.grams / (p.amount * ML_PER_VOLUME_UNIT[p.unit]);
   const first = candidates[0]!;
@@ -224,10 +229,8 @@ export function gramsForAmount(food: Food, amount: number, unit: string, portion
   const distinct = candidates.some((p) => Math.abs(density(p) - d0) / d0 > DENSITY_TOLERANCE);
   if (distinct) return { ok: false, reason: "ambiguous", options: candidates };
 
-  // Prefer a portion stated in the same unit so the USDA weight is used directly.
-  const same = candidates.find((p) => p.unit === unit) ?? first;
-  const grams = same.unit === unit
-    ? (amount / same.amount) * same.grams
-    : amount * ML_PER_VOLUME_UNIT[unit] * density(same);
-  return { ok: true, grams, basis: "usda_portion", portion: same };
+  const grams = first.unit === unit
+    ? (amount / first.amount) * first.grams
+    : amount * ML_PER_VOLUME_UNIT[unit] * density(first);
+  return { ok: true, grams, basis: "usda_portion", portion: first };
 }
