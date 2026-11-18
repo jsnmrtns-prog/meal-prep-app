@@ -1,0 +1,32 @@
+{
+  "name": "meal-prep-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Meal-prep recipe scaling, USDA nutrition verification and grocery lists, as a Home Screen web app.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "npm run test:engine && npm run typecheck:engine",
+    "test:engine": "node --test \"tests/engine/**/*.test.ts\"",
+    "typecheck:engine": "tsc -p tsconfig.engine.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:e2e": "node tests/e2e/smoke.mjs",
+    "check": "npm test && npm run build && npm run test:e2e",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.28.0",
+    "playwright": "^1.63.0",
+    "typescript": "^6.0.0"
+  }
+}
