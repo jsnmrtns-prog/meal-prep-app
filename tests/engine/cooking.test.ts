@@ -2,7 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { cookingSteps, stepsDivide, type Recipe } from "../../src/engine/index.ts";
+import { cookingSteps, stepsDivide, upgradeSavedLines, type Recipe } from "../../src/engine/index.ts";
 
 const teriyaki = JSON.parse(readFileSync(new URL("../fixtures/recipes/teriyaki-fried-rice.json", import.meta.url), "utf8")).recipe as Recipe;
 const show = (r: Recipe, containers?: number) =>
@@ -41,4 +41,9 @@ test("an ingredient the steps don't name is listed after the step it was placed 
   const r = { id: "r", name: "x", portions: 2, steps: [{ text: "Heat the pan." }, { text: "Cook the chicken." }], lines: [line("oil", "olive oil", [1], { stepsInferred: true }), line("ch", "chicken breast", [2])] } as Recipe;
   assert.deepEqual(show(r), ["Heat the pan. +oil", "Cook the chicken[ch]."]);
   assert.equal(stepsDivide(r), false);
+});
+
+test("soy sauce is a sauce, not a carb, so scaling keeps it as the recipe says", () => {
+  const r = { id: "r", name: "x", portions: 2, steps: [{ text: "Add soy sauce." }], lines: [line("soy", "soy sauce", [1], { role: "carb" })] } as Recipe;
+  assert.equal(upgradeSavedLines(r).lines[0]!.role, "sauce");
 });

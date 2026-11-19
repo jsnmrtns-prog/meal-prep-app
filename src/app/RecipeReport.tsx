@@ -242,7 +242,7 @@ export function RecipeReportScreen({ id, presetId }: { id: string; presetId: str
       <>
         {header}
         <CookView data={data} perMeal={perPortionOf(data.calc)} notes={[]} />
-        <Fold title="Shopping list" testId="shopping-fold"><ShoppingSection shopping={data.shopping} /></Fold>
+        <Fold title="Shopping list" testId="shopping-fold"><ShoppingSection shopping={data.shopping} titled={false} /></Fold>
         <Fold title="Nutrition & checks" testId="details-fold">
           <p className="lead">{recipe.portions} servings · {r0(data.calc.batchGrams)} g of ingredients (raw/dry)</p>
           <StatusCard report={data.report} />
@@ -318,7 +318,7 @@ function PlanView({ plan, engine, recipe, options }: { plan: OptimizedPlan; engi
       )}
       {options}
       <CookView data={data} perMeal={plan.perMeal} notes={plan.stepNotes.filter((n) => !/^Divide into /.test(n))} targets={plan.targets} />
-      <Fold title="Shopping list" testId="shopping-fold"><ShoppingSection shopping={data.shopping} /></Fold>
+      <Fold title="Shopping list" testId="shopping-fold"><ShoppingSection shopping={data.shopping} titled={false} /></Fold>
       <Fold title="Nutrition & checks" testId="details-fold">
         <StatusCard report={data.report} />
         <section className="section" data-testid="targets">
@@ -380,7 +380,8 @@ function countLabel(label: string, n: number): string {
 /** The amount as written into a cooking step or the ingredient list. */
 function cookAmount(line: IngredientLine, g: number, inStep = false): string {
   const q = line.quantity;
-  const dry = /\b(?:uncooked|dry|dried)\b/i.test(line.name) && /\b(?:rice|pasta|noodles|quinoa|oats|couscous|lentils|beans)\b/i.test(line.name) ? " uncooked" : "";
+  // In a step that says "cooked rice", say the amount is uncooked; the list already names it.
+  const dry = inStep && /\b(?:uncooked|dry|dried)\b/i.test(line.name) && /\b(?:rice|pasta|noodles|quinoa|oats|couscous|lentils|beans)\b/i.test(line.name) ? " uncooked" : "";
   if (q.kind === "mass") return `${g >= 100 ? (inStep ? `${imperial(g)} / ${grams(g)}` : weight(g)) : grams(g)}${dry}`.replace(/\.0 oz/g, " oz");
   if (q.kind === "volume") return `${amountText(q.amount)} ${UNIT_TEXT[q.unit] ?? q.unit}`;
   return `${amountText(q.amount)} ${countLabel(q.portionLabel, q.amount)}`;
@@ -631,14 +632,14 @@ function buyText(item: ShoppingItem): string {
   }
 }
 
-function ShoppingSection({ shopping }: { shopping: ShoppingList }): ReactElement {
+function ShoppingSection({ shopping, titled = true }: { shopping: ShoppingList; titled?: boolean }): ReactElement {
   const toBuy = shopping.items.filter((i) => i.buy.kind !== "pantry");
   const pantry = shopping.items.filter((i) => i.buy.kind === "pantry");
   const unverified = toBuy.some((i) => (i.buy.kind === "package" || i.buy.kind === "each" || i.buy.kind === "by_weight") && !i.buy.verified);
   let lastCategory = "";
   return (
     <section className="section" data-testid="shopping">
-      <h3 className="section__title">Shopping list</h3>
+      {titled && <h3 className="section__title">Shopping list</h3>}
       <div className="card">
         {toBuy.map((item) => {
           const header = item.category !== lastCategory ? <div className="list-head">{item.category}</div> : null;

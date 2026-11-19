@@ -274,6 +274,8 @@ export function guessRole(food: Food, name = ""): IngredientRole {
   if (/protein powder|whey/.test(d)) return "protein";
   if (["Poultry Products", "Beef Products", "Pork Products", "Finfish and Shellfish Products", "Lamb, Veal, and Game Products", "Sausages and Luncheon Meats"].includes(c)) return "protein";
   if (c === "Cereal Grains and Pasta" || c === "Baked Products" || c === "Breakfast Cereals") return "carb";
+  // USDA files soy sauce and miso with the beans; in a recipe they're sauces.
+  if (/\bsoy sauce\b|\btamari\b|\bshoyu\b|\bmiso\b|\bteriyaki\b/.test(d)) return "sauce";
   if (c === "Legumes and Legume Products") return /tofu|tempeh/.test(d) ? "protein" : "carb";
   if (c === "Fats and Oils") return "fat";
   if (c === "Vegetables and Vegetable Products") return /potato|corn\b/.test(d) ? "carb" : "vegetable";
@@ -457,6 +459,8 @@ export function upgradeSavedLines(recipe: Recipe): Recipe {
       if (l.inferred) next.stepsInferred = true;
       else delete next.stepsInferred;
     }
+    // Soy sauce was once read as a carb (USDA files it with the beans): it's a sauce, kept as the recipe says.
+    if (next.role === "carb" && /\bsoy sauce\b|\btamari\b|\bshoyu\b|\bmiso\b/i.test(next.name)) next = { ...next, role: "sauce" };
     if (next !== line) changed = true;
     return next;
   });
