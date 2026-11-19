@@ -509,7 +509,7 @@ function ReviewRow({ index, row, resolved, engine, onChange }: {
   return (
     <div className="review-row" data-testid={`review-row-${index}`}>
       <p className="review-row__raw">{p.group ? <span className="badge badge--muted badge--inline-left">{p.group}</span> : null}{p.raw}</p>
-      {p.flags.length > 0 && <FlagList flags={p.flags} />}
+      {p.flags.some((f) => !QUIET_FLAGS.has(f.code)) && <FlagList flags={p.flags.filter((f) => !QUIET_FLAGS.has(f.code))} />}
       {!out && approximateNote(p.name) && <FlagList flags={[{ code: "unusual", severity: "check", message: approximateNote(p.name)! }]} />}
       {!out && (
         <>

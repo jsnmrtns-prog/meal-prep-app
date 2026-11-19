@@ -29,6 +29,7 @@ const SYNONYMS: [RegExp, string][] = [
   [/\b(red|yellow|green|orange) (?:bell )?peppers?\b(?! flakes)/i, "peppers sweet $1 raw"],
   [/(?<!(?:peanut|almond|nut|cashew|seed|apple|cocoa|shea) )\b(?:reduced[- ]fat|light|lite|low[- ]fat|half[- ]fat) butter\b/i, "butter light stick with salt"],
   [/\bsesame seeds?\b/i, "seeds sesame seeds whole dried"],
+  [/^(?!.*\bcooked\b).*\b(?:mixed frozen|frozen mixed|stir[- ]fry|mixed) (?:vegetables|veggies|veg)\b/i, "vegetables mixed frozen unprepared"],
   // Names cookbooks use that USDA files under another word.
   [/\bparmigiano(?:[- ]+reggiano)?\b|\bparmesan\b/i, "cheese parmesan grated"],
   [/\blemon zest\b|\bzest of (?:\d+ |a |one )?lemons?\b/i, "lemon peel raw"],
@@ -210,7 +211,7 @@ function hasPortion(food: Food, want: MatchWant | undefined): boolean {
  * have the portion the recipe uses.
  */
 export function suggestFoods(rawName: string, db: FoodDb, limit = 6, want?: MatchWant): Food[] {
-  const name = rawName.replace(/yoghurt/gi, "yogurt").replace(/\bchilli\b/gi, "chili").replace(/\bmince\b/gi, "ground");
+  const name = rawName.replace(/yoghurt/gi, "yogurt").replace(/\bchilli\b/gi, "chili").replace(/\bmince\b/gi, "ground").replace(/\bveg(?:gies|gie|ies|e?s)?\b/gi, "vegetables");
   const queries: string[] = [];
   for (const [re, q] of SYNONYMS) {
     const m = name.match(re);
