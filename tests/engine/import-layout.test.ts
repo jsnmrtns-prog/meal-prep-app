@@ -84,11 +84,11 @@ test("lime juice and black pepper resolve to a USDA weight without asking", () =
   assert.deepEqual(quantityFor(pepper, pf).quantity, { kind: "volume", amount: 1, unit: "tsp", portionLabel: "tsp, ground" });
 });
 
-test("limits still at the old ½×–2½× default move to ½×–5×; changed limits stay", () => {
+test("limits still at an old default (½×–2½× or ½×–5×) move to 0.05×–10×; changed limits stay", () => {
   const s = defaultSettings();
-  const old = { ...s, bounds: { protein: { min: 0.5, max: 2.5 }, carb: { min: 0.5, max: 2.5 }, fat: { min: 0.75, max: 2.5 } } };
+  const old = { ...s, bounds: { protein: { min: 0.5, max: 2.5 }, carb: { min: 0.5, max: 5 }, fat: { min: 0.75, max: 2.5 } } };
   const up = upgradeSettings(old);
-  assert.deepEqual(up.bounds, { protein: { min: 0.5, max: 5 }, carb: { min: 0.5, max: 5 }, fat: { min: 0.75, max: 2.5 } });
+  assert.deepEqual(up.bounds, { protein: { min: 0.05, max: 10 }, carb: { min: 0.05, max: 10 }, fat: { min: 0.75, max: 2.5 } });
   assert.deepEqual(upgradeSettings(s).bounds, s.bounds);
 });
 

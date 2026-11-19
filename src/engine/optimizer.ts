@@ -47,9 +47,9 @@ export interface LeverBounds {
 }
 export type Bounds = Record<Lever, LeverBounds>;
 export const DEFAULT_BOUNDS: Bounds = {
-  protein: { min: 0.5, max: 5 },
-  carb: { min: 0.5, max: 5 },
-  fat: { min: 0.5, max: 5 },
+  protein: { min: 0.05, max: 10 },
+  carb: { min: 0.05, max: 10 },
+  fat: { min: 0.05, max: 10 },
 };
 /** A dairy ingredient with at least this much protein per 100 kcal counts as a main protein. */
 export const PROTEIN_RICH_PER_100_KCAL = 10;

@@ -83,7 +83,14 @@ test("per-meal totals match the independent Python calculation", () => {
 });
 
 test("golden recipes: what the presets produce", () => {
-  const t750 = optimizeRecipe(teriyaki, standard, db);
+  // With the default 0.05×–10× limits, even 650 kcal teriyaki works, but only by cutting the rice
+  // to almost nothing, so it's flagged as a big change.
+  assert.deepEqual(DEFAULT_BOUNDS.carb, { min: 0.05, max: 10 });
+  const wide650 = optimizeRecipe(teriyaki, TEST_PRESETS[0]!, db);
+  assert.ok(wide650.ok && wide650.plan.bigChange);
+  // Tighter limits (½×–5×) show how the planner handles a squeeze.
+  const narrow = { bounds: { protein: { min: 0.5, max: 5 }, carb: { min: 0.5, max: 5 }, fat: { min: 0.5, max: 5 } } };
+  const t750 = optimizeRecipe(teriyaki, standard, db, narrow);
   assert.ok(t750.ok);
   if (t750.ok) {
     // Chicken thighs are fatty: 750 kcal works only with the rice and oils at their minimum,
@@ -97,7 +104,7 @@ test("golden recipes: what the presets produce", () => {
     const res = optimizeRecipe(r, p, db);
     assert.ok(res.ok, `${r.id}/${p.id}`);
   }
-  const t650 = optimizeRecipe(teriyaki, TEST_PRESETS[0]!, db);
+  const t650 = optimizeRecipe(teriyaki, TEST_PRESETS[0]!, db, narrow);
   assert.equal(t650.ok, false);
   if (!t650.ok) {
     assert.match(t650.conflicts[0]!, /no room for the white rice/);

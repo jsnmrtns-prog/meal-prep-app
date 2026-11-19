@@ -106,6 +106,26 @@ await check("all five tabs navigate", async () => {
   }
 });
 
+/** Answer every line under "Needs you": pick the first USDA size, or enter 100 g, then tick it. */
+async function clearNeeds() {
+  for (let guard = 0; guard < 30; guard++) {
+    const row = page.getByTestId("review-needs").locator('[data-testid^="review-row-"]').first();
+    if (!(await row.count())) return;
+    const chip = row.locator(".chip").first();
+    const size = row.locator('select[aria-label^="Size"]');
+    const grams = row.locator('input[aria-label^="Grams"]');
+    const tick = row.locator('input[aria-label$="checked"]');
+    if (await chip.count()) await chip.click();
+    else if (await size.count()) await size.selectOption({ index: 1 });
+    else if (await grams.count()) {
+      await grams.fill("100");
+      await row.getByRole("button", { name: "Use grams" }).click();
+    } else await tick.check();
+    await page.waitForTimeout(50);
+  }
+  throw new Error("lines under Needs you didn't clear");
+}
+
 async function openTextBox() {
   const link = page.getByRole("button", { name: "Type or paste the text yourself" });
   if (await link.count()) await link.click();
@@ -354,29 +374,21 @@ await check("M6: a pasted web recipe is read, every line checked, and saved with
   await page.getByRole("heading", { level: 1, name: "Check the Import" }).waitFor();
   assert.equal(await page.getByLabel("Recipe name").inputValue(), "Chicken Burrito Bowls");
   assert.equal(await page.getByLabel("Servings").inputValue(), "4");
-  const rows = page.locator('[data-testid^="review-row-"]');
-  assert.equal(await rows.count(), 11);
-  // Flags shown where the app wasn't sure.
+  // Only the lines that need you are open; the rest start ticked and folded into one short list.
+  const needs = await page.getByTestId("review-needs").locator('[data-testid^="review-row-"]').count();
+  assert.ok(needs <= 3, `${needs} lines need you`);
+  await page.screenshot({ path: join(outDir, "import-review.png"), animations: "disabled", fullPage: true });
+  await page.getByTestId("review-sure").getByRole("button", { name: /lines look right/ }).click();
+  assert.equal(await page.locator('[data-testid^="review-row-"]').count(), 11);
+  // Notes worth a glance still show on folded lines.
   await page.getByTestId("review-row-2").getByText(/Uses the package size given/).waitFor();
   await page.getByTestId("review-row-8").getByText(/No amount given: using ¼ tsp/).waitFor();
   await page.getByTestId("review-row-9").getByText(/No amount given: using ¼ tsp/).waitFor();
-  await page.getByTestId("review-blockers").getByText("11 lines need checking below.").waitFor();
-  await page.screenshot({ path: join(outDir, "import-review.png"), animations: "disabled", fullPage: true });
-  // Leave out salt and pepper (read as two lines); check every other line.
-  await page.getByTestId("review-row-8").getByRole("button", { name: "Leave out" }).click();
-  await page.getByTestId("review-row-9").getByRole("button", { name: "Leave out" }).click();
-  for (let i = 0; i < 11; i++) {
-    if (i === 8 || i === 9) continue;
-    const row = page.getByTestId(`review-row-${i}`);
-    const size = row.getByLabel(`Size ${i + 1}`);
-    if (await size.count()) await size.selectOption({ index: 1 });
-    else if (await row.getByLabel(`Grams ${i + 1}`).count()) {
-      await row.getByLabel(`Grams ${i + 1}`).fill("100");
-      await row.getByRole("button", { name: "Use grams" }).click();
-    }
-    await row.getByLabel(`Line ${i + 1} checked`).click();
-    await row.getByRole("button", { name: "Change" }).waitFor();
-  }
+  await page.screenshot({ path: join(outDir, "import-review-open.png"), animations: "disabled", fullPage: true });
+  // Tapping a folded line reopens it; leave the pepper out from there.
+  await page.getByTestId("review-row-9").click();
+  await page.getByTestId("review-needs").getByTestId("review-row-9").getByRole("button", { name: "Leave out" }).click();
+  await clearNeeds();
   await page.getByRole("button", { name: "Continue to the recipe" }).click();
   await page.getByRole("heading", { level: 1, name: "New Recipe" }).waitFor();
   await page.getByTestId("from-import").waitFor();
@@ -395,6 +407,7 @@ await check("M6: a PDF with two columns of ingredients opens straight into the r
   await page.goto(`${url}#/import`);
   await page.getByLabel("Recipe file").setInputFiles(new URL("../fixtures/import-files/two-column.pdf", import.meta.url).pathname);
   await page.getByRole("heading", { level: 1, name: "Check the Import" }).waitFor({ timeout: 20000 });
+  await page.getByTestId("review-sure").getByRole("button", { name: /look right/ }).click();
   assert.equal(await page.locator('[data-testid^="review-row-"]').count(), 9);
   assert.equal(await page.getByLabel("Recipe name").inputValue(), "SPICY CHICKEN PASTA");
   const original = await page.getByTestId("original-text").textContent();
@@ -427,14 +440,11 @@ await check("cookbook-style text: groups, steps and the Accept button for lines 
   await page.getByLabel("Recipe text").fill(text);
   await page.getByRole("button", { name: "Read recipe" }).click();
   await page.getByRole("heading", { level: 1, name: "Check the Import" }).waitFor();
-  assert.equal(await page.locator('[data-testid^="review-row-"]').count(), 13);
+  const needs = await page.getByTestId("review-needs").locator('[data-testid^="review-row-"]').count();
+  assert.ok(needs <= 3, `${needs} of 13 lines need you`);
+  await page.getByTestId("review-sure").getByText(`${13 - needs} lines look right`).waitFor();
+  await page.getByRole("button", { name: /^Instructions \(3 steps\)/ }).click();
   assert.equal(await page.getByLabel(/^Step \d+$/).count(), 3);
-  const accept = page.getByTestId("accept-easy");
-  const n = Number((await accept.textContent()).match(/\d+/)[0]);
-  assert.ok(n >= 10, `only ${n} lines with nothing to fix`);
-  await accept.click();
-  await page.getByText(`${n} of 13 checked`, { exact: false }).waitFor();
-  assert.equal(await page.getByTestId("accept-easy").count(), 0);
   await page.screenshot({ path: join(outDir, "import-cookbook.png"), animations: "disabled", fullPage: true });
 });
 

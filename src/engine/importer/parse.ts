@@ -890,7 +890,7 @@ function suggestAmount(p: ParsedIngredient): ParsedIngredient {
     name: p.name.replace(/^(?:a\s+)?(?:big\s+|small\s+|large\s+)?(?:pinch(?:es)?|dash(?:es)?|splash(?:es)?|spoonfuls?|dollops?|squeeze|drizzle|sprinkle|handfuls?)\s+(?:of\s+)?/i, "").replace(/^(?:garnish(?:ed)?(?:\s+with)?|to taste:?)\s+/i, "").replace(/\s+(?:for garnish|to garnish)$/i, "") || p.name,
     flags: [
       ...p.flags.filter((f) => f.severity !== "fix"),
-      { code: "suggested", severity: "check", message: `No amount given: using ${shown} (${pick.why}). Change it if you use more or less.` },
+      { code: "suggested", severity: "check", message: `No amount given: using ${shown}. Change it if you use more or less.` },
     ],
   };
 }

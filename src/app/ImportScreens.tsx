@@ -289,12 +289,29 @@ interface Row {
   search: string;
 }
 
+function resolveRow(r: Row, engine: Engine) {
+  const food = typeof r.choice === "number" && engine.db.has(r.choice) ? engine.db.get(r.choice) : null;
+  const q = r.choice === "out" ? null : quantityFor(r.parsed, food);
+  const quantity = r.override ?? q?.quantity ?? null;
+  return { food, q, quantity };
+}
+
+/** A line the app is sure about: food and amount found, nothing to fix, not a stand-in. These start ticked. */
+function isSure(r: Row, engine: Engine): boolean {
+  const res = resolveRow(r, engine);
+  return r.choice !== "out" && !r.parsed.flags.some((f) => f.severity === "fix") && !approximateNote(r.parsed.name) && !!res.food && !!res.quantity;
+}
+
 function initialRows(parsed: ParsedRecipe, engine: Engine): Row[] {
   return parsed.ingredients.map((p) => {
     const top = p.name ? suggestFoods(p.name, engine.db, 1, wantFor(p))[0] : undefined;
-    return { parsed: p, choice: top ? top.fdcId : null, override: null, confirmed: false, search: "" };
+    const row: Row = { parsed: p, choice: top ? top.fdcId : null, override: null, confirmed: false, search: "" };
+    return { ...row, confirmed: isSure(row, engine) };
   });
 }
+
+/** Check notes that only describe how the text was tidied; not worth showing on a line that looks right. */
+const QUIET_FLAGS = new Set(["joined_line", "combined", "ocr_fix", "letter_unit", "split_line"]);
 
 export function ImportReviewScreen(): ReactElement {
   const session = useMemo(() => getImport(), []);
@@ -320,25 +337,20 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
   const [rows, setRows] = useState<Row[]>(() => initialRows(parsed, engine));
   const setRow = (i: number, patch: Partial<Row>) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
 
-  const resolved = rows.map((r) => {
-    const food = typeof r.choice === "number" && engine.db.has(r.choice) ? engine.db.get(r.choice) : null;
-    const q = r.choice === "out" ? null : quantityFor(r.parsed, food);
-    const quantity = r.override ?? q?.quantity ?? null;
-    return { food, q, quantity };
-  });
+  const resolved = rows.map((r) => resolveRow(r, engine));
+  const [showSure, setShowSure] = useState(false);
+  const [showSteps, setShowSteps] = useState(false);
   const included = rows.map((r, i) => ({ r, i })).filter(({ r }) => r.choice !== "out");
   const blockers: string[] = [];
   if (!title.trim()) blockers.push("Enter the recipe name.");
   if (!(servings !== null && Number.isInteger(servings) && servings >= 1)) blockers.push("Enter how many servings the recipe makes (a whole number).");
   if (steps.filter((s) => s.trim()).length === 0) blockers.push("Add at least one step.");
   if (included.length === 0) blockers.push("Keep at least one ingredient.");
-  const waiting = rows.filter((r, i) => !(r.choice === "out" ? r.confirmed : r.confirmed && resolved[i]!.food && resolved[i]!.quantity));
-  // Lines with nothing to fix and a food and amount found: one tap accepts them all (their Check notes stay visible).
-  const easy = rows.map((r, i) => i).filter((i) => {
-    const r = rows[i]!;
-    return !r.confirmed && r.choice !== "out" && !r.parsed.flags.some((f) => f.severity === "fix") && !approximateNote(r.parsed.name) && resolved[i]!.food && resolved[i]!.quantity;
-  });
-  if (waiting.length > 0) blockers.push(`${waiting.length} ${waiting.length === 1 ? "line needs" : "lines need"} checking below.`);
+  const isDone = (r: Row, i: number) => (r.choice === "out" ? r.confirmed : r.confirmed && !!resolved[i]!.food && !!resolved[i]!.quantity);
+  const needIdx = rows.map((_, i) => i).filter((i) => !isDone(rows[i]!, i));
+  const doneIdx = rows.map((_, i) => i).filter((i) => isDone(rows[i]!, i));
+  const assumed = doneIdx.filter((i) => rows[i]!.choice !== "out" && rows[i]!.parsed.flags.some((f) => !QUIET_FLAGS.has(f.code))).length;
+  if (needIdx.length > 0) blockers.push(`${needIdx.length} ${needIdx.length === 1 ? "line needs" : "lines need"} you above.`);
 
   const finish = () => {
     const cleanSteps = steps.map((s) => s.trim()).filter(Boolean);
@@ -374,46 +386,67 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
   return (
     <>
       <BackLink href="#/import">Import</BackLink>
-      <p className="lead">Check each line. Anything the app wasn't sure about is marked. Nothing is saved until the last step.</p>
+      <p className="lead">{needIdx.length === 0 ? "Everything was read. Glance over it and continue." : `${needIdx.length} ${needIdx.length === 1 ? "line needs" : "lines need"} you. The rest look right.`}</p>
       {parsed.flags.length > 0 && <FlagList flags={parsed.flags} testId="recipe-flags" />}
-      <section className="section">
-        <h2 className="section__title">Recipe</h2>
-        <div className="card card--form">
-          <Field label="Name"><input className="input" aria-label="Recipe name" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
-          <Field label="Servings the recipe makes"><NumberInput label="Servings" inputMode="numeric" value={servings} onChange={setServings} /></Field>
-        </div>
-      </section>
+      <div className="card card--form review-head">
+        <Field label="Name"><input className="input" aria-label="Recipe name" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+        <Field label="Servings the recipe makes"><NumberInput label="Servings" inputMode="numeric" value={servings} onChange={setServings} /></Field>
+      </div>
 
       <section className="section" data-testid="review-ingredients">
-        <h2 className="section__title">Ingredients ({rows.length - waiting.length} of {rows.length} checked)</h2>
-        {easy.length > 0 && (
-          <div className="bulk-accept">
-            <button className="row-button" data-testid="accept-easy" onClick={() => setRows((rs) => rs.map((r, j) => (easy.includes(j) ? { ...r, confirmed: true } : r)))}>
-              Accept the {easy.length} {easy.length === 1 ? "line" : "lines"} with nothing to fix
+        {needIdx.length > 0 && (
+          <>
+            <h2 className="section__title">Needs you ({needIdx.length})</h2>
+            <div className="card" data-testid="review-needs">
+              {needIdx.map((i) => (
+                <ReviewRow key={i} index={i} row={rows[i]!} resolved={resolved[i]!} engine={engine} onChange={(p) => setRow(i, p)} />
+              ))}
+            </div>
+          </>
+        )}
+        {doneIdx.length > 0 && (
+          <div className="card sure" data-testid="review-sure">
+            <button className="row row--button fold-head" aria-expanded={showSure} onClick={() => setShowSure(!showSure)}>
+              <span className="fold-head__title">✓ {doneIdx.length} {doneIdx.length === 1 ? "line looks" : "lines look"} right</span>
+              <span className="fold-head__sub">{assumed > 0 ? `${assumed} with a standard amount or a note · ` : ""}{showSure ? "Hide" : "Show"}</span>
             </button>
-            <p className="footnote">Then read down the list: each line shows the food picked and any Check note. Tap Change on any that's wrong.</p>
+            {showSure && doneIdx.map((i) => {
+              const r = rows[i]!;
+              const out = r.choice === "out";
+              const notes = out ? [] : r.parsed.flags.filter((f) => !QUIET_FLAGS.has(f.code));
+              return (
+                <button key={i} className="sure-row" data-testid={`review-row-${i}`} onClick={() => setRow(i, { confirmed: false, ...(out ? { choice: null } : {}) })}>
+                  <span className="sure-row__line">{r.parsed.raw}</span>
+                  <span className="sure-row__food">{out ? "Left out" : resolved[i]!.food!.description}</span>
+                  {notes.map((f, k) => <span key={k} className="sure-row__note">{f.message}</span>)}
+                </button>
+              );
+            })}
+            {showSure && <p className="footnote sure__foot">Tap a line to change it.</p>}
           </div>
         )}
-        <div className="card">
-          {rows.map((r, i) => (
-            <ReviewRow key={i} index={i} row={r} resolved={resolved[i]!} engine={engine} onChange={(p) => setRow(i, p)} />
-          ))}
-        </div>
       </section>
 
       <section className="section" data-testid="review-steps">
-        <h2 className="section__title">Instructions</h2>
-        <div className="card card--form">
-          {steps.map((s, i) => (
-            <div key={i} className="step-edit">
-              <Field label={`Step ${i + 1}`}>
-                <textarea className="input input--area" aria-label={`Step ${i + 1}`} rows={3} value={s} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? e.target.value : x)))} />
-              </Field>
-              {steps.length > 1 && <button className="small-button small-button--danger" onClick={() => setSteps(steps.filter((_, j) => j !== i))}>Remove step {i + 1}</button>}
-            </div>
-          ))}
-          <button className="small-button" onClick={() => setSteps([...steps, ""])}>Add a step</button>
+        <div className="card">
+          <button className="row row--button fold-head" aria-expanded={showSteps} onClick={() => setShowSteps(!showSteps)}>
+            <span className="fold-head__title">Instructions ({steps.filter((x) => x.trim()).length} {steps.filter((x) => x.trim()).length === 1 ? "step" : "steps"})</span>
+            <span className="fold-head__sub">{showSteps ? "Hide" : "Show or edit"}</span>
+          </button>
         </div>
+        {showSteps && (
+          <div className="card card--form">
+            {steps.map((s, i) => (
+              <div key={i} className="step-edit">
+                <Field label={`Step ${i + 1}`}>
+                  <textarea className="input input--area" aria-label={`Step ${i + 1}`} rows={3} value={s} onChange={(e) => setSteps(steps.map((x, j) => (j === i ? e.target.value : x)))} />
+                </Field>
+                {steps.length > 1 && <button className="small-button small-button--danger" onClick={() => setSteps(steps.filter((_, j) => j !== i))}>Remove step {i + 1}</button>}
+              </div>
+            ))}
+            <button className="small-button" onClick={() => setSteps([...steps, ""])}>Add a step</button>
+          </div>
+        )}
       </section>
 
       <details className="more more--section" data-testid="original-text">
@@ -452,22 +485,8 @@ function ReviewRow({ index, row, resolved, engine, onChange }: {
   if (resolved.food && !options.some((f) => f.fdcId === resolved.food!.fdcId)) options.unshift(resolved.food);
   const setParsed = (patch: Partial<ParsedIngredient>) => onChange({ parsed: { ...p, ...patch }, override: null, confirmed: false });
   const out = row.choice === "out";
-  const done = row.confirmed && (out || (resolved.food && resolved.quantity));
-  if (done) {
-    // Checked lines fold up so the list stays short; tap Change to reopen one.
-    return (
-      <div className="review-row review-row--done" data-testid={`review-row-${index}`}>
-        <p className="review-row__raw">{p.raw}</p>
-        {!out && p.flags.length > 0 && <FlagList flags={p.flags} />}
-        <div className="review-row__actions">
-          <span className="option__meta">{out ? "Left out" : `✓ ${resolved.food!.description}`}</span>
-          <button className="small-button" onClick={() => onChange({ confirmed: false, ...(out ? { choice: suggestions[0]?.fdcId ?? null } : {}) })}>Change</button>
-        </div>
-      </div>
-    );
-  }
   return (
-    <div className={`review-row${done ? " review-row--done" : ""}`} data-testid={`review-row-${index}`}>
+    <div className="review-row" data-testid={`review-row-${index}`}>
       <p className="review-row__raw">{p.group ? <span className="badge badge--muted badge--inline-left">{p.group}</span> : null}{p.raw}</p>
       {p.flags.length > 0 && <FlagList flags={p.flags} />}
       {!out && approximateNote(p.name) && <FlagList flags={[{ code: "unusual", severity: "check", message: approximateNote(p.name)! }]} />}
@@ -506,16 +525,21 @@ function ReviewRow({ index, row, resolved, engine, onChange }: {
           {resolved.q?.problem && !row.override && (
             <div className="needs" data-testid={`needs-${index}`}>
               <p className="flag flag--fix">Fix: {resolved.q.problem}</p>
-              {resolved.q.options.length > 0 && (
+              {resolved.q.options.length > 0 && resolved.q.options.length <= 6 && (
+                <div className="chips" role="group" aria-label={`Size ${index + 1}`}>
+                  {resolved.q.options.map((o, k) => <button key={k} className="chip" onClick={() => onChange({ override: o.quantity, confirmed: true })}>{o.label}</button>)}
+                </div>
+              )}
+              {resolved.q.options.length > 6 && (
                 <select className="input" aria-label={`Size ${index + 1}`} value="" onChange={(e) => {
                   const o = resolved.q!.options[Number(e.target.value)];
-                  if (o) onChange({ override: o.quantity });
+                  if (o) onChange({ override: o.quantity, confirmed: true });
                 }}>
                   <option value="">Choose a USDA size</option>
                   {resolved.q.options.map((o, k) => <option key={k} value={k}>{o.label}</option>)}
                 </select>
               )}
-              <GramsEntry index={index} onSet={(g) => onChange({ override: { kind: "mass", amount: g, unit: "g" } })} />
+              <GramsEntry index={index} onSet={(g) => onChange({ override: { kind: "mass", amount: g, unit: "g" }, confirmed: true })} />
             </div>
           )}
           {row.override && (

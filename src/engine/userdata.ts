@@ -303,7 +303,7 @@ export function withSeedPackages(packages: PackageEntry[]): PackageEntry[] {
 }
 
 /** The old default upper limit (2½×), replaced by 5× in version 0.7.1. */
-const OLD_DEFAULT_MAX = 2.5;
+const OLD_DEFAULTS: { min: number; max: number }[] = [{ min: 0.5, max: 2.5 }, { min: 0.5, max: 5 }];
 
 /**
  * Brings saved settings up to date: adds new seed packages, and moves limits
@@ -313,7 +313,7 @@ export function upgradeSettings(s: Settings): Settings {
   const bounds = clone(s.bounds);
   for (const lever of ["protein", "carb", "fat"] as const) {
     const b = bounds[lever];
-    if (b && b.min === DEFAULT_BOUNDS[lever].min && b.max === OLD_DEFAULT_MAX) b.max = DEFAULT_BOUNDS[lever].max;
+    if (b && OLD_DEFAULTS.some((o) => o.min === b.min && o.max === b.max)) bounds[lever] = { ...DEFAULT_BOUNDS[lever] };
   }
   return { ...s, bounds, packages: withSeedPackages(s.packages) };
 }

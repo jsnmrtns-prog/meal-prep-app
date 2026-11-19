@@ -3,10 +3,10 @@
  "plans": {
   "teriyaki-chicken-fried-rice/standard-750/plan": {
    "perMeal": {
-    "kcal": 757.2833333333334,
-    "protein": 76.005,
-    "carbs": 36.302225,
-    "fat": 30.84325833333334
+    "kcal": 749.9200000000002,
+    "protein": 75.99069999999999,
+    "carbs": 30.177658333333337,
+    "fat": 32.866725
    }
   },
   "teriyaki-chicken-fried-rice/standard-750/alternative/Use chicken breast instead of thighs": {
@@ -33,28 +33,20 @@
     "fat": 12.953658333333331
    }
   },
-  "teriyaki-chicken-fried-rice/test-650/option/Use chicken breast instead of thighs": {
+  "teriyaki-chicken-fried-rice/test-650/plan": {
+   "perMeal": {
+    "kcal": 656.3816666666667,
+    "protein": 75.4906,
+    "carbs": 15.262291666666668,
+    "fat": 29.465658333333337
+   }
+  },
+  "teriyaki-chicken-fried-rice/test-650/alternative/Use chicken breast instead of thighs": {
    "perMeal": {
     "kcal": 649.6649999999998,
     "protein": 75.98223333333333,
     "carbs": 49.202058333333326,
     "fat": 12.889091666666667
-   }
-  },
-  "teriyaki-chicken-fried-rice/test-650/option/Change to 740 kcal per meal": {
-   "perMeal": {
-    "kcal": 753.4866666666667,
-    "protein": 75.50366666666666,
-    "carbs": 36.29729166666667,
-    "fat": 30.657391666666673
-   }
-  },
-  "teriyaki-chicken-fried-rice/test-650/option/Lower protein to 63 g per meal": {
-   "perMeal": {
-    "kcal": 656.225,
-    "protein": 63.193833333333345,
-    "carbs": 36.127525,
-    "fat": 25.68315833333334
    }
   },
   "teriyaki-chicken-fried-rice/test-exact-carbs/option/Use chicken breast instead of thighs": {
@@ -65,20 +57,20 @@
     "fat": 16.375625000000003
    }
   },
-  "teriyaki-chicken-fried-rice/test-exact-carbs/option/Change to 795 kcal per meal": {
+  "teriyaki-chicken-fried-rice/test-exact-carbs/option/Change to 780 kcal per meal": {
    "perMeal": {
-    "kcal": 808.495,
+    "kcal": 794.1300000000001,
     "protein": 70.0059,
     "carbs": 59.94179166666666,
-    "fat": 28.525591666666674
+    "fat": 26.900591666666674
    }
   },
-  "teriyaki-chicken-fried-rice/test-exact-carbs/option/Lower protein to 58 g per meal": {
+  "teriyaki-chicken-fried-rice/test-exact-carbs/option/Lower protein to 60 g per meal": {
    "perMeal": {
-    "kcal": 713.1233333333333,
-    "protein": 58.0015,
-    "carbs": 60.04099166666666,
-    "fat": 23.493025000000003
+    "kcal": 713.2083333333334,
+    "protein": 60.00683333333334,
+    "carbs": 60.060725,
+    "fat": 22.528158333333337
    }
   },
   "taco-mac-n-cheese/standard-750/plan": {
@@ -113,28 +105,20 @@
     "fat": 14.146944166666664
    }
   },
-  "taco-mac-n-cheese/test-650/option/Use 97% lean ground beef instead of 93%": {
+  "taco-mac-n-cheese/test-650/plan": {
    "perMeal": {
-    "kcal": 656.3580000000001,
-    "protein": 75.9915,
-    "carbs": 51.69209833333333,
-    "fat": 14.497477499999997
+    "kcal": 656.6080000000001,
+    "protein": 75.5133,
+    "carbs": 30.44258166666667,
+    "fat": 24.353377499999997
    }
   },
-  "taco-mac-n-cheese/test-650/option/Change to 725 kcal per meal": {
+  "taco-mac-n-cheese/test-650/alternative/Use 97% lean ground beef instead of 93%": {
    "perMeal": {
-    "kcal": 737.8646666666668,
-    "protein": 75.4835,
-    "carbs": 52.15649833333333,
-    "fat": 23.634177500000003
-   }
-  },
-  "taco-mac-n-cheese/test-650/option/Lower protein to 65 g per meal": {
-   "perMeal": {
-    "kcal": 661.9846666666667,
-    "protein": 65.21600000000002,
-    "carbs": 50.992798333333326,
-    "fat": 20.5631775
+    "kcal": 650.2296666666667,
+    "protein": 76.02043333333334,
+    "carbs": 50.11016499999999,
+    "fat": 14.513927499999996
    }
   }
  }
