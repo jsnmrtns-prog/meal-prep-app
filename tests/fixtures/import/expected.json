@@ -60,16 +60,25 @@
     {
      "amount": null,
      "unit": null,
-     "name": "salt and pepper",
+     "name": "salt",
      "flags": [
-      "combined",
+      "split_line",
+      "to_taste"
+     ]
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "pepper",
+     "flags": [
+      "split_line",
       "to_taste"
      ]
     },
     {
      "amount": 0.25,
      "unit": "cup",
-     "name": "chopped cilantro",
+     "name": "cilantro",
      "flags": [
       "optional"
      ]
@@ -207,7 +216,7 @@
     {
      "amount": null,
      "unit": null,
-     "name": "jalape\u00f1os",
+     "name": "jalapeños",
      "flags": [
       "range"
      ]
@@ -393,13 +402,13 @@
     {
      "amount": 1,
      "unit": "cup",
-     "name": "chopped spinach",
+     "name": "spinach",
      "flags": []
     },
     {
      "amount": 0.5,
      "unit": "cup",
-     "name": "diced red bell pepper",
+     "name": "red bell pepper",
      "flags": []
     },
     {
@@ -591,7 +600,7 @@
     {
      "amount": 0.25,
      "unit": "cup",
-     "name": "chopped fresh parsley",
+     "name": "fresh parsley",
      "flags": []
     },
     {

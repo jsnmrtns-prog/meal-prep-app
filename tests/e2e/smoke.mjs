@@ -349,16 +349,18 @@ await check("M6: a pasted web recipe is read, every line checked, and saved with
   assert.equal(await page.getByLabel("Recipe name").inputValue(), "Chicken Burrito Bowls");
   assert.equal(await page.getByLabel("Servings").inputValue(), "4");
   const rows = page.locator('[data-testid^="review-row-"]');
-  assert.equal(await rows.count(), 10);
+  assert.equal(await rows.count(), 11);
   // Flags shown where the app wasn't sure.
   await page.getByTestId("review-row-2").getByText(/Uses the package size given/).waitFor();
   await page.getByTestId("review-row-8").getByText(/Says "to taste"/).waitFor();
-  await page.getByTestId("review-blockers").getByText("10 lines need checking below.").waitFor();
+  await page.getByTestId("review-row-9").getByText(/Says "to taste"/).waitFor();
+  await page.getByTestId("review-blockers").getByText("11 lines need checking below.").waitFor();
   await page.screenshot({ path: join(outDir, "import-review.png"), animations: "disabled", fullPage: true });
-  // Leave out salt and pepper; check every other line.
+  // Leave out salt and pepper (read as two lines); check every other line.
   await page.getByTestId("review-row-8").getByRole("button", { name: "Leave out" }).click();
-  for (let i = 0; i < 10; i++) {
-    if (i === 8) continue;
+  await page.getByTestId("review-row-9").getByRole("button", { name: "Leave out" }).click();
+  for (let i = 0; i < 11; i++) {
+    if (i === 8 || i === 9) continue;
     const row = page.getByTestId(`review-row-${i}`);
     const size = row.getByLabel(`Size ${i + 1}`);
     if (await size.count()) await size.selectOption({ index: 1 });

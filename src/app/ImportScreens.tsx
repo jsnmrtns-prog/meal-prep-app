@@ -3,6 +3,7 @@
 import { useMemo, useState, type ReactElement } from "react";
 import {
   AI_PROMPT,
+  approximateNote,
   guessRole,
   guessState,
   looksLikeAiBlock,
@@ -219,7 +220,7 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
   // Lines with nothing to fix and a food and amount found: one tap accepts them all (their Check notes stay visible).
   const easy = rows.map((r, i) => i).filter((i) => {
     const r = rows[i]!;
-    return !r.confirmed && r.choice !== "out" && !r.parsed.flags.some((f) => f.severity === "fix") && resolved[i]!.food && resolved[i]!.quantity;
+    return !r.confirmed && r.choice !== "out" && !r.parsed.flags.some((f) => f.severity === "fix") && !approximateNote(r.parsed.name) && resolved[i]!.food && resolved[i]!.quantity;
   });
   if (waiting.length > 0) blockers.push(`${waiting.length} ${waiting.length === 1 ? "line needs" : "lines need"} checking below.`);
 
@@ -346,6 +347,7 @@ function ReviewRow({ index, row, resolved, engine, onChange }: {
     <div className={`review-row${done ? " review-row--done" : ""}`} data-testid={`review-row-${index}`}>
       <p className="review-row__raw">{p.group ? <span className="badge badge--muted badge--inline-left">{p.group}</span> : null}{p.raw}</p>
       {p.flags.length > 0 && <FlagList flags={p.flags} />}
+      {!out && approximateNote(p.name) && <FlagList flags={[{ code: "unusual", severity: "check", message: approximateNote(p.name)! }]} />}
       {!out && (
         <>
           <div className="field-row">

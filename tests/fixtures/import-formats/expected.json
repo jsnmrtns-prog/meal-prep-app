@@ -118,14 +118,17 @@
    [
     2.5,
     "cup",
-    "chopped romaine lettuce",
+    "romaine lettuce",
     []
    ],
    [
     null,
     null,
     "greek yogurt or sour cream",
-    ["to_taste", "alternatives"]
+    [
+     "to_taste",
+     "alternatives"
+    ]
    ]
   ]
  },
@@ -183,7 +186,9 @@
     null,
     "cup",
     "vegetable oil",
-    ["range"]
+    [
+     "range"
+    ]
    ],
    [
     0.25,
@@ -268,7 +273,7 @@
    [
     57,
     "g",
-    "chopped walnuts",
+    "walnuts",
     []
    ]
   ]
@@ -606,6 +611,388 @@
     "cup",
     "plain yogurt",
     []
+   ]
+  ]
+ },
+ "l-wprm-copy": {
+  "title": "Lemon Herb Turkey and Quinoa",
+  "servings": 4,
+  "steps": 4,
+  "notes": 3,
+  "ingredients": [
+   [
+    1,
+    "tsp",
+    "dried basil",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "dried thyme",
+    []
+   ],
+   [
+    0.5,
+    "tsp",
+    "onion powder",
+    []
+   ],
+   [
+    0.25,
+    "tsp",
+    "black pepper",
+    []
+   ],
+   [
+    1.5,
+    "lb",
+    "ground turkey 93% lean",
+    []
+   ],
+   [
+    1,
+    "tbsp",
+    "cooking oil",
+    []
+   ],
+   [
+    1,
+    "cup",
+    "quinoa",
+    []
+   ],
+   [
+    2,
+    "cup",
+    "chicken broth",
+    []
+   ],
+   [
+    1,
+    "tbsp",
+    "parsley",
+    []
+   ]
+  ]
+ },
+ "m-card-livetext": {
+  "title": "LOADED PROTEIN BEEF NACHO BAKE",
+  "servings": null,
+  "steps": 3,
+  "notes": 1,
+  "ingredients": [
+   [
+    150,
+    "g",
+    "Corn Tortilla Chips",
+    []
+   ],
+   [
+    200,
+    "g",
+    "Low Fat Cottage Cheese",
+    []
+   ],
+   [
+    null,
+    null,
+    "Chili Powder",
+    [
+     "no_amount"
+    ]
+   ],
+   [
+    null,
+    null,
+    "Salt",
+    [
+     "no_amount"
+    ]
+   ],
+   [
+    null,
+    null,
+    "Cumin",
+    [
+     "no_amount"
+    ]
+   ],
+   [
+    250,
+    "g",
+    "Lean Beef Mince",
+    []
+   ],
+   [
+    40,
+    "g",
+    "Light / Low Fat Cheese",
+    []
+   ],
+   [
+    0.5,
+    null,
+    "Red Onion",
+    []
+   ],
+   [
+    null,
+    null,
+    "Fresh Coriander",
+    [
+     "no_amount"
+    ]
+   ]
+  ]
+ },
+ "n-caption": {
+  "title": "Spicy Turkey Pasta Bake",
+  "servings": 3,
+  "steps": 0,
+  "notes": 0,
+  "ingredients": [
+   [
+    1,
+    "cup",
+    "0% Fat Cottage Cheese",
+    []
+   ],
+   [
+    0.25,
+    "cup",
+    "Grated Parmesan",
+    []
+   ],
+   [
+    2,
+    "tsp",
+    "Cajun Seasoning",
+    []
+   ],
+   [
+    0.5,
+    "cup",
+    "Fat Free Milk",
+    []
+   ],
+   [
+    18,
+    "oz",
+    "Ground Turkey",
+    []
+   ],
+   [
+    null,
+    null,
+    "Garlic Salt",
+    [
+     "no_amount"
+    ]
+   ],
+   [
+    6,
+    "oz",
+    "Protein Pasta",
+    []
+   ],
+   [
+    0.5,
+    "cup",
+    "Onion",
+    []
+   ],
+   [
+    null,
+    null,
+    "Red Pepper Flakes",
+    [
+     "no_amount"
+    ]
+   ]
+  ]
+ },
+ "o-sections-inline-steps": {
+  "title": "Smoky Chicken & Wedges",
+  "servings": 4,
+  "steps": 4,
+  "notes": 0,
+  "ingredients": [
+   [
+    900,
+    "g",
+    "Boneless Skinless Chicken Breast",
+    []
+   ],
+   [
+    2,
+    "tsp",
+    "Garam Masala",
+    []
+   ],
+   [
+    2,
+    "tsp",
+    "Smoked Paprika",
+    []
+   ],
+   [
+    1.5,
+    "tsp",
+    "Coriander Powder",
+    []
+   ],
+   [
+    70,
+    "g",
+    "Fat Free Yogurt",
+    []
+   ],
+   [
+    0.75,
+    "count:lime",
+    "Lime juice",
+    []
+   ],
+   [
+    800,
+    "g",
+    "Uncooked Red or Yellow Potatoes",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "Garlic Powder",
+    []
+   ],
+   [
+    null,
+    null,
+    "Olive Oil Spray",
+    [
+     "no_amount"
+    ]
+   ],
+   [
+    null,
+    null,
+    "Salt",
+    [
+     "to_taste"
+    ]
+   ],
+   [
+    null,
+    "g",
+    "Red Cabbage",
+    [
+     "range"
+    ]
+   ],
+   [
+    0.5,
+    "tsp",
+    "Salt",
+    []
+   ],
+   [
+    0.5,
+    "tsp",
+    "Pepper",
+    []
+   ],
+   [
+    60,
+    "g",
+    "Light Mayo",
+    []
+   ]
+  ]
+ },
+ "p-notes-app": {
+  "title": "Breakfast Sausage Bake",
+  "servings": null,
+  "steps": 4,
+  "notes": 0,
+  "ingredients": [
+   [
+    12,
+    null,
+    "eggs",
+    []
+   ],
+   [
+    1,
+    "cup",
+    "heavy cream",
+    []
+   ],
+   [
+    1,
+    "count:package",
+    "shredded cheddar cheese",
+    []
+   ],
+   [
+    1,
+    "lb",
+    "breakfast sausage",
+    []
+   ],
+   [
+    null,
+    null,
+    "Salsa",
+    [
+     "no_amount"
+    ]
+   ]
+  ]
+ },
+ "q-step-colon": {
+  "title": null,
+  "servings": null,
+  "steps": 3,
+  "notes": 0,
+  "ingredients": [
+   [
+    1,
+    "lb",
+    "lean ground turkey",
+    []
+   ],
+   [
+    1,
+    "tbsp",
+    "chili seasoning",
+    []
+   ],
+   [
+    2,
+    "cup",
+    "cooked brown rice",
+    []
+   ],
+   [
+    1,
+    "cup",
+    "canned pinto beans",
+    []
+   ],
+   [
+    1,
+    null,
+    "avocado",
+    []
+   ],
+   [
+    null,
+    null,
+    "Lemon wedges",
+    [
+     "no_amount"
+    ]
    ]
   ]
  }

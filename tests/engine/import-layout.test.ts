@@ -101,3 +101,9 @@ test("canned foods are matched to USDA canned records and measured as packaged",
     assert.equal(guessState(food, p.name), "as_packaged", line);
   }
 });
+
+test("foods USDA doesn't have are marked as stand-ins, so they aren't accepted without a look", async () => {
+  const { approximateNote } = await import("../../src/engine/index.ts");
+  for (const name of ["Cajun Seasoning", "Italian Seasoning", "Chipotle Paste", "Garlic Salt", "Protein Pasta", "Tandoori Masala"]) assert.ok(approximateNote(name), name);
+  for (const name of ["Garlic Powder", "Smoked Paprika", "Chicken Breast"]) assert.equal(approximateNote(name), null, name);
+});

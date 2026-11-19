@@ -24,7 +24,25 @@ const SYNONYMS: [RegExp, string][] = [
   [/\b(\d{2})% (?:lean )?ground turkey\b/i, "turkey ground $1% lean raw"],
   [/\bground turkey (\d{2})%/i, "turkey ground $1% lean raw"],
   [/\b(?:scallions?|green onions?)\b/i, "onions spring or scallions raw"],
-  [/\b(red|yellow|green|orange) (?:bell )?peppers?\b/i, "peppers sweet $1 raw"],
+  [/\b(?:chili|chilli|red pepper) flakes\b|\bcrushed red pepper\b/i, "spices pepper red or cayenne"],
+  [/\b(red|yellow|green|orange) (?:bell )?peppers?\b(?! flakes)/i, "peppers sweet $1 raw"],
+  [/\blime wedges?\b/i, "limes raw"],
+  [/\blemon wedges?\b/i, "lemons raw without peel"],
+  [/\bparsley flakes\b|\bdried parsley\b/i, "spices parsley dried"],
+  [/^(?:fresh |chopped |flat[- ]leaf |italian )*parsley$/i, "parsley fresh"],
+  [/\bitalian seasoning\b|\bmixed herbs\b|\bherbes de provence\b/i, "spices oregano dried"],
+  [/\b(?:tandoori|garam) masala\b/i, "spices curry powder"],
+  [/\b(?:ground coriander|coriander powder|coriander seeds?)\b/i, "spices coriander seed"],
+  [/(?:\bfat[- ]free|\bskim|\bnonfat|\bnon-fat|\b0%)\s+milk\b/i, "milk nonfat fluid with added vitamin a and vitamin d fat free or skim"],
+  [/\b(?:low[- ]fat|1%)\s+milk\b/i, "milk lowfat fluid 1% milkfat with added vitamin a and vitamin d"],
+  [/\b(?:reduced[- ]fat|2%)\s+milk\b/i, "milk reduced fat fluid 2% milkfat with added vitamin a and vitamin d"],
+  [/\bwhole milk\b/i, "milk whole 3.25% milkfat with added vitamin d"],
+  [/\b(?:light|lite|reduced[- ]fat|low[- ]fat)\s+mayo(?:nnaise)?\b/i, "salad dressing mayonnaise light"],
+  [/\btomato paste\b/i, "tomato products canned paste without salt added"],
+  [/\bgarlic salt\b/i, "salt table"],
+  [/\bheavy (?:whipping )?cream\b|\bdouble cream\b/i, "cream fluid heavy whipping"],
+  [/\bswiss cheese\b/i, "cheese swiss"],
+  [/\bcajun seasoning\b|\bcreole seasoning\b/i, "spices paprika"],
   [/\bbell peppers?\b/i, "peppers sweet raw"],
   [/\b(onion|garlic|chili|curry) powder\b/i, "spices $1 powder"],
   [/\bchilli powder\b/i, "spices chili powder"],
@@ -44,9 +62,10 @@ const SYNONYMS: [RegExp, string][] = [
   [/\bcooked brown rice\b/i, "rice brown long-grain cooked"],
   [/\b(?:penne|spaghetti|rotini|macaroni|elbow|orzo|pasta)\b/i, "pasta dry enriched"],
   [/\b(olive|avocado|sesame|canola|coconut) oil\b/i, "oil $1"],
-  [/\bvegetable oil\b|^oil$/i, "oil soybean salad or cooking"],
+  [/\bvegetable oil\b|^oil$|^(?:cooking|neutral|frying) oil$/i, "oil soybean salad or cooking"],
   [/\bgarlic cloves?\b|\bcloves? (?:of )?garlic\b|^garlic\b(?! (?:powder|salt))/i, "garlic raw"],
   [/\bshrimp\b/i, "crustaceans shrimp raw"],
+  [/(?:\b0%|\bfat[- ]free\b|\bnon-?fat\b).*\bcottage cheese\b/i, "cheese cottage nonfat uncreamed dry large or small curd"],
   [/\bcottage cheese\b/i, "cheese cottage lowfat 2% milkfat"],
   [/\bpart[- ]skim ricotta\b/i, "cheese ricotta part skim milk"],
   [/\bpart[- ]skim mozzarella\b|\bmozzarella\b/i, "cheese mozzarella low moisture part-skim"],
@@ -83,6 +102,23 @@ const SYNONYMS: [RegExp, string][] = [
   [/\bdijon\b/i, "mustard prepared"],
   [/\bbroccoli\b/i, "broccoli raw"],
 ];
+
+/** Foods USDA doesn't have, where the suggestion is only the closest stand-in. */
+const APPROXIMATE: [RegExp, string][] = [
+  [/\bchipotle\b/i, "USDA has no chipotle paste"],
+  [/\bcajun seasoning\b|\bcreole seasoning\b/i, "USDA has no Cajun seasoning"],
+  [/\bitalian seasoning\b|\bmixed herbs\b|\bherbes de provence\b/i, "USDA has no Italian seasoning blend"],
+  [/\b(?:tandoori|garam) masala\b/i, "USDA has no masala blend"],
+  [/\bgarlic salt\b/i, "USDA has no garlic salt"],
+  [/\bprotein pasta\b|\bchickpea pasta\b|\blentil pasta\b/i, "USDA has no protein pasta"],
+  [/\bhollandaise\b/i, "USDA has no hollandaise"],
+];
+
+/** A note when the suggested food can only be a stand-in, so it isn't accepted without a look. */
+export function approximateNote(name: string): string | null {
+  const hit = APPROXIMATE.find(([re]) => re.test(name));
+  return hit ? `${hit[1]}: the food picked is the closest stand-in. Change it, or add the product's label under Settings → Label foods.` : null;
+}
 
 /** How well a USDA description matches the search words: earlier, fuller matches score higher. */
 function matchScore(description: string, terms: string[]): number {
@@ -133,7 +169,8 @@ function hasPortion(food: Food, want: MatchWant | undefined): boolean {
  * dropped; prefers raw foods (unless the name says cooked) and records that
  * have the portion the recipe uses.
  */
-export function suggestFoods(name: string, db: FoodDb, limit = 6, want?: MatchWant): Food[] {
+export function suggestFoods(rawName: string, db: FoodDb, limit = 6, want?: MatchWant): Food[] {
+  const name = rawName.replace(/yoghurt/gi, "yogurt").replace(/\bchilli\b/gi, "chili").replace(/\bmince\b/gi, "ground");
   const queries: string[] = [];
   for (const [re, q] of SYNONYMS) {
     const m = name.match(re);
@@ -159,6 +196,8 @@ export function suggestFoods(name: string, db: FoodDb, limit = 6, want?: MatchWa
       if (!f.usableForMacros) continue;
       let score = matchScore(f.description, qTerms) - qi * 4;
       if (NOT_WANTED.test(f.description)) score -= 40;
+      // A soup or a condensed product is never what "black beans" means.
+      if (/^soup\b|\bcondensed\b/i.test(f.description) && !/\b(?:soup|broth|stock|bouillon|condensed)\b/i.test(name)) score -= 20;
       if (COOKED.test(f.description) !== wantsCooked) score -= 8;
       if (!hasPortion(f, want)) score -= 15;
       if (f.dataset === "foundation") score += 0.5;
@@ -174,6 +213,8 @@ export function suggestFoods(name: string, db: FoodDb, limit = 6, want?: MatchWa
 /** What `suggestFoods` should prefer for a parsed line. */
 export function wantFor(p: Pick<ParsedIngredient, "unit" | "sizeWord" | "packageSize" | "name">): MatchWant | undefined {
   if (p.packageSize || p.unit?.kind === "mass") return undefined;
+  // "1 package of shredded swiss cheese": you'll enter the package weight, so any record will do.
+  if (p.unit?.kind === "count" && /^(?:package|packet|can|tin|jar|bag|box|carton|tub|bottle|pouch|container|block|envelope)$/.test(p.unit.noun)) return undefined;
   if (p.unit?.kind === "volume") return { volume: true };
   const words = [p.unit?.kind === "count" ? p.unit.noun : null, p.sizeWord].filter((w): w is string => Boolean(w));
   // "3 garlic cloves": the count word is the last word of the name. "1 red pepper" with no size: any whole-item size will do.
@@ -224,7 +265,7 @@ export interface QuantityChoice {
  * USDA sizes to choose from (you can always enter grams instead).
  */
 export function quantityFor(
-  p: Pick<ParsedIngredient, "amount" | "unit" | "sizeWord" | "packageSize" | "name">,
+  p: Pick<ParsedIngredient, "amount" | "unit" | "sizeWord" | "packageSize" | "name"> & { prep?: string | null },
   food: Food | null,
 ): { quantity: Quantity | null; problem: string | null; options: QuantityChoice[] } {
   const none = (problem: string, options: QuantityChoice[] = []) => ({ quantity: null, problem, options });
@@ -239,9 +280,13 @@ export function quantityFor(
       if (!r.ok && r.reason === "ambiguous") {
         // The recipe's own words pick the form ("ground cumin", "whole peppercorns"); black pepper
         // measured by the spoon is ground unless it says otherwise.
-        const hint = ["ground", "whole", "leaves", "leaf", "mashed", "chopped", "sliced", "diced", "minced", "shredded", "grated", "crushed"].find((w) => new RegExp(`\\b${w}\\b`, "i").test(p.name));
+        const hint = ["ground", "whole", "leaves", "leaf", "mashed", "whipped", "chopped", "sliced", "diced", "minced", "shredded", "grated", "crushed"].find((w) => new RegExp(`\\b${w}\\b`, "i").test(`${p.name} ${p.prep ?? ""}`) && r.options.some((o) => new RegExp(`\\b${w}`, "i").test(o.label)));
+        const words = `${p.name} ${p.prep ?? ""}`;
+        const want = hint ?? (/\bdiced\b/i.test(words) ? "chopped" : /\bdried\b/i.test(words) ? "leaves" : undefined);
         const pick =
-          (hint ? r.options.filter((o) => new RegExp(`\\b${hint}`, "i").test(o.label)) : []).at(0) ??
+          (want ? r.options.filter((o) => new RegExp(`\\b${want}`, "i").test(o.label)) : []).at(0) ??
+          // Cream by the cup is liquid unless the recipe says whipped.
+          (!/\bwhipped\b/i.test(p.name) ? r.options.find((o) => /\bfluid\b/i.test(o.label)) : undefined) ??
           (/\bpepper, black\b/i.test(food.description) ? r.options.find((o) => /\bground\b/i.test(o.label)) : undefined);
         if (pick) return { quantity: { kind: "volume", amount, unit: u.unit, portionLabel: pick.label }, problem: null, options: [] };
         return none(
