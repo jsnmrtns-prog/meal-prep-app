@@ -268,3 +268,23 @@ export function portionRecipe(recipe: Recipe, calc: CalcResult, yields: YieldDb)
     assumptions,
   };
 }
+
+/**
+ * Several recipes as one, for a combined shopping list: every ingredient line
+ * kept (IDs prefixed by the recipe's place in the list), steps dropped. Lines
+ * for the same USDA food and package then become one shopping item.
+ */
+export function combineRecipes(recipes: Recipe[]): Recipe {
+  return {
+    id: "shopping-list",
+    name: "Shopping list",
+    portions: 1,
+    steps: [],
+    lines: recipes.flatMap((r, k) =>
+      r.lines.map((l) => {
+        const { usedInSteps: _u, stepsInferred: _s, ...rest } = l;
+        return { ...rest, id: `${k}~${l.id}` };
+      }),
+    ),
+  };
+}

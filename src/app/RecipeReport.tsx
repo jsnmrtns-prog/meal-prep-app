@@ -28,6 +28,7 @@ import {
   type TradeoffOption,
 } from "../engine/index.ts";
 import { grams, imperial, weight } from "./format.ts";
+import { shareText, useShopping } from "./ShoppingScreen.tsx";
 import { useUserData } from "./store.tsx";
 import { BackLink, go, useEngine, type Engine } from "./ui.tsx";
 
@@ -231,6 +232,7 @@ export function RecipeReportScreen({ id, presetId }: { id: string; presetId: str
       <h2 className="food-title">{saved.favorite ? "★ " : ""}{recipe.name}</h2>
       <RecipeActions saved={saved} />
       <PresetPicker recipeId={saved.id} presetId={presetId} presets={settings.presets} />
+      <AddToList recipeId={saved.id} presetId={presetId} />
     </>
   );
   if (!view || !engine) return <>{header}<p className="lead">Calculating…</p></>;
@@ -359,6 +361,26 @@ function PlanView({ plan, engine, recipe, options }: { plan: OptimizedPlan; engi
   );
 }
 
+function AddToList({ recipeId, presetId }: { recipeId: string; presetId: string | null }): ReactElement {
+  const shop = useShopping();
+  const { settings } = useUserData();
+  const on = shop.has(recipeId);
+  const label = (id: string | null) => (id ? `${settings.presets.find((p) => p.id === id)?.kcal ?? "?"} kcal` : "original amounts");
+  if (on && on.presetId === presetId) {
+    return (
+      <div className="add-list add-list--on" data-testid="add-to-list">
+        <span>✓ On your shopping list ({label(presetId)})</span>
+        <button className="link-button" onClick={() => void shop.remove(recipeId)}>Remove</button>
+      </div>
+    );
+  }
+  return (
+    <button className="secondary-action add-list" data-testid="add-to-list" onClick={() => void shop.add(recipeId, presetId)}>
+      {on ? `Use ${label(presetId)} on the shopping list` : `Add to shopping list (${label(presetId)})`}
+    </button>
+  );
+}
+
 function Fold({ title, testId, children }: { title: string; testId: string; children: ReactNode }): ReactElement {
   return (
     <details className="more more--section fold" data-testid={testId}>
@@ -437,6 +459,23 @@ function CookView({ data, perMeal, notes, targets }: { data: Computed; perMeal: 
           ))}
           {!stepsDivide(recipe) && <li>Divide into <strong className="amt">{data.portioning.portions} containers</strong>, about {weight(data.portioning.perContainerGrams)} each. Weigh the finished batch for exact portions.</li>}
         </ol>
+      </div>
+      <div className="actions actions--center">
+        <button className="action" data-testid="share-recipe" onClick={() => {
+          const stepText = (st: (typeof steps)[number]) => st.parts.map((p) => (p.kind === "text" ? p.text : ` (${cookAmount(lineOf.get(p.lineId)!, gramsOf.get(p.lineId) ?? 0, true)})`)).join("") + (st.also.length ? ` Also: ${st.also.map((id) => `${lineOf.get(id)!.name} (${amt(id)})`).join(", ")}.` : "");
+          const text = [
+            recipe.name,
+            `Makes ${data.portioning.portions} containers, about ${weight(data.portioning.perContainerGrams)} each · ${r0(perMeal.kcal)} kcal · P ${r0(perMeal.protein)} g · C ${r0(perMeal.carbs)} g · F ${r0(perMeal.fat)} g per container`,
+            "",
+            "Ingredients",
+            ...recipe.lines.map((l) => `• ${l.name}: ${amt(l.id)}`),
+            "",
+            "Steps",
+            ...steps.map((st, i) => `${i + 1}. ${stepText(st)}`),
+            ...(stepsDivide(recipe) ? [] : [`${steps.length + 1}. Divide into ${data.portioning.portions} containers, about ${weight(data.portioning.perContainerGrams)} each.`]),
+          ].join("\n");
+          void shareText(recipe.name, text);
+        }}>Share recipe</button>
       </div>
     </section>
   );
@@ -616,7 +655,7 @@ function MacroRow({ label, unit, value, printed, digits = 1 }: { label: string; 
   );
 }
 
-function buyText(item: ShoppingItem): string {
+export function buyText(item: ShoppingItem): string {
   const b = item.buy;
   switch (b.kind) {
     case "package":

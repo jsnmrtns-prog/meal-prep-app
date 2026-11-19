@@ -30,6 +30,14 @@ export interface Settings {
   packages: PackageEntry[];
   labelFoods: SavedLabelFood[];
   onboarded: boolean;
+  /** The combined shopping list: which recipes (at which plan) are on it, and what's ticked off. */
+  shopping?: ShoppingSelection;
+}
+
+export interface ShoppingSelection {
+  entries: { recipeId: string; presetId: string | null }[];
+  /** Keys of items ticked off while shopping. */
+  checked: string[];
 }
 
 export interface RecipeVersion {
@@ -88,6 +96,30 @@ export function defaultSettings(): Settings {
     labelFoods: [],
     onboarded: false,
   };
+}
+
+/**
+ * A brand-new install: no meal plans, no ingredient preferences, no recipes.
+ * The first-run setup asks for calories, protein, carbs and meals and makes the
+ * first plan. (defaultSettings() is the spec's starting setup, used for demos and tests.)
+ */
+export function blankSettings(): Settings {
+  return {
+    profile: { allergies: [], customAllergens: [], preferences: [] },
+    presets: [],
+    defaultPresetId: "",
+    bounds: clone(DEFAULT_BOUNDS),
+    packages: clone(SEED_PACKAGES),
+    labelFoods: [],
+    onboarded: false,
+  };
+}
+
+/** The meal plan made by the first-run setup. */
+export function firstPreset(a: { kcal: number; protein: number; carbsMin: number | null; meals: number }): MacroPreset {
+  const p: MacroPreset = { id: "my-plan", name: "My Meal Prep", kcal: a.kcal, kcalTolerancePct: 2, protein: { grams: a.protein, mode: "minimum" }, meals: a.meals };
+  if (a.carbsMin !== null && a.carbsMin > 0) p.carbsMin = a.carbsMin;
+  return p;
 }
 
 /** A short random ID, e.g. "r-k3j9x2a7". */
@@ -256,6 +288,10 @@ export function settingsProblems(s: unknown): string[] {
     else checkLabelFood(x.food, `Label food ${i + 1}`, e);
   });
   if (typeof s.onboarded !== "boolean") e.push("Setup flag is damaged");
+  if (s.shopping !== undefined) {
+    const sh = s.shopping;
+    if (!isObj(sh) || !Array.isArray(sh.entries) || !sh.entries.every((x: unknown) => isObj(x) && isStr(x.recipeId) && (x.presetId === null || isStr(x.presetId))) || !isStrArr(sh.checked)) e.push("The shopping list is damaged");
+  }
   return e;
 }
 

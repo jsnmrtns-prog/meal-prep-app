@@ -25,6 +25,9 @@ import {
   type FoodDbFile,
   type Recipe,
   type UserProfile,
+  blankSettings,
+  firstPreset,
+  presetProblems,
 } from "../../src/engine/index.ts";
 
 const read = (p: string) => JSON.parse(readFileSync(new URL(p, import.meta.url), "utf8"));
@@ -135,4 +138,14 @@ test("newly linked USDA foods are added to your package entries without changing
   const rice = merged.find((p) => p.key === "white-rice-2lb")!;
   assert.deepEqual(rice.fdcIds, [168877, 169756, 2512381]);
   assert.equal(rice.verified, true);
+});
+
+test("a new device starts blank; the setup's plan is valid and a shopping list survives a backup check", () => {
+  const b = blankSettings();
+  assert.deepEqual([b.presets.length, b.profile.preferences.length, b.onboarded], [0, 0, false]);
+  const plan = firstPreset({ kcal: 700, protein: 60, carbsMin: 50, meals: 6 });
+  assert.deepEqual(presetProblems(plan), []);
+  const s = { ...b, presets: [plan], defaultPresetId: plan.id, onboarded: true, shopping: { entries: [{ recipeId: "x", presetId: "my-plan" }], checked: ["k"] } };
+  const r = checkBackup({ app: "meal-prep-app", schema: 1, exportedAt: "2026-01-01", engineVersion: "x", settings: s, recipes: [] });
+  assert.ok(r.ok, JSON.stringify(!r.ok && r.problems));
 });

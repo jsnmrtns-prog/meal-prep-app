@@ -79,7 +79,35 @@ async function check(name, fn) {
 }
 
 await mkdir(outDir, { recursive: true });
-await page.goto(url);
+
+// A new device opening the link: a blank start that asks for the first meal plan.
+await check("a new device starts blank: the setup makes your first meal plan, with no recipes or preferences", async () => {
+  const fresh = await browser.newContext({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true });
+  const p = await fresh.newPage();
+  try {
+    await p.goto(url);
+    await p.getByTestId("onboarding").waitFor();
+    await p.getByRole("button", { name: "Next" }).click();
+    await p.getByRole("button", { name: "No allergies, next" }).click();
+    await p.getByText("Your meal plan").waitFor();
+    assert.equal(await p.getByLabel("Calories per meal").inputValue(), "750");
+    await p.getByLabel("Calories per meal").fill("700");
+    await p.getByLabel("Protein per meal").fill("60");
+    await p.screenshot({ path: join(outDir, "onboarding-plan.png"), animations: "disabled" });
+    await p.getByRole("button", { name: "Start using the app" }).click();
+    await p.getByRole("button", { name: "Import a recipe" }).waitFor();
+    await p.getByText("700 kcal · at least 60 g protein · at least 50 g carbs · 6 meals", { exact: false }).waitFor();
+    await p.goto(`${url}#/recipes`);
+    await p.getByText("No recipes yet", { exact: false }).waitFor();
+    await p.goto(`${url}#/settings/preferences`);
+    assert.equal(await p.getByText("Light garlic").count(), 0, "no starting preferences");
+  } finally {
+    await fresh.close();
+  }
+});
+
+// The rest of the checks start from the demo setup (the spec's profile, two presets, two reference recipes).
+await page.goto(`${url}?seed=demo`);
 
 await check("first run shows setup, then the home screen", async () => {
   await page.getByTestId("onboarding").waitFor();
@@ -102,7 +130,7 @@ await check("all five tabs navigate", async () => {
   const tabs = [
     ["Import", "Import Recipe"],
     ["My Recipes", "My Recipes"],
-    ["Shopping", "Shopping Lists"],
+    ["Shopping", "Shopping List"],
     ["Settings", "Settings"],
     ["Home", "Meal Prep"],
   ];
@@ -518,6 +546,33 @@ await check("M6: the AI shortcut shows the prompt and checks a pasted AI reply",
   await page.getByTestId("import-error").getByText("No ingredients in the block.").waitFor();
 });
 
+await check("shopping list: add recipes at a plan, they combine into one list by section; tick items; remove", async () => {
+  await page.goto(`${url}#/shopping`);
+  await page.getByTestId("shopping-empty").waitFor();
+  await page.goto(`${url}#/recipes/teriyaki-chicken-fried-rice/higher-850`);
+  await page.getByTestId("add-to-list").getByText("Add to shopping list (850 kcal)").click();
+  await page.getByTestId("add-to-list").getByText("✓ On your shopping list (850 kcal)").waitFor();
+  await page.goto(`${url}#/recipes/taco-mac-n-cheese`);
+  await page.getByTestId("add-to-list").getByText("Add to shopping list (original amounts)").click();
+  await page.goto(`${url}#/shopping`);
+  const recipesCard = page.getByTestId("shopping-recipes");
+  await recipesCard.getByText("Teriyaki Chicken Fried Rice").waitFor();
+  await recipesCard.getByText("850 kcal · 6 containers", { exact: false }).waitFor();
+  await recipesCard.getByText("Taco Mac N Cheese").waitFor();
+  const items = page.getByTestId("shopping-items");
+  await items.getByText("Meat & seafood").waitFor();
+  const rows = await items.locator(".shop-row").count();
+  assert.ok(rows >= 6, `${rows} items`);
+  await items.locator(".shop-row input").first().click();
+  await items.getByText(/^To buy \(1 of/).waitFor();
+  await page.screenshot({ path: join(outDir, "shopping.png"), animations: "disabled", fullPage: true });
+  await page.goto(`${url}#/home`);
+  await page.getByText("2 recipes on your list").waitFor();
+  await page.goto(`${url}#/shopping`);
+  await recipesCard.getByRole("button", { name: "Remove Taco Mac N Cheese" }).click();
+  await recipesCard.getByText("Taco Mac N Cheese").waitFor({ state: "detached" });
+});
+
 await check("manifest is valid for Home Screen install", async () => {
   const res = await page.request.get(`${url}manifest.webmanifest`);
   assert.equal(res.status(), 200);
@@ -547,7 +602,7 @@ await check("service worker installs and the app opens offline", async () => {
   await page.reload();
   await page.getByRole("heading", { level: 1, name: "Meal Prep" }).waitFor({ timeout: 5000 });
   await page.goto(`${url}#/shopping`);
-  await page.getByRole("heading", { level: 1, name: "Shopping Lists" }).waitFor({ timeout: 5000 });
+  await page.getByRole("heading", { level: 1, name: "Shopping List" }).waitFor({ timeout: 5000 });
   await page.goto(`${url}#/foods/171077`);
   await page.getByText("120 kcal").waitFor({ timeout: 5000 });
   await context.setOffline(false);

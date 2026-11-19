@@ -2,6 +2,7 @@
 // Nothing leaves the phone unless you export a backup yourself.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
 import {
+  blankSettings,
   defaultSettings,
   duplicateSavedRecipe,
   makeBackup,
@@ -64,10 +65,12 @@ async function loadEverything(): Promise<{ settings: Settings; recipes: SavedRec
   ]);
   db.close();
   if (!stored) {
-    // First run: your starting profile, the two presets and your reference recipes.
-    const settings = defaultSettings();
+    // First run: a blank start (the setup makes your first meal plan). "?seed=demo" in the address
+    // starts with the spec's profile, two presets and the two reference recipes instead (for testing).
+    const demo = typeof location !== "undefined" && new URLSearchParams(location.search).get("seed") === "demo";
+    const settings = demo ? defaultSettings() : blankSettings();
     const now = new Date();
-    const recipes = REFERENCE_RECIPES.map((r) => newSavedRecipe(r, "reference", now));
+    const recipes = demo ? REFERENCE_RECIPES.map((r) => newSavedRecipe(r, "reference", now)) : [];
     await write((kv, rs) => {
       kv.put(settings, SETTINGS_KEY);
       for (const r of recipes) rs.put(r);

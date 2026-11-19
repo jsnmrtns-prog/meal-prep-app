@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState, type ReactElement } from "react";
-import { ENGINE_VERSION, MAJOR_ALLERGENS, describePreset, type Allergen } from "../engine/index.ts";
+import { ENGINE_VERSION, MAJOR_ALLERGENS, describePreset, firstPreset, type Allergen } from "../engine/index.ts";
 import { HomeIcon, ImportIcon, RecipesIcon, SettingsIcon, ShoppingIcon } from "./icons.tsx";
 import { FoodDetailScreen, FoodSearchScreen } from "./FoodLookup.tsx";
 import { loadFoodDb } from "./foodData.ts";
 import { BookScreen, ImportReviewScreen, ImportScreen } from "./ImportScreens.tsx";
 import { RecipeEditorScreen } from "./RecipeEditor.tsx";
+import { ShoppingScreen } from "./ShoppingScreen.tsx";
 import { RecipeLibrary, RecipeReportScreen, RecipeVersionsScreen } from "./RecipeReport.tsx";
 import {
   ALLERGEN_LABEL,
@@ -20,7 +21,7 @@ import {
   SettingsMenu,
 } from "./SettingsScreens.tsx";
 import { UserDataProvider, useUserData } from "./store.tsx";
-import { Empty, LinkRow, Row, Section, go } from "./ui.tsx";
+import { Empty, Field, LinkRow, NumberInput, Row, Section, go } from "./ui.tsx";
 import {
   formatBytes,
   getStorageStatus,
@@ -37,7 +38,7 @@ const TABS: ReadonlyArray<{ id: TabId; label: string; title: string; Icon: () =>
   { id: "home", label: "Home", title: "Meal Prep", Icon: HomeIcon },
   { id: "import", label: "Import", title: "Import Recipe", Icon: ImportIcon },
   { id: "recipes", label: "My Recipes", title: "My Recipes", Icon: RecipesIcon },
-  { id: "shopping", label: "Shopping", title: "Shopping Lists", Icon: ShoppingIcon },
+  { id: "shopping", label: "Shopping", title: "Shopping List", Icon: ShoppingIcon },
   { id: "settings", label: "Settings", title: "Settings", Icon: SettingsIcon },
 ];
 
@@ -219,8 +220,10 @@ function HomeScreen(): ReactElement {
           <LinkRow key={p.id} href={`#/settings/presets/${p.id}`} label={<>{p.name}<span className="row__sub">{describePreset(p)} · ±{p.kcalTolerancePct}%</span></>} />
         ))}
       </Section>
-      <Section title="Current shopping list">
-        <Empty milestone="M7">Your latest shopping list will show up here.</Empty>
+      <Section title="Shopping list">
+        {(settings.shopping?.entries.length ?? 0) === 0
+          ? <Empty>Add recipes from their page to build one list for the week.</Empty>
+          : <LinkRow href="#/shopping" label={<>{settings.shopping!.entries.length} {settings.shopping!.entries.length === 1 ? "recipe" : "recipes"} on your list<span className="row__sub">Tap to see what to buy</span></>} />}
       </Section>
     </>
   );
@@ -230,8 +233,21 @@ function Onboarding(): ReactElement {
   const { settings, saveSettings } = useUserData();
   const [step, setStep] = useState(0);
   const [allergies, setAllergies] = useState<Allergen[]>(settings.profile.allergies);
+  // A blank start asks for the first meal plan; a demo start already has its presets.
+  const needsPlan = settings.presets.length === 0;
+  const [kcal, setKcal] = useState<number | null>(750);
+  const [protein, setProtein] = useState<number | null>(75);
+  const [carbs, setCarbs] = useState<number | null>(50);
+  const [meals, setMeals] = useState<number | null>(6);
+  const planOk = !needsPlan || (kcal !== null && kcal >= 100 && protein !== null && protein >= 0 && meals !== null && Number.isInteger(meals) && meals >= 1 && (carbs === null || carbs >= 0) && 4 * protein + 4 * (carbs ?? 0) <= kcal * 1.05);
   const finish = async () => {
-    await saveSettings({ ...settings, profile: { ...settings.profile, allergies }, onboarded: true });
+    const plan = needsPlan ? firstPreset({ kcal: kcal!, protein: protein!, carbsMin: carbs, meals: meals! }) : null;
+    await saveSettings({
+      ...settings,
+      profile: { ...settings.profile, allergies },
+      ...(plan ? { presets: [plan], defaultPresetId: plan.id } : {}),
+      onboarded: true,
+    });
     void requestPersistentStorage();
   };
   return (
@@ -260,7 +276,21 @@ function Onboarding(): ReactElement {
           <button className="primary-action" onClick={() => setStep(2)}>{allergies.length === 0 ? "No allergies, next" : "Next"}</button>
         </>
       )}
-      {step === 2 && (
+      {step === 2 && needsPlan && (
+        <>
+          <h2 className="food-title">Your meal plan</h2>
+          <p className="lead">What each container should give you. Recipes are scaled to this. You can add more plans, like a higher-calorie one, in Settings.</p>
+          <div className="card card--form" data-testid="first-plan">
+            <Field label="Calories per meal"><NumberInput label="Calories per meal" value={kcal} onChange={setKcal} /></Field>
+            <Field label="Protein per meal, at least (g)"><NumberInput label="Protein per meal" value={protein} onChange={setProtein} /></Field>
+            <Field label="Carbs per meal, at least (g)" hint="About 45 g is 1 cup of cooked white rice. Leave empty for no minimum."><NumberInput label="Carbs per meal" value={carbs} onChange={setCarbs} /></Field>
+            <Field label="Meals per batch"><NumberInput label="Meals per batch" inputMode="numeric" value={meals} onChange={setMeals} /></Field>
+          </div>
+          {!planOk && <p className="warning">Check the numbers: protein and carbs can't add up to more calories than the meal has.</p>}
+          <button className="primary-action" disabled={!planOk} onClick={() => void finish()}>Start using the app</button>
+        </>
+      )}
+      {step === 2 && !needsPlan && (
         <>
           <h2 className="food-title">Your starting setup</h2>
           <Section title="Macro presets">
@@ -274,14 +304,6 @@ function Onboarding(): ReactElement {
         </>
       )}
     </div>
-  );
-}
-
-function ShoppingScreen(): ReactElement {
-  return (
-    <Section title="Lists">
-      <Empty milestone="M7">Shopping lists built from one or more saved recipes.</Empty>
-    </Section>
   );
 }
 
