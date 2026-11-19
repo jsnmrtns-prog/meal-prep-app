@@ -227,7 +227,7 @@ export function PresetEditorScreen({ id }: { id: string }): ReactElement {
             setP(next);
             setSaved(false);
           }} />
-          Set a {label} target
+          Set an exact {label} target{key === "carbs" && p.carbsMin !== undefined ? " (replaces the minimum)" : ""}
         </label>
         {t && (
           <div className="field-row">
@@ -256,11 +256,28 @@ export function PresetEditorScreen({ id }: { id: string }): ReactElement {
             <Field label="Protein per meal (g)"><NumberInput label="Protein grams" value={p.protein.grams} onChange={(v) => upd({ protein: { ...p.protein, grams: v ?? 0 } })} /></Field>
             <Field label="Protein is">
               <select className="input" aria-label="Protein mode" value={p.protein.mode} onChange={(e) => upd({ protein: e.target.value === "exact" ? { grams: p.protein.grams, mode: "exact", tolerancePct: p.protein.tolerancePct ?? 2 } : { grams: p.protein.grams, mode: "minimum" } })}>
-                <option value="minimum">A minimum (up to 5 g more)</option>
+                <option value="minimum">A minimum</option>
                 <option value="exact">Exact (within ±%)</option>
               </select>
             </Field>
           </div>
+          {p.protein.mode === "minimum" && (
+            <Field label="Protein up to (g)" hint="The most protein a meal may have. Leave empty for 5 g over the minimum.">
+              <NumberInput label="Protein up to" value={p.protein.max ?? null} onChange={(v) => {
+                const { max: _m, ...rest } = p.protein;
+                upd({ protein: v === null ? rest : { ...rest, max: v } });
+              }} />
+            </Field>
+          )}
+          {!p.carbs && (
+            <Field label="Carbs at least (g per meal)" hint="About 45 g is 1 cup of cooked white rice. Leave empty for no minimum.">
+              <NumberInput label="Carbs at least" value={p.carbsMin ?? null} onChange={(v) => {
+                const { carbsMin: _c, ...rest } = p;
+                setP(v === null ? rest : { ...rest, carbsMin: v });
+                setSaved(false);
+              }} />
+            </Field>
+          )}
           {p.protein.mode === "exact" && (
             <Field label="Protein within ±%"><NumberInput label="Protein tolerance" value={p.protein.tolerancePct ?? 2} onChange={(v) => upd({ protein: { ...p.protein, tolerancePct: v ?? 0 } })} /></Field>
           )}

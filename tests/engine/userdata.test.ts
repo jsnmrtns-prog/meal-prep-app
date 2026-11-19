@@ -62,7 +62,7 @@ test("damaged backups are rejected with plain reasons", () => {
   const r = checkBackup(bad);
   assert.equal(r.ok, false);
   const text = (r as { problems: string[] }).problems.join(" | ");
-  assert.match(text, /Preset 1: 75 g protein alone/);
+  assert.match(text, /Preset 1: 75 g protein \+ 50 g carbs alone/);
   assert.match(text, /limits for carb are invalid/);
   assert.match(text, /ingredient 1: amount must be zero or more/);
   assert.match(text, /ingredient 2: unknown role/);

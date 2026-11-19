@@ -26,6 +26,7 @@ import { calculateRecipe, type CalcResult } from "./calculate.ts";
 import type { FoodDb } from "./fooddb.ts";
 import {
   kcalRange,
+  carbsRange,
   optionalRange,
   presetProblems,
   proteinRange,
@@ -67,6 +68,8 @@ export interface TargetResult {
   range: TargetRange;
   value: number;
   ok: boolean;
+  /** A floor only (the carb minimum): show "at least", not a range. */
+  atLeast?: true;
 }
 
 export interface LineChange {
@@ -203,6 +206,7 @@ function aimSets(preset: MacroPreset): Equation[][] {
   const pr = proteinRange(preset);
   const c = optionalRange(preset.carbs);
   const f = optionalRange(preset.fat);
+  const floor = !c ? carbsRange(preset) : null;
   const proteinAims = preset.protein.mode === "minimum" ? [pr.aim, pr.min + 0.5, pr.min + 0.2] : [pr.aim];
   const halfK = (k.max - k.aim) / 2;
   const kcalAims = [k.aim, k.aim + halfK, k.aim - halfK, k.aim + 1.8 * halfK, k.aim - 1.8 * halfK];
@@ -217,6 +221,13 @@ function aimSets(preset: MacroPreset): Equation[][] {
       sets.push(eqs);
     }
     if (c && f) break;
+  }
+  // A carb floor: first try without it (often the carbs land above it anyway);
+  // then hold the carbs just above the floor and let the fats make room.
+  if (floor && !f) {
+    for (const kcal of kcalAims) for (const protein of proteinAims) {
+      sets.push([{ key: "protein", aim: protein }, { key: "carbs", aim: floor.aim }, { key: "kcal", aim: kcal }]);
+    }
   }
   return sets;
 }
@@ -353,7 +364,8 @@ function targetResults(perMeal: Macros, preset: MacroPreset): TargetResult[] {
   };
   add("kcal", "Calories", kcalRange(preset));
   add("protein", "Protein", proteinRange(preset));
-  add("carbs", "Carbs", optionalRange(preset.carbs));
+  add("carbs", "Carbs", carbsRange(preset));
+  if (!preset.carbs && rows.at(-1)?.key === "carbs") rows.at(-1)!.atLeast = true;
   add("fat", "Fat", optionalRange(preset.fat));
   return rows;
 }
@@ -416,6 +428,15 @@ function diagnose(p: Prepared, preset: MacroPreset, model: Model, eqs: Equation[
       conflicts.push(`Reaching ${preset.kcal} kcal would take ${times(g.carb)} the original ${names(p, "carb")} per meal, more than the ${times(bounds.carb.max)} limit${present.has("fat") ? ", even with the oils at their maximum" : ""}.`);
     }
   }
+  if (conflicts.length === 0 && preset.carbsMin && !preset.carbs && present.has("carb")) {
+    const floor = carbsRange(preset)!;
+    const eqs3: Equation[] = [{ key: "protein", aim: proteinRange(preset).aim }, { key: "carbs", aim: floor.aim }, { key: "kcal", aim: kcalRange(preset).aim }];
+    const c3 = present.has("fat") ? candidatesFor(3, bounds, present)[0] : undefined;
+    const g = c3 ? solveCandidate(model, eqs3, c3) : null;
+    if (!g || g.fat < bounds.fat.min) {
+      conflicts.push(`With ${proteinText} protein from the ${names(p, "protein")}, there isn't room for at least ${preset.carbsMin} g carbs within ${preset.kcal} kcal${present.has("fat") ? ", even with the oils at their minimum" : ""}.`);
+    }
+  }
   if (conflicts.length === 0) conflicts.push(`No combination of ${LEVERS.filter((l) => present.has(l)).map((l) => names(p, l)).join("; ")} within the limits meets every target.`);
   return { conflicts };
 }
@@ -428,7 +449,14 @@ function attempt(recipe: Recipe, preset: MacroPreset, db: FoodDb, bounds: Bounds
   const sets = aimSets(preset);
   const model1 = modelFrom(p, () => true);
 
-  for (const eqs of sets) for (const cand of candidatesFor(eqs.length, bounds, present)) {
+  // With a carb floor, try in this order: fats as in the recipe; then carbs held at the floor
+  // with the fats trimmed just enough; only then fats at a limit or carbs at a limit.
+  let pairs = sets.flatMap((eqs) => candidatesFor(eqs.length, bounds, present).map((cand) => ({ eqs, cand })));
+  if (preset.carbsMin && !preset.carbs) {
+    const rank = (x: { eqs: Equation[]; cand: Candidate }) => (x.eqs.length === 2 && x.cand.hold.fat === 1 ? 0 : x.eqs.some((e) => e.key === "carbs") ? 1 : 2);
+    pairs = pairs.map((x, i) => ({ x, i })).sort((a, b) => rank(a.x) - rank(b.x) || a.i - b.i).map(({ x }) => x);
+  }
+  for (const { eqs, cand } of pairs) {
     const f1 = solveCandidate(model1, eqs, cand);
     if (!f1 || !withinBounds(f1, cand, bounds, present)) continue;
 
@@ -470,7 +498,9 @@ function attempt(recipe: Recipe, preset: MacroPreset, db: FoodDb, bounds: Bounds
       stepNotes.push(`Divide into ${preset.meals} containers (the original recipe makes ${recipe.portions} servings).`);
     }
     for (const c of changes) if (c.swappedFrom) stepNotes.push(`Use ${c.name} wherever the steps say ${c.swappedFrom}.`);
-    return { plan: { recipe: final, calc, preset, perMeal, targets, changes, bigChange, stepNotes, method: cand.label } };
+    const floorHeld = !preset.carbs && eqs.some((e) => e.key === "carbs");
+    const method = floorHeld ? `protein adjusted; carbs held at your ${preset.carbsMin} g minimum; fats adjusted to fit the calories` : cand.label;
+    return { plan: { recipe: final, calc, preset, perMeal, targets, changes, bigChange, stepNotes, method } };
   }
   return { diagnosis: diagnose(p, preset, model1, sets[0]!, bounds, present) };
 }

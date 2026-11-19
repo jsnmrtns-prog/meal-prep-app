@@ -378,7 +378,7 @@ function TargetRow({ t }: { t: TargetResult }): ReactElement {
     <div className="row" data-testid={`target-${t.key}`}>
       <span className="row__label">
         {t.label}
-        <span className="row__sub">Target {r1(t.range.min)}–{r1(t.range.max)} {unit}</span>
+        <span className="row__sub">{t.atLeast ? `At least ${r1(t.range.min)} ${unit}` : `Target ${r1(t.range.min)}–${r1(t.range.max)} ${unit}`}</span>
       </span>
       <span className="row__value">
         {v} {unit} <span className={`badge badge--${t.ok ? "good" : "bad"}`}>{t.ok ? "Met" : "Missed"}</span>

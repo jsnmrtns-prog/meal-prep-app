@@ -302,18 +302,30 @@ export function withSeedPackages(packages: PackageEntry[]): PackageEntry[] {
   return [...merged, ...clone(SEED_PACKAGES).filter((p) => !keys.has(p.key))];
 }
 
-/** The old default upper limit (2½×), replaced by 5× in version 0.7.1. */
+/** Earlier default limits: ½×–2½× until 0.7.1, ½×–5× until 0.7.3. */
 const OLD_DEFAULTS: { min: number; max: number }[] = [{ min: 0.5, max: 2.5 }, { min: 0.5, max: 5 }];
 
 /**
  * Brings saved settings up to date: adds new seed packages, and moves limits
  * still at the old ½×–2½× default to the new default. Limits you changed stay.
  */
+/** The two starting presets as they were before carb minimums (0.7.3). */
+const OLD_PRESETS: MacroPreset[] = [
+  { id: "standard-750", name: "Standard Meal Prep", kcal: 750, kcalTolerancePct: 2, protein: { grams: 75, mode: "minimum" }, meals: 6 },
+  { id: "higher-850", name: "Higher Calorie Meal Prep", kcal: 850, kcalTolerancePct: 2, protein: { grams: 75, mode: "minimum" }, meals: 6 },
+];
+
 export function upgradeSettings(s: Settings): Settings {
+  // A starting preset nobody changed picks up the new carb minimum (and protein range).
+  const presets = s.presets.map((p) => {
+    const old = OLD_PRESETS.find((o) => o.id === p.id);
+    const now = DEFAULT_PRESETS.find((d) => d.id === p.id);
+    return old && now && JSON.stringify(p) === JSON.stringify(old) ? clone(now) : p;
+  });
   const bounds = clone(s.bounds);
   for (const lever of ["protein", "carb", "fat"] as const) {
     const b = bounds[lever];
     if (b && OLD_DEFAULTS.some((o) => o.min === b.min && o.max === b.max)) bounds[lever] = { ...DEFAULT_BOUNDS[lever] };
   }
-  return { ...s, bounds, packages: withSeedPackages(s.packages) };
+  return { ...s, presets, bounds, packages: withSeedPackages(s.packages) };
 }

@@ -1,15 +1,7 @@
 {
  "source": "scripts/golden_optimizer.py (independent of the TypeScript engine)",
  "plans": {
-  "teriyaki-chicken-fried-rice/standard-750/plan": {
-   "perMeal": {
-    "kcal": 749.9200000000002,
-    "protein": 75.99069999999999,
-    "carbs": 30.177658333333337,
-    "fat": 32.866725
-   }
-  },
-  "teriyaki-chicken-fried-rice/standard-750/alternative/Use chicken breast instead of thighs": {
+  "teriyaki-chicken-fried-rice/standard-750/option/Use chicken breast instead of thighs": {
    "perMeal": {
     "kcal": 749.6616666666667,
     "protein": 75.98,
@@ -17,12 +9,28 @@
     "fat": 12.921241666666667
    }
   },
+  "teriyaki-chicken-fried-rice/standard-750/option/Change to 780 kcal per meal": {
+   "perMeal": {
+    "kcal": 793.8233333333334,
+    "protein": 75.197,
+    "carbs": 50.93875833333334,
+    "fat": 28.555925000000002
+   }
+  },
+  "teriyaki-chicken-fried-rice/standard-750/option/Lower protein to 71 g per meal": {
+   "perMeal": {
+    "kcal": 763.4016666666666,
+    "protein": 71.21504999999999,
+    "carbs": 51.033775,
+    "fat": 26.987025000000003
+   }
+  },
   "teriyaki-chicken-fried-rice/higher-850/plan": {
    "perMeal": {
-    "kcal": 849.995,
-    "protein": 75.99718333333333,
-    "carbs": 55.87270833333334,
-    "fat": 32.22942500000001
+    "kcal": 865.4866666666668,
+    "protein": 75.51303333333333,
+    "carbs": 60.79432499999999,
+    "fat": 31.92505833333334
    }
   },
   "teriyaki-chicken-fried-rice/higher-850/alternative/Use chicken breast instead of thighs": {

@@ -2,749 +2,15 @@
  "source": "scripts/export-optimized.ts",
  "plans": [
   {
-   "key": "teriyaki-chicken-fried-rice/standard-750/plan",
-   "kind": "plan",
-   "title": "",
-   "preset": {
-    "id": "standard-750",
-    "name": "Standard Meal Prep",
-    "kcal": 750,
-    "kcalTolerancePct": 2,
-    "protein": {
-     "grams": 75,
-     "mode": "minimum"
-    },
-    "meals": 6
-   },
-   "bounds": {
-    "protein": {
-     "min": 0.05,
-     "max": 10
-    },
-    "carb": {
-     "min": 0.05,
-     "max": 10
-    },
-    "fat": {
-     "min": 0.05,
-     "max": 10
-    }
-   },
-   "original": {
-    "portions": 5,
-    "lines": [
-     {
-      "id": "garlic",
-      "group": "Teriyaki Sauce",
-      "name": "garlic cloves, minced",
-      "food": {
-       "kind": "usda",
-       "fdcId": 169230
-      },
-      "quantity": {
-       "kind": "count",
-       "amount": 1.5,
-       "portionLabel": "clove"
-      },
-      "state": "raw",
-      "role": "seasoning",
-      "assumptions": [
-       "Clove size not given; USDA's 3 g clove used."
-      ],
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "soy-sauce",
-      "group": "Teriyaki Sauce",
-      "name": "soy sauce",
-      "food": {
-       "kind": "usda",
-       "fdcId": 174277
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 60,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "brown-sugar",
-      "group": "Teriyaki Sauce",
-      "name": "zero-calorie brown sugar",
-      "food": {
-       "kind": "builtin",
-       "id": "zero_calorie_sweetener"
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 24,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "mirin",
-      "group": "Teriyaki Sauce",
-      "name": "mirin",
-      "food": {
-       "kind": "usda",
-       "fdcId": 167723
-      },
-      "substituteFor": "mirin",
-      "quantity": {
-       "kind": "mass",
-       "amount": 60,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "note": "Sake stands in for mirin; it understates mirin's sugar.",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "cornstarch",
-      "group": "Teriyaki Sauce",
-      "name": "cornstarch",
-      "food": {
-       "kind": "usda",
-       "fdcId": 169698
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 8,
-       "unit": "g"
-      },
-      "state": "dry",
-      "role": "sauce",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "slurry-water",
-      "group": "Teriyaki Sauce",
-      "name": "cold water",
-      "food": {
-       "kind": "builtin",
-       "id": "water"
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 15,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "other",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "chicken",
-      "group": "Teriyaki Chicken",
-      "name": "boneless skinless chicken thighs",
-      "food": {
-       "kind": "usda",
-       "fdcId": 2646171
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 710,
-       "unit": "g"
-      },
-      "state": "raw",
-      "role": "protein",
-      "usedInSteps": [
-       2,
-       3
-      ],
-      "cook": {
-       "kind": "yield",
-       "yieldId": "cook-5094",
-       "match": "closest"
-      }
-     },
-     {
-      "id": "fish-sauce",
-      "group": "Teriyaki Chicken",
-      "name": "fish sauce",
-      "food": {
-       "kind": "usda",
-       "fdcId": 174531
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 5,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "usedInSteps": [
-       2
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "avocado-oil",
-      "group": "Teriyaki Chicken",
-      "name": "avocado oil",
-      "food": {
-       "kind": "usda",
-       "fdcId": 173573
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 15,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "fat",
-      "usedInSteps": [
-       2
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "rice",
-      "group": "Fried Rice",
-      "name": "white rice",
-      "food": {
-       "kind": "usda",
-       "fdcId": 168877
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 300,
-       "unit": "g"
-      },
-      "state": "dry",
-      "role": "carb",
-      "usedInSteps": [
-       4,
-       5
-      ],
-      "cook": {
-       "kind": "yield",
-       "yieldId": "hydrate-rice-white-long-grain",
-       "match": "exact"
-      }
-     },
-     {
-      "id": "veggies",
-      "group": "Fried Rice",
-      "name": "mixed frozen vegetables",
-      "food": {
-       "kind": "usda",
-       "fdcId": 170471
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 300,
-       "unit": "g"
-      },
-      "state": "frozen",
-      "role": "vegetable",
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "eggs",
-      "group": "Fried Rice",
-      "name": "eggs",
-      "food": {
-       "kind": "usda",
-       "fdcId": 171287
-      },
-      "quantity": {
-       "kind": "count",
-       "amount": 2,
-       "portionLabel": "large"
-      },
-      "state": "raw",
-      "role": "protein",
-      "assumptions": [
-       "Egg size not given; large eggs (50 g each) assumed."
-      ],
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "egg-whites",
-      "group": "Fried Rice",
-      "name": "egg whites",
-      "food": {
-       "kind": "usda",
-       "fdcId": 323697
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 200,
-       "unit": "g"
-      },
-      "state": "raw",
-      "role": "protein",
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "sesame-oil",
-      "group": "Fried Rice",
-      "name": "sesame oil (drizzle)",
-      "food": {
-       "kind": "usda",
-       "fdcId": 171016
-      },
-      "quantity": {
-       "kind": "volume",
-       "amount": 1,
-       "unit": "tsp"
-      },
-      "state": "as_packaged",
-      "role": "fat",
-      "assumptions": [
-       "Recipe says \"drizzle\"; 1 tsp assumed."
-      ],
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "soy-drizzle",
-      "group": "Fried Rice",
-      "name": "soy sauce (drizzle)",
-      "food": {
-       "kind": "usda",
-       "fdcId": 174277
-      },
-      "quantity": {
-       "kind": "volume",
-       "amount": 1,
-       "unit": "tbsp"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "assumptions": [
-       "Recipe says \"drizzle\"; 1 Tbsp assumed."
-      ],
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     }
-    ]
-   },
-   "recipe": {
-    "portions": 6,
-    "lines": [
-     {
-      "id": "garlic",
-      "group": "Teriyaki Sauce",
-      "name": "garlic cloves, minced",
-      "food": {
-       "kind": "usda",
-       "fdcId": 169230
-      },
-      "quantity": {
-       "kind": "count",
-       "amount": 2,
-       "portionLabel": "clove"
-      },
-      "state": "raw",
-      "role": "seasoning",
-      "assumptions": [
-       "Clove size not given; USDA's 3 g clove used."
-      ],
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "soy-sauce",
-      "group": "Teriyaki Sauce",
-      "name": "soy sauce",
-      "food": {
-       "kind": "usda",
-       "fdcId": 174277
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 72,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "brown-sugar",
-      "group": "Teriyaki Sauce",
-      "name": "zero-calorie brown sugar",
-      "food": {
-       "kind": "builtin",
-       "id": "zero_calorie_sweetener"
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 29,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "mirin",
-      "group": "Teriyaki Sauce",
-      "name": "mirin",
-      "food": {
-       "kind": "usda",
-       "fdcId": 167723
-      },
-      "substituteFor": "mirin",
-      "quantity": {
-       "kind": "mass",
-       "amount": 72,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "note": "Sake stands in for mirin; it understates mirin's sugar.",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "cornstarch",
-      "group": "Teriyaki Sauce",
-      "name": "cornstarch",
-      "food": {
-       "kind": "usda",
-       "fdcId": 169698
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 9.5,
-       "unit": "g"
-      },
-      "state": "dry",
-      "role": "sauce",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "slurry-water",
-      "group": "Teriyaki Sauce",
-      "name": "cold water",
-      "food": {
-       "kind": "builtin",
-       "id": "water"
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 18,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "other",
-      "usedInSteps": [
-       1
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "chicken",
-      "group": "Teriyaki Chicken",
-      "name": "boneless skinless chicken thighs",
-      "food": {
-       "kind": "usda",
-       "fdcId": 2646171
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 1839,
-       "unit": "g"
-      },
-      "state": "raw",
-      "role": "protein",
-      "usedInSteps": [
-       2,
-       3
-      ],
-      "cook": {
-       "kind": "yield",
-       "yieldId": "cook-5094",
-       "match": "closest"
-      }
-     },
-     {
-      "id": "fish-sauce",
-      "group": "Teriyaki Chicken",
-      "name": "fish sauce",
-      "food": {
-       "kind": "usda",
-       "fdcId": 174531
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 6,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "usedInSteps": [
-       2
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "avocado-oil",
-      "group": "Teriyaki Chicken",
-      "name": "avocado oil",
-      "food": {
-       "kind": "usda",
-       "fdcId": 173573
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 18,
-       "unit": "g"
-      },
-      "state": "as_packaged",
-      "role": "fat",
-      "usedInSteps": [
-       2
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "rice",
-      "group": "Fried Rice",
-      "name": "white rice",
-      "food": {
-       "kind": "usda",
-       "fdcId": 168877
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 135,
-       "unit": "g"
-      },
-      "state": "dry",
-      "role": "carb",
-      "usedInSteps": [
-       4,
-       5
-      ],
-      "cook": {
-       "kind": "yield",
-       "yieldId": "hydrate-rice-white-long-grain",
-       "match": "exact"
-      }
-     },
-     {
-      "id": "veggies",
-      "group": "Fried Rice",
-      "name": "mixed frozen vegetables",
-      "food": {
-       "kind": "usda",
-       "fdcId": 170471
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 360,
-       "unit": "g"
-      },
-      "state": "frozen",
-      "role": "vegetable",
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "eggs",
-      "group": "Fried Rice",
-      "name": "eggs",
-      "food": {
-       "kind": "usda",
-       "fdcId": 171287
-      },
-      "quantity": {
-       "kind": "count",
-       "amount": 5,
-       "portionLabel": "large"
-      },
-      "state": "raw",
-      "role": "protein",
-      "assumptions": [
-       "Egg size not given; large eggs (50 g each) assumed."
-      ],
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "egg-whites",
-      "group": "Fried Rice",
-      "name": "egg whites",
-      "food": {
-       "kind": "usda",
-       "fdcId": 323697
-      },
-      "quantity": {
-       "kind": "mass",
-       "amount": 518,
-       "unit": "g"
-      },
-      "state": "raw",
-      "role": "protein",
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "sesame-oil",
-      "group": "Fried Rice",
-      "name": "sesame oil (drizzle)",
-      "food": {
-       "kind": "usda",
-       "fdcId": 171016
-      },
-      "quantity": {
-       "kind": "volume",
-       "amount": 1.25,
-       "unit": "tsp"
-      },
-      "state": "as_packaged",
-      "role": "fat",
-      "assumptions": [
-       "Recipe says \"drizzle\"; 1 tsp assumed."
-      ],
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     },
-     {
-      "id": "soy-drizzle",
-      "group": "Fried Rice",
-      "name": "soy sauce (drizzle)",
-      "food": {
-       "kind": "usda",
-       "fdcId": 174277
-      },
-      "quantity": {
-       "kind": "volume",
-       "amount": 1.25,
-       "unit": "tbsp"
-      },
-      "state": "as_packaged",
-      "role": "sauce",
-      "assumptions": [
-       "Recipe says \"drizzle\"; 1 Tbsp assumed."
-      ],
-      "usedInSteps": [
-       5
-      ],
-      "cook": {
-       "kind": "unchanged"
-      }
-     }
-    ]
-   },
-   "method": "protein and carbs adjusted; fats as in the original"
+   "key": "teriyaki-chicken-fried-rice/standard-750/conflict",
+   "kind": "conflict",
+   "conflicts": [
+    "With at least 75 g protein from the boneless skinless chicken thighs, eggs and egg whites, there isn't room for at least 50 g carbs within 750 kcal, even with the oils at their minimum."
+   ]
   },
   {
-   "key": "teriyaki-chicken-fried-rice/standard-750/alternative/Use chicken breast instead of thighs",
-   "kind": "alternative",
+   "key": "teriyaki-chicken-fried-rice/standard-750/option/Use chicken breast instead of thighs",
+   "kind": "option",
    "title": "Use chicken breast instead of thighs",
    "preset": {
     "id": "standard-750",
@@ -755,6 +21,7 @@
      "grams": 75,
      "mode": "minimum"
     },
+    "carbsMin": 50,
     "meals": 6
    },
    "bounds": {
@@ -1484,18 +751,19 @@
    "method": "protein and carbs adjusted; fats as in the original"
   },
   {
-   "key": "teriyaki-chicken-fried-rice/higher-850/plan",
-   "kind": "plan",
-   "title": "",
+   "key": "teriyaki-chicken-fried-rice/standard-750/option/Change to 780 kcal per meal",
+   "kind": "option",
+   "title": "Change to 780 kcal per meal",
    "preset": {
-    "id": "higher-850",
-    "name": "Higher Calorie Meal Prep",
-    "kcal": 850,
+    "id": "standard-750",
+    "name": "Standard Meal Prep",
+    "kcal": 780,
     "kcalTolerancePct": 2,
     "protein": {
      "grams": 75,
      "mode": "minimum"
     },
+    "carbsMin": 50,
     "meals": 6
    },
    "bounds": {
@@ -2017,7 +1285,7 @@
       },
       "quantity": {
        "kind": "mass",
-       "amount": 1775,
+       "amount": 1765,
        "unit": "g"
       },
       "state": "raw",
@@ -2064,7 +1332,7 @@
       },
       "quantity": {
        "kind": "mass",
-       "amount": 18,
+       "amount": 1.5,
        "unit": "g"
       },
       "state": "as_packaged",
@@ -2086,7 +1354,7 @@
       },
       "quantity": {
        "kind": "mass",
-       "amount": 328,
+       "amount": 291,
        "unit": "g"
       },
       "state": "dry",
@@ -2158,7 +1426,1492 @@
       },
       "quantity": {
        "kind": "mass",
-       "amount": 500,
+       "amount": 497,
+       "unit": "g"
+      },
+      "state": "raw",
+      "role": "protein",
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "sesame-oil",
+      "group": "Fried Rice",
+      "name": "sesame oil (drizzle)",
+      "food": {
+       "kind": "usda",
+       "fdcId": 171016
+      },
+      "quantity": {
+       "kind": "volume",
+       "amount": 0.25,
+       "unit": "tsp"
+      },
+      "state": "as_packaged",
+      "role": "fat",
+      "assumptions": [
+       "Recipe says \"drizzle\"; 1 tsp assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "soy-drizzle",
+      "group": "Fried Rice",
+      "name": "soy sauce (drizzle)",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174277
+      },
+      "quantity": {
+       "kind": "volume",
+       "amount": 1.25,
+       "unit": "tbsp"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "assumptions": [
+       "Recipe says \"drizzle\"; 1 Tbsp assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     }
+    ]
+   },
+   "method": "protein adjusted; carbs held at your 50 g minimum; fats adjusted to fit the calories"
+  },
+  {
+   "key": "teriyaki-chicken-fried-rice/standard-750/option/Lower protein to 71 g per meal",
+   "kind": "option",
+   "title": "Lower protein to 71 g per meal",
+   "preset": {
+    "id": "standard-750",
+    "name": "Standard Meal Prep",
+    "kcal": 750,
+    "kcalTolerancePct": 2,
+    "protein": {
+     "grams": 71,
+     "mode": "minimum"
+    },
+    "carbsMin": 50,
+    "meals": 6
+   },
+   "bounds": {
+    "protein": {
+     "min": 0.05,
+     "max": 10
+    },
+    "carb": {
+     "min": 0.05,
+     "max": 10
+    },
+    "fat": {
+     "min": 0.05,
+     "max": 10
+    }
+   },
+   "original": {
+    "portions": 5,
+    "lines": [
+     {
+      "id": "garlic",
+      "group": "Teriyaki Sauce",
+      "name": "garlic cloves, minced",
+      "food": {
+       "kind": "usda",
+       "fdcId": 169230
+      },
+      "quantity": {
+       "kind": "count",
+       "amount": 1.5,
+       "portionLabel": "clove"
+      },
+      "state": "raw",
+      "role": "seasoning",
+      "assumptions": [
+       "Clove size not given; USDA's 3 g clove used."
+      ],
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "soy-sauce",
+      "group": "Teriyaki Sauce",
+      "name": "soy sauce",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174277
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 60,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "brown-sugar",
+      "group": "Teriyaki Sauce",
+      "name": "zero-calorie brown sugar",
+      "food": {
+       "kind": "builtin",
+       "id": "zero_calorie_sweetener"
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 24,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "mirin",
+      "group": "Teriyaki Sauce",
+      "name": "mirin",
+      "food": {
+       "kind": "usda",
+       "fdcId": 167723
+      },
+      "substituteFor": "mirin",
+      "quantity": {
+       "kind": "mass",
+       "amount": 60,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "note": "Sake stands in for mirin; it understates mirin's sugar.",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "cornstarch",
+      "group": "Teriyaki Sauce",
+      "name": "cornstarch",
+      "food": {
+       "kind": "usda",
+       "fdcId": 169698
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 8,
+       "unit": "g"
+      },
+      "state": "dry",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "slurry-water",
+      "group": "Teriyaki Sauce",
+      "name": "cold water",
+      "food": {
+       "kind": "builtin",
+       "id": "water"
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 15,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "other",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "chicken",
+      "group": "Teriyaki Chicken",
+      "name": "boneless skinless chicken thighs",
+      "food": {
+       "kind": "usda",
+       "fdcId": 2646171
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 710,
+       "unit": "g"
+      },
+      "state": "raw",
+      "role": "protein",
+      "usedInSteps": [
+       2,
+       3
+      ],
+      "cook": {
+       "kind": "yield",
+       "yieldId": "cook-5094",
+       "match": "closest"
+      }
+     },
+     {
+      "id": "fish-sauce",
+      "group": "Teriyaki Chicken",
+      "name": "fish sauce",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174531
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 5,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       2
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "avocado-oil",
+      "group": "Teriyaki Chicken",
+      "name": "avocado oil",
+      "food": {
+       "kind": "usda",
+       "fdcId": 173573
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 15,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "fat",
+      "usedInSteps": [
+       2
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "rice",
+      "group": "Fried Rice",
+      "name": "white rice",
+      "food": {
+       "kind": "usda",
+       "fdcId": 168877
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 300,
+       "unit": "g"
+      },
+      "state": "dry",
+      "role": "carb",
+      "usedInSteps": [
+       4,
+       5
+      ],
+      "cook": {
+       "kind": "yield",
+       "yieldId": "hydrate-rice-white-long-grain",
+       "match": "exact"
+      }
+     },
+     {
+      "id": "veggies",
+      "group": "Fried Rice",
+      "name": "mixed frozen vegetables",
+      "food": {
+       "kind": "usda",
+       "fdcId": 170471
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 300,
+       "unit": "g"
+      },
+      "state": "frozen",
+      "role": "vegetable",
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "eggs",
+      "group": "Fried Rice",
+      "name": "eggs",
+      "food": {
+       "kind": "usda",
+       "fdcId": 171287
+      },
+      "quantity": {
+       "kind": "count",
+       "amount": 2,
+       "portionLabel": "large"
+      },
+      "state": "raw",
+      "role": "protein",
+      "assumptions": [
+       "Egg size not given; large eggs (50 g each) assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "egg-whites",
+      "group": "Fried Rice",
+      "name": "egg whites",
+      "food": {
+       "kind": "usda",
+       "fdcId": 323697
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 200,
+       "unit": "g"
+      },
+      "state": "raw",
+      "role": "protein",
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "sesame-oil",
+      "group": "Fried Rice",
+      "name": "sesame oil (drizzle)",
+      "food": {
+       "kind": "usda",
+       "fdcId": 171016
+      },
+      "quantity": {
+       "kind": "volume",
+       "amount": 1,
+       "unit": "tsp"
+      },
+      "state": "as_packaged",
+      "role": "fat",
+      "assumptions": [
+       "Recipe says \"drizzle\"; 1 tsp assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "soy-drizzle",
+      "group": "Fried Rice",
+      "name": "soy sauce (drizzle)",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174277
+      },
+      "quantity": {
+       "kind": "volume",
+       "amount": 1,
+       "unit": "tbsp"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "assumptions": [
+       "Recipe says \"drizzle\"; 1 Tbsp assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     }
+    ]
+   },
+   "recipe": {
+    "portions": 6,
+    "lines": [
+     {
+      "id": "garlic",
+      "group": "Teriyaki Sauce",
+      "name": "garlic cloves, minced",
+      "food": {
+       "kind": "usda",
+       "fdcId": 169230
+      },
+      "quantity": {
+       "kind": "count",
+       "amount": 2,
+       "portionLabel": "clove"
+      },
+      "state": "raw",
+      "role": "seasoning",
+      "assumptions": [
+       "Clove size not given; USDA's 3 g clove used."
+      ],
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "soy-sauce",
+      "group": "Teriyaki Sauce",
+      "name": "soy sauce",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174277
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 72,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "brown-sugar",
+      "group": "Teriyaki Sauce",
+      "name": "zero-calorie brown sugar",
+      "food": {
+       "kind": "builtin",
+       "id": "zero_calorie_sweetener"
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 29,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "mirin",
+      "group": "Teriyaki Sauce",
+      "name": "mirin",
+      "food": {
+       "kind": "usda",
+       "fdcId": 167723
+      },
+      "substituteFor": "mirin",
+      "quantity": {
+       "kind": "mass",
+       "amount": 72,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "note": "Sake stands in for mirin; it understates mirin's sugar.",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "cornstarch",
+      "group": "Teriyaki Sauce",
+      "name": "cornstarch",
+      "food": {
+       "kind": "usda",
+       "fdcId": 169698
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 9.5,
+       "unit": "g"
+      },
+      "state": "dry",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "slurry-water",
+      "group": "Teriyaki Sauce",
+      "name": "cold water",
+      "food": {
+       "kind": "builtin",
+       "id": "water"
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 18,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "other",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "chicken",
+      "group": "Teriyaki Chicken",
+      "name": "boneless skinless chicken thighs",
+      "food": {
+       "kind": "usda",
+       "fdcId": 2646171
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 1653,
+       "unit": "g"
+      },
+      "state": "raw",
+      "role": "protein",
+      "usedInSteps": [
+       2,
+       3
+      ],
+      "cook": {
+       "kind": "yield",
+       "yieldId": "cook-5094",
+       "match": "closest"
+      }
+     },
+     {
+      "id": "fish-sauce",
+      "group": "Teriyaki Chicken",
+      "name": "fish sauce",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174531
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 6,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       2
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "avocado-oil",
+      "group": "Teriyaki Chicken",
+      "name": "avocado oil",
+      "food": {
+       "kind": "usda",
+       "fdcId": 173573
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 1,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "fat",
+      "usedInSteps": [
+       2
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "rice",
+      "group": "Fried Rice",
+      "name": "white rice",
+      "food": {
+       "kind": "usda",
+       "fdcId": 168877
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 292,
+       "unit": "g"
+      },
+      "state": "dry",
+      "role": "carb",
+      "usedInSteps": [
+       4,
+       5
+      ],
+      "cook": {
+       "kind": "yield",
+       "yieldId": "hydrate-rice-white-long-grain",
+       "match": "exact"
+      }
+     },
+     {
+      "id": "veggies",
+      "group": "Fried Rice",
+      "name": "mixed frozen vegetables",
+      "food": {
+       "kind": "usda",
+       "fdcId": 170471
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 360,
+       "unit": "g"
+      },
+      "state": "frozen",
+      "role": "vegetable",
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "eggs",
+      "group": "Fried Rice",
+      "name": "eggs",
+      "food": {
+       "kind": "usda",
+       "fdcId": 171287
+      },
+      "quantity": {
+       "kind": "count",
+       "amount": 5,
+       "portionLabel": "large"
+      },
+      "state": "raw",
+      "role": "protein",
+      "assumptions": [
+       "Egg size not given; large eggs (50 g each) assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "egg-whites",
+      "group": "Fried Rice",
+      "name": "egg whites",
+      "food": {
+       "kind": "usda",
+       "fdcId": 323697
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 466,
+       "unit": "g"
+      },
+      "state": "raw",
+      "role": "protein",
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "sesame-oil",
+      "group": "Fried Rice",
+      "name": "sesame oil (drizzle)",
+      "food": {
+       "kind": "usda",
+       "fdcId": 171016
+      },
+      "quantity": {
+       "kind": "volume",
+       "amount": 0.25,
+       "unit": "tsp"
+      },
+      "state": "as_packaged",
+      "role": "fat",
+      "assumptions": [
+       "Recipe says \"drizzle\"; 1 tsp assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "soy-drizzle",
+      "group": "Fried Rice",
+      "name": "soy sauce (drizzle)",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174277
+      },
+      "quantity": {
+       "kind": "volume",
+       "amount": 1.25,
+       "unit": "tbsp"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "assumptions": [
+       "Recipe says \"drizzle\"; 1 Tbsp assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     }
+    ]
+   },
+   "method": "protein adjusted; carbs held at your 50 g minimum; fats adjusted to fit the calories"
+  },
+  {
+   "key": "teriyaki-chicken-fried-rice/higher-850/plan",
+   "kind": "plan",
+   "title": "",
+   "preset": {
+    "id": "higher-850",
+    "name": "Higher Calorie Meal Prep",
+    "kcal": 850,
+    "kcalTolerancePct": 2,
+    "protein": {
+     "grams": 75,
+     "mode": "minimum",
+     "max": 85
+    },
+    "carbsMin": 60,
+    "meals": 6
+   },
+   "bounds": {
+    "protein": {
+     "min": 0.05,
+     "max": 10
+    },
+    "carb": {
+     "min": 0.05,
+     "max": 10
+    },
+    "fat": {
+     "min": 0.05,
+     "max": 10
+    }
+   },
+   "original": {
+    "portions": 5,
+    "lines": [
+     {
+      "id": "garlic",
+      "group": "Teriyaki Sauce",
+      "name": "garlic cloves, minced",
+      "food": {
+       "kind": "usda",
+       "fdcId": 169230
+      },
+      "quantity": {
+       "kind": "count",
+       "amount": 1.5,
+       "portionLabel": "clove"
+      },
+      "state": "raw",
+      "role": "seasoning",
+      "assumptions": [
+       "Clove size not given; USDA's 3 g clove used."
+      ],
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "soy-sauce",
+      "group": "Teriyaki Sauce",
+      "name": "soy sauce",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174277
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 60,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "brown-sugar",
+      "group": "Teriyaki Sauce",
+      "name": "zero-calorie brown sugar",
+      "food": {
+       "kind": "builtin",
+       "id": "zero_calorie_sweetener"
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 24,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "mirin",
+      "group": "Teriyaki Sauce",
+      "name": "mirin",
+      "food": {
+       "kind": "usda",
+       "fdcId": 167723
+      },
+      "substituteFor": "mirin",
+      "quantity": {
+       "kind": "mass",
+       "amount": 60,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "note": "Sake stands in for mirin; it understates mirin's sugar.",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "cornstarch",
+      "group": "Teriyaki Sauce",
+      "name": "cornstarch",
+      "food": {
+       "kind": "usda",
+       "fdcId": 169698
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 8,
+       "unit": "g"
+      },
+      "state": "dry",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "slurry-water",
+      "group": "Teriyaki Sauce",
+      "name": "cold water",
+      "food": {
+       "kind": "builtin",
+       "id": "water"
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 15,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "other",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "chicken",
+      "group": "Teriyaki Chicken",
+      "name": "boneless skinless chicken thighs",
+      "food": {
+       "kind": "usda",
+       "fdcId": 2646171
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 710,
+       "unit": "g"
+      },
+      "state": "raw",
+      "role": "protein",
+      "usedInSteps": [
+       2,
+       3
+      ],
+      "cook": {
+       "kind": "yield",
+       "yieldId": "cook-5094",
+       "match": "closest"
+      }
+     },
+     {
+      "id": "fish-sauce",
+      "group": "Teriyaki Chicken",
+      "name": "fish sauce",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174531
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 5,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       2
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "avocado-oil",
+      "group": "Teriyaki Chicken",
+      "name": "avocado oil",
+      "food": {
+       "kind": "usda",
+       "fdcId": 173573
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 15,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "fat",
+      "usedInSteps": [
+       2
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "rice",
+      "group": "Fried Rice",
+      "name": "white rice",
+      "food": {
+       "kind": "usda",
+       "fdcId": 168877
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 300,
+       "unit": "g"
+      },
+      "state": "dry",
+      "role": "carb",
+      "usedInSteps": [
+       4,
+       5
+      ],
+      "cook": {
+       "kind": "yield",
+       "yieldId": "hydrate-rice-white-long-grain",
+       "match": "exact"
+      }
+     },
+     {
+      "id": "veggies",
+      "group": "Fried Rice",
+      "name": "mixed frozen vegetables",
+      "food": {
+       "kind": "usda",
+       "fdcId": 170471
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 300,
+       "unit": "g"
+      },
+      "state": "frozen",
+      "role": "vegetable",
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "eggs",
+      "group": "Fried Rice",
+      "name": "eggs",
+      "food": {
+       "kind": "usda",
+       "fdcId": 171287
+      },
+      "quantity": {
+       "kind": "count",
+       "amount": 2,
+       "portionLabel": "large"
+      },
+      "state": "raw",
+      "role": "protein",
+      "assumptions": [
+       "Egg size not given; large eggs (50 g each) assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "egg-whites",
+      "group": "Fried Rice",
+      "name": "egg whites",
+      "food": {
+       "kind": "usda",
+       "fdcId": 323697
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 200,
+       "unit": "g"
+      },
+      "state": "raw",
+      "role": "protein",
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "sesame-oil",
+      "group": "Fried Rice",
+      "name": "sesame oil (drizzle)",
+      "food": {
+       "kind": "usda",
+       "fdcId": 171016
+      },
+      "quantity": {
+       "kind": "volume",
+       "amount": 1,
+       "unit": "tsp"
+      },
+      "state": "as_packaged",
+      "role": "fat",
+      "assumptions": [
+       "Recipe says \"drizzle\"; 1 tsp assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "soy-drizzle",
+      "group": "Fried Rice",
+      "name": "soy sauce (drizzle)",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174277
+      },
+      "quantity": {
+       "kind": "volume",
+       "amount": 1,
+       "unit": "tbsp"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "assumptions": [
+       "Recipe says \"drizzle\"; 1 Tbsp assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     }
+    ]
+   },
+   "recipe": {
+    "portions": 6,
+    "lines": [
+     {
+      "id": "garlic",
+      "group": "Teriyaki Sauce",
+      "name": "garlic cloves, minced",
+      "food": {
+       "kind": "usda",
+       "fdcId": 169230
+      },
+      "quantity": {
+       "kind": "count",
+       "amount": 2,
+       "portionLabel": "clove"
+      },
+      "state": "raw",
+      "role": "seasoning",
+      "assumptions": [
+       "Clove size not given; USDA's 3 g clove used."
+      ],
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "soy-sauce",
+      "group": "Teriyaki Sauce",
+      "name": "soy sauce",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174277
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 72,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "brown-sugar",
+      "group": "Teriyaki Sauce",
+      "name": "zero-calorie brown sugar",
+      "food": {
+       "kind": "builtin",
+       "id": "zero_calorie_sweetener"
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 29,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "mirin",
+      "group": "Teriyaki Sauce",
+      "name": "mirin",
+      "food": {
+       "kind": "usda",
+       "fdcId": 167723
+      },
+      "substituteFor": "mirin",
+      "quantity": {
+       "kind": "mass",
+       "amount": 72,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "note": "Sake stands in for mirin; it understates mirin's sugar.",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "cornstarch",
+      "group": "Teriyaki Sauce",
+      "name": "cornstarch",
+      "food": {
+       "kind": "usda",
+       "fdcId": 169698
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 9.5,
+       "unit": "g"
+      },
+      "state": "dry",
+      "role": "sauce",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "slurry-water",
+      "group": "Teriyaki Sauce",
+      "name": "cold water",
+      "food": {
+       "kind": "builtin",
+       "id": "water"
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 18,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "other",
+      "usedInSteps": [
+       1
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "chicken",
+      "group": "Teriyaki Chicken",
+      "name": "boneless skinless chicken thighs",
+      "food": {
+       "kind": "usda",
+       "fdcId": 2646171
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 1749,
+       "unit": "g"
+      },
+      "state": "raw",
+      "role": "protein",
+      "usedInSteps": [
+       2,
+       3
+      ],
+      "cook": {
+       "kind": "yield",
+       "yieldId": "cook-5094",
+       "match": "closest"
+      }
+     },
+     {
+      "id": "fish-sauce",
+      "group": "Teriyaki Chicken",
+      "name": "fish sauce",
+      "food": {
+       "kind": "usda",
+       "fdcId": 174531
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 6,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "sauce",
+      "usedInSteps": [
+       2
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "avocado-oil",
+      "group": "Teriyaki Chicken",
+      "name": "avocado oil",
+      "food": {
+       "kind": "usda",
+       "fdcId": 173573
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 18,
+       "unit": "g"
+      },
+      "state": "as_packaged",
+      "role": "fat",
+      "usedInSteps": [
+       2
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "rice",
+      "group": "Fried Rice",
+      "name": "white rice",
+      "food": {
+       "kind": "usda",
+       "fdcId": 168877
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 365,
+       "unit": "g"
+      },
+      "state": "dry",
+      "role": "carb",
+      "usedInSteps": [
+       4,
+       5
+      ],
+      "cook": {
+       "kind": "yield",
+       "yieldId": "hydrate-rice-white-long-grain",
+       "match": "exact"
+      }
+     },
+     {
+      "id": "veggies",
+      "group": "Fried Rice",
+      "name": "mixed frozen vegetables",
+      "food": {
+       "kind": "usda",
+       "fdcId": 170471
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 360,
+       "unit": "g"
+      },
+      "state": "frozen",
+      "role": "vegetable",
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "eggs",
+      "group": "Fried Rice",
+      "name": "eggs",
+      "food": {
+       "kind": "usda",
+       "fdcId": 171287
+      },
+      "quantity": {
+       "kind": "count",
+       "amount": 5,
+       "portionLabel": "large"
+      },
+      "state": "raw",
+      "role": "protein",
+      "assumptions": [
+       "Egg size not given; large eggs (50 g each) assumed."
+      ],
+      "usedInSteps": [
+       5
+      ],
+      "cook": {
+       "kind": "unchanged"
+      }
+     },
+     {
+      "id": "egg-whites",
+      "group": "Fried Rice",
+      "name": "egg whites",
+      "food": {
+       "kind": "usda",
+       "fdcId": 323697
+      },
+      "quantity": {
+       "kind": "mass",
+       "amount": 493,
        "unit": "g"
       },
       "state": "raw",
@@ -2235,8 +2988,10 @@
     "kcalTolerancePct": 2,
     "protein": {
      "grams": 75,
-     "mode": "minimum"
+     "mode": "minimum",
+     "max": 85
     },
+    "carbsMin": 60,
     "meals": 6
    },
    "bounds": {
@@ -6702,6 +7457,7 @@
      "grams": 75,
      "mode": "minimum"
     },
+    "carbsMin": 50,
     "meals": 6
    },
    "bounds": {
@@ -7407,6 +8163,7 @@
      "grams": 75,
      "mode": "minimum"
     },
+    "carbsMin": 50,
     "meals": 6
    },
    "bounds": {
@@ -8110,8 +8867,10 @@
     "kcalTolerancePct": 2,
     "protein": {
      "grams": 75,
-     "mode": "minimum"
+     "mode": "minimum",
+     "max": 85
     },
+    "carbsMin": 60,
     "meals": 6
    },
    "bounds": {
@@ -8815,8 +9574,10 @@
     "kcalTolerancePct": 2,
     "protein": {
      "grams": 75,
-     "mode": "minimum"
+     "mode": "minimum",
+     "max": 85
     },
+    "carbsMin": 60,
     "meals": 6
    },
    "bounds": {

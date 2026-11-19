@@ -215,31 +215,27 @@ await check("taco shopping list buys whole items and one 1 lb package of beef", 
 
 await check("home lists the two macro presets", async () => {
   await page.goto(`${url}#/home`);
-  await page.getByText("750 kcal · at least 75 g protein · 6 meals · ±2%").waitFor();
-  await page.getByText("850 kcal · at least 75 g protein · 6 meals · ±2%").waitFor();
+  await page.getByText("750 kcal · at least 75 g protein · at least 50 g carbs · 6 meals · ±2%").waitFor();
+  await page.getByText("850 kcal · 75–85 g protein · at least 60 g carbs · 6 meals · ±2%").waitFor();
 });
 
-await check("teriyaki scaled to 750 kcal meets the targets and offers the leaner swap", async () => {
+await check("teriyaki at 750 kcal: thighs leave no room for 50 g carbs, so options are offered; chicken breast meets every target", async () => {
   await page.goto(`${url}#/recipes/teriyaki-chicken-fried-rice`);
   await page.getByTestId("preset-picker").getByRole("link", { name: "750 kcal" }).click();
   await page.getByTestId("preset-line").getByText(/Standard Meal Prep/).waitFor();
-  assert.equal(await page.getByTestId("target-kcal").locator(".badge").textContent(), "Met");
-  assert.equal(await page.getByTestId("target-protein").locator(".badge").textContent(), "Met");
-  await page.getByTestId("big-change").waitFor();
-  await page.getByTestId("step-notes").getByText("Divide into 6 containers (the original recipe makes 5 servings).").waitFor();
-  assert.equal(await page.getByTestId("audit-4").locator(".badge").textContent(), "Passed");
-  for (const id of [1, 2, 3, 4, 5]) assert.notEqual(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Failed");
+  await page.getByTestId("conflict").getByText(/there isn't room for at least 50 g carbs within 750 kcal/).waitFor();
   assert.equal(await page.locator('.seg__item--active').textContent(), "750 kcal");
   await page.screenshot({ path: join(outDir, "scaled-750.png"), animations: "disabled", fullPage: true });
   await page.getByTestId("options").getByRole("button", { name: /Use chicken breast instead of thighs/ }).click();
   await page.getByTestId("picked-option").getByText("Option: Use chicken breast instead of thighs").waitFor();
-  assert.equal(await page.getByTestId("target-protein").locator(".badge").textContent(), "Met");
-  assert.equal(await page.getByTestId("big-change").count(), 0);
+  for (const t of ["kcal", "protein", "carbs"]) assert.equal(await page.getByTestId(`target-${t}`).locator(".badge").textContent(), "Met", t);
+  await page.getByTestId("step-notes").getByText("Divide into 6 containers (the original recipe makes 5 servings).").waitFor();
   await page.getByTestId("step-notes").getByText(/chicken breast wherever the steps say/).waitFor();
   await page.getByTestId("ingredients").getByText("Chicken, breast, boneless, skinless, raw", { exact: false }).first().waitFor();
+  for (const id of [1, 2, 3, 4, 5]) assert.notEqual(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Failed");
   await page.screenshot({ path: join(outDir, "scaled-750-breast.png"), animations: "disabled", fullPage: true });
-  await page.getByRole("button", { name: "‹ Back to the main plan" }).click();
-  await page.getByTestId("big-change").waitFor();
+  await page.getByRole("button", { name: "‹ Back to all options" }).click();
+  await page.getByTestId("conflict").waitFor();
 });
 
 await check("taco scaled to 850 kcal meets the targets", async () => {

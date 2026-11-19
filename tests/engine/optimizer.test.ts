@@ -23,6 +23,10 @@ import {
   type Recipe,
   type UserProfile,
   type YieldsFile,
+  defaultSettings,
+  describePreset,
+  proteinRange,
+  upgradeSettings,
 } from "../../src/engine/index.ts";
 import { TEST_PRESETS, goldenPlans } from "../../scripts/export-optimized.ts";
 
@@ -37,6 +41,11 @@ const recipes = ["teriyaki-fried-rice", "taco-mac-and-cheese"].map(
 );
 const [teriyaki, taco] = recipes as [Recipe, Recipe];
 const [standard, higher] = DEFAULT_PRESETS as [MacroPreset, MacroPreset];
+/** The same preset without its carb minimum. */
+const noFloor = (p: MacroPreset): MacroPreset => {
+  const { carbsMin: _c, ...rest } = p;
+  return rest;
+};
 
 function allPlans(): { label: string; plan: OptimizedPlan; requested: MacroPreset }[] {
   const out: { label: string; plan: OptimizedPlan; requested: MacroPreset }[] = [];
@@ -58,7 +67,7 @@ const plans = allPlans();
 test("default presets have no arithmetic conflicts; impossible ones are caught", () => {
   for (const p of DEFAULT_PRESETS) assert.deepEqual(presetProblems(p), []);
   const tiny: MacroPreset = { ...standard, id: "tiny", kcal: 250 };
-  assert.match(presetProblems(tiny)[0]!, /75 g protein alone is about 300 kcal/);
+  assert.match(presetProblems(tiny)[0]!, /75 g protein \+ 50 g carbs alone is about 500 kcal/);
   assert.match(presetProblems({ ...standard, meals: 0 })[0]!, /whole number/);
   const r = optimizeRecipe(teriyaki, tiny, db);
   assert.equal(r.ok, false);
@@ -90,7 +99,7 @@ test("golden recipes: what the presets produce", () => {
   assert.ok(wide650.ok && wide650.plan.bigChange);
   // Tighter limits (½×–5×) show how the planner handles a squeeze.
   const narrow = { bounds: { protein: { min: 0.5, max: 5 }, carb: { min: 0.5, max: 5 }, fat: { min: 0.5, max: 5 } } };
-  const t750 = optimizeRecipe(teriyaki, standard, db, narrow);
+  const t750 = optimizeRecipe(teriyaki, noFloor(standard), db, narrow);
   assert.ok(t750.ok);
   if (t750.ok) {
     // Chicken thighs are fatty: 750 kcal works only with the rice and oils at their minimum,
@@ -104,7 +113,7 @@ test("golden recipes: what the presets produce", () => {
     const res = optimizeRecipe(r, p, db);
     assert.ok(res.ok, `${r.id}/${p.id}`);
   }
-  const t650 = optimizeRecipe(teriyaki, TEST_PRESETS[0]!, db, narrow);
+  const t650 = optimizeRecipe(teriyaki, noFloor(TEST_PRESETS[0]!), db, narrow);
   assert.equal(t650.ok, false);
   if (!t650.ok) {
     assert.match(t650.conflicts[0]!, /no room for the white rice/);
@@ -175,7 +184,7 @@ test("cottage cheese counts as a main protein; seasonings and sauces never do", 
 });
 
 test("swaps are recalculated with the new USDA food and explained in the steps", () => {
-  const res = optimizeRecipe(teriyaki, standard, db);
+  const res = optimizeRecipe(teriyaki, higher, db);
   assert.ok(res.ok);
   if (!res.ok) return;
   const alt = res.alternatives[0]!.plan;
@@ -208,4 +217,42 @@ test("kitchen-friendly rounding", () => {
   assert.equal(practicalQuantity({ kind: "mass", amount: 72.4, unit: "g" }).amount, 72);
   assert.equal(practicalQuantity({ kind: "mass", amount: 5.3, unit: "g" }).amount, 5.5);
   assert.equal(practicalQuantity({ kind: "mass", amount: 19.2, unit: "oz" }).amount, 19.25);
+});
+
+test("carb minimums: 50 g (750 kcal) and 60 g (850 kcal, protein 75–85 g); never below, and a recipe that can't fit gets options", () => {
+  assert.equal(standard.carbsMin, 50);
+  assert.equal(higher.carbsMin, 60);
+  assert.deepEqual(proteinRange(higher), { min: 75, max: 85, aim: 76 });
+  assert.equal(describePreset(higher), "850 kcal · 75–85 g protein · at least 60 g carbs · 6 meals");
+  for (const r of [teriyaki, taco]) for (const p of [standard, higher]) {
+    const res = optimizeRecipe(r, p, db);
+    if (res.ok) assert.ok(res.plan.perMeal.carbs >= p.carbsMin!, `${r.id}/${p.id}: ${res.plan.perMeal.carbs} g carbs`);
+  }
+  // Fatty thighs at 750 kcal: no room for 50 g carbs, so the leaner swap is offered and meets it.
+  const t = optimizeRecipe(teriyaki, standard, db);
+  assert.equal(t.ok, false);
+  if (!t.ok) {
+    assert.match(t.conflicts[0]!, /there isn't room for at least 50 g carbs within 750 kcal/);
+    const swap = t.options.find((o) => o.title === "Use chicken breast instead of thighs");
+    assert.ok(swap?.plan && swap.plan.perMeal.carbs >= 50);
+  }
+  // When the carbs would fall short, they're held at the floor and the fats make room.
+  const lowCarb = { ...higher, kcal: 950, carbsMin: 90 };
+  const held = optimizeRecipe(teriyaki, lowCarb, db);
+  assert.ok(held.ok, JSON.stringify(!held.ok && held.conflicts));
+  if (held.ok) {
+    assert.ok(held.plan.perMeal.carbs >= 90 && held.plan.perMeal.carbs < 92, String(held.plan.perMeal.carbs));
+    assert.match(held.plan.method, /carbs held at your 90 g minimum/);
+  }
+});
+
+test("starting presets nobody changed pick up the carb minimums; changed presets stay as they are", () => {
+  const s = defaultSettings();
+  const old = { ...s, presets: [
+    { id: "standard-750", name: "Standard Meal Prep", kcal: 750, kcalTolerancePct: 2, protein: { grams: 75, mode: "minimum" as const }, meals: 6 },
+    { id: "higher-850", name: "Higher Calorie Meal Prep", kcal: 850, kcalTolerancePct: 2, protein: { grams: 75, mode: "minimum" as const }, meals: 5 },
+  ] };
+  const up = upgradeSettings(old);
+  assert.equal(up.presets[0]!.carbsMin, 50);
+  assert.equal(up.presets[1]!.carbsMin, undefined, "5 meals: changed by you, kept");
 });
