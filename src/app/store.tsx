@@ -8,7 +8,7 @@ import {
   newSavedRecipe,
   revertSavedRecipe,
   updateSavedRecipe,
-  withSeedPackages,
+  upgradeSettings,
   type Backup,
   type Recipe,
   type SavedRecipe,
@@ -73,9 +73,8 @@ async function loadEverything(): Promise<{ settings: Settings; recipes: SavedRec
     });
     return { settings, recipes };
   }
-  const packages = withSeedPackages(stored.packages);
-  if (JSON.stringify(packages) === JSON.stringify(stored.packages)) return { settings: stored, recipes: storedRecipes };
-  const settings = { ...stored, packages };
+  const settings = upgradeSettings(stored);
+  if (JSON.stringify(settings) === JSON.stringify(stored)) return { settings: stored, recipes: storedRecipes };
   await write((kv) => kv.put(settings, SETTINGS_KEY));
   return { settings, recipes: storedRecipes };
 }
@@ -164,7 +163,7 @@ export function UserDataProvider({ children }: { children: ReactNode }): ReactEl
       },
       exportBackup: () => makeBackup(state.settings, state.recipes, new Date()),
       restoreBackup: async (backup) => {
-        const settings = { ...backup.settings, packages: withSeedPackages(backup.settings.packages) };
+        const settings = upgradeSettings(backup.settings);
         await write((kv, rs) => {
           rs.clear();
           for (const r of backup.recipes) rs.put(r);

@@ -89,7 +89,21 @@ test("your two recipe PDFs read correctly", { skip: !userPdfs.every(existsSync) 
   assert.equal(taco.steps.length, 5);
   assert.deepEqual(taco.ingredients.map((i) => i.amount), [2, 2, 1, 454, 30, 50, null, 330, 350, 25, 50, 10, 50]);
   const velveeta = taco.ingredients.find((i) => /Velveeta/.test(i.name))!;
-  assert.deepEqual(velveeta.flags.map((f) => f.code).sort(), ["alternatives", "amounts_disagree", "joined_line"]);
+  assert.deepEqual(velveeta.flags.map((f) => f.code).sort(), ["alternatives", "joined_line"]);
+});
+
+const userPage = "/mnt/user-data/uploads/24725eb5-Test_page.pdf";
+test("your cookbook page (taco beef and crispy potatoes) reads correctly", { skip: !existsSync(userPage) && "PDF not available here" }, async () => {
+  const r = parseRecipeText(await pdfLines(new Uint8Array(read(new URL(`file://${userPage}`)))));
+  assert.equal(r.servings, 4);
+  assert.equal(r.steps.length, 5, JSON.stringify(r.steps));
+  assert.ok(r.steps.every((s) => !/\bz\b|»|STEP|Contents/.test(s)), JSON.stringify(r.steps));
+  assert.equal(r.notes.length, 5);
+  assert.equal(r.ingredients.length, 33);
+  assert.deepEqual([...new Set(r.ingredients.map((i) => i.group))], ["Taco Spice Mix", "Seasoned Taco Potatoes", "Taco Beef", "Chipotle Spicy Sauce", "Pico de Gallo"]);
+  assert.ok(r.ingredients.slice(0, 8).every((i) => i.amount === 2.5), "spice mix scaled to 1 + 1.5 servings");
+  assert.ok(r.ingredients.every((i) => i.amount !== null));
+  assert.equal(r.ingredients.filter((i) => i.flags.some((f) => f.severity === "fix")).length, 0, r.ingredients.filter((i) => i.flags.some((f) => f.severity === "fix")).map((i) => i.raw).join(" | "));
 });
 
 test("AI prompt asks for the exact block format and forbids guessing", () => {

@@ -609,3 +609,6 @@ ul.flags[data-testid="recipe-flags"] { margin: 0 0 16px; padding: 12px 14px; bor
 .link-button--inline { margin: 0; padding: 0; display: inline; font-size: inherit; }
 .field-row--end { align-items: flex-end; }
 .field-row--end .small-button { margin-bottom: 4px; }
+
+.bulk-accept { margin: 0 0 10px; }
+.bulk-accept .footnote { margin-top: 4px; }

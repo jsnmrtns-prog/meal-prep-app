@@ -19,15 +19,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -760,15 +760,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -1501,15 +1501,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -2242,15 +2242,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -2990,15 +2990,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -3731,15 +3731,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -4472,15 +4472,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -5224,15 +5224,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -5969,15 +5969,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -6714,15 +6714,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -7455,15 +7455,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -8160,15 +8160,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -8865,15 +8865,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -9570,15 +9570,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -10261,7 +10261,6 @@
    "key": "taco-mac-n-cheese/test-650/conflict",
    "kind": "conflict",
    "conflicts": [
-    "Reaching at least 75 g protein per meal would take 2.62× the original 93% lean ground beef and 2% cottage cheese per meal, more than the 2.5× limit.",
     "With that much 93% lean ground beef and 2% cottage cheese, the other ingredients already reach 650 kcal, leaving almost no room for the pasta."
    ]
   },
@@ -10283,15 +10282,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -10988,15 +10987,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {
@@ -11693,15 +11692,15 @@
    "bounds": {
     "protein": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "carb": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     },
     "fat": {
      "min": 0.5,
-     "max": 2.5
+     "max": 5
     }
    },
    "original": {

@@ -32,7 +32,9 @@ export type FlagCode =
   | "no_steps"
   | "no_ingredients"
   | "ai_unclear"
-  | "ai_mismatch";
+  | "ai_mismatch"
+  | "split_line"
+  | "sub_recipe";
 
 export interface ImportFlag {
   code: FlagCode;
@@ -90,6 +92,7 @@ const COUNT_NOUNS = new Set([
   "pinch", "pinches", "dash", "dashes", "handful", "handfuls", "stick", "sticks", "bag", "bags", "box", "boxes",
   "container", "containers", "fillet", "fillets", "breast", "breasts", "thigh", "thighs", "envelope", "envelopes",
   "scoop", "scoops", "drop", "drops", "splash", "drizzle", "sheet", "sheets", "leaf", "leaves", "ear", "ears",
+  "serving", "servings",
 ]);
 const SIZE_WORDS = new Set(["large", "medium", "small", "extra-large", "jumbo", "extra large"]);
 /** Count nouns that are vague amounts rather than measurable units. */
@@ -154,12 +157,39 @@ function stripBullet(line: string): string {
   return line.replace(BULLET, "").trim();
 }
 
+/**
+ * Cleans what PDF layouts leave behind: letter-spaced headings ("S T E P 1"),
+ * bullet symbols drawn with symbol fonts (a lone "z" is a Wingdings dot) and
+ * arrow markers ("»", "»»"). A symbol at the start of a line becomes a plain bullet.
+ */
+export function tidyLine(line: string): string {
+  let t = line.replace(/\s+/g, " ").trim();
+  t = t.replace(/\b(?:[A-Z] ){2,}[A-Z]\b/g, (m) => m.replace(/ /g, ""));
+  t = t.replace(/^(?:(?:z|[»«›‹]+|[◆■►▶❖✦➢])\s+)+(?=\S)/, "• ");
+  t = t.replace(/(^|\s)(?:z|[»«›‹]+|[◆■►▶❖✦➢])(?=\s|$)/g, "$1").replace(/\s+/g, " ").trim();
+  if (/^[»«›‹]+$/.test(t) || t === "•") return "";
+  return t;
+}
+
 // ---------- one ingredient ----------
 
 /** Reads one ingredient line. */
 export function parseIngredientLine(rawLine: string, group: string | null = null): ParsedIngredient {
   const flags: ImportFlag[] = [];
   const raw = stripBullet(rawLine).replace(/\s+/g, " ").trim();
+  // "Juice of 1 lime": USDA gives the juice from one lime, so count limes.
+  const juice = raw.match(new RegExp(`^juice (?:of|from) (${NUM}|a|an|one|two|three|half)\\s+(?:whole |large |medium |small |fresh )*(lime|lemon|orange)s?\\b\\s*(?:,\\s*(.*))?$`, "i"));
+  if (juice) {
+    const n = parseNumber(juice[1]!) ?? WORD_NUMBERS[juice[1]!.toLowerCase()] ?? null;
+    const fruit = juice[2]!.toLowerCase();
+    if (n !== null) {
+      return {
+        raw, group, amount: n, amountMax: null, unit: { kind: "count", noun: fruit }, sizeWord: null,
+        name: `${fruit[0]!.toUpperCase()}${fruit.slice(1)} juice`, prep: juice[3]?.trim() || null, optional: false, packageSize: null,
+        flags: [{ code: "unusual", severity: "check", message: `Counts the juice of ${fmt(n)} ${fruit}${n === 1 ? "" : "s"}, using USDA's weight for the juice from one.` }],
+      };
+    }
+  }
   const ocr = fixOcr(raw);
   if (ocr.fixed) flags.push({ code: "ocr_fix", severity: "check", message: `Read "${raw.split(" ").slice(0, 3).join(" ")}" as "${ocr.text.split(" ").slice(0, 3).join(" ")}". Check the amount.` });
   let rest = ocr.text;
@@ -182,6 +212,7 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
   // Amount (with an optional range).
   let amount: number | null = null;
   let amountMax: number | null = null;
+  let amountText = "";
   const range = rest.match(new RegExp(`^(${NUM})\\s*(?:-|–|—|to|or)\\s*(${NUM})\\b\\s*`, "i"));
   const single = rest.match(new RegExp(`^(${NUM})(?![\\d/])\\s*`));
   const wordNum = rest.match(/^(a|an|one|two|three|four|five|six|seven|eight|nine|ten|twelve|half|a dozen|dozen)\b\s+/i);
@@ -191,6 +222,7 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
     rest = rest.slice(range[0].length);
   } else if (single) {
     amount = parseNumber(single[1]!);
+    amountText = single[1]!;
     rest = rest.slice(single[0].length);
   } else if (wordNum) {
     const w = wordNum[1]!.toLowerCase().replace("a dozen", "dozen");
@@ -200,7 +232,7 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
 
   // A stated package size right after the amount: "1 (15 oz) can", "2 (14.5-ounce) cans".
   let packageSize: ParsedIngredient["packageSize"] = null;
-  let altAmount: { amount: number; unit: ParsedUnit } | null = null;
+  let altAmount: { amount: number; unit: ParsedUnit; text: string } | null = null;
 
   // Unit.
   let unit: ParsedUnit | null = null;
@@ -249,7 +281,7 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
       const w = alt[2]!.trim().replace(/\.$/, "").toLowerCase();
       const u = UNIT_WORDS[w] ?? (/^fl\.?\s*oz$/.test(w) ? UNIT_WORDS["fl oz"] : undefined);
       if (n !== null && u) {
-        altAmount = { amount: n, unit: u };
+        altAmount = { amount: n, unit: u, text: alt[1]! };
         rest = rest.slice(alt[0].length);
       } else if (n !== null && unit && (COUNT_NOUNS.has(w) || COUNT_NOUNS.has(w.split(" ")[0]!))) {
         // "30 g (1 packet)": the weight is what counts; the packet is just a description.
@@ -312,7 +344,10 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
     const a = toBase(amount, first);
     const b = toBase(altAmount.amount, second);
     if (first.kind === second.kind && a !== null && b !== null) {
-      if (Math.abs(a - b) / Math.max(a, b) > 0.05) {
+      // Printed amounts are rounded ("30g (1oz)" is 28.35 g): allow half of the last shown digit on either side.
+      const slack = (text: string, u: ParsedUnit) => 0.5 * 10 ** -((text.split(/[.,]/)[1] ?? "").replace(/\D/g, "").length) * (toBase(1, u) ?? 0);
+      const allowed = Math.max(0.05 * Math.max(a, b), (/^\d+(?:[.,]\d+)?$/.test(amountText) ? slack(amountText, first) : 0) + (/^\d+(?:[.,]\d+)?$/.test(altAmount.text) ? slack(altAmount.text, second) : 0));
+      if (Math.abs(a - b) > allowed) {
         flags.push({ code: "amounts_disagree", severity: "fix", message: `The two amounts don't match (${fmt(amount)} ${unitText(first)} vs ${fmt(altAmount.amount)} ${unitText(second)}). Enter the one you'll use.` });
       }
     } else if (second.kind === "mass" && first.kind !== "mass") {
@@ -344,8 +379,13 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
   if (u?.kind === "count" && VAGUE.has(u.noun)) {
     flags.push({ code: "unusual", severity: "fix", message: `"${u.noun}" isn't a measurable amount: enter it in teaspoons or grams.` });
   }
-  if (/\bor\b/i.test(name) || /\/(?!\d)/.test(name)) {
+  if (/\bor\b/i.test(name)) {
     flags.push({ code: "alternatives", severity: "fix", message: "Lists more than one option: keep the one you'll use." });
+  } else if (/[A-Za-z]\s*\/\s*[A-Za-z]/.test(name)) {
+    flags.push({ code: "alternatives", severity: "check", message: "Gives two names for it: check the food picked." });
+  }
+  if (/^or\b/i.test(prep ?? "")) {
+    flags.push({ code: "alternatives", severity: "check", message: `Suggests a swap (${prep}): ${name} is used.` });
   }
   if (/\s(?:and|&|\+)\s/i.test(name) || (toTaste && prep !== null && !/\b(?:ground|fresh|freshly|chopped|minced|diced|divided)\b/i.test(prep))) {
     flags.push({ code: "combined", severity: "check", message: "Looks like two ingredients on one line. Keep it only if it's one product; otherwise split it." });
@@ -379,19 +419,24 @@ function toBase(n: number, u: ParsedUnit): number | null {
 
 // ---------- whole recipe ----------
 
-const H_INGREDIENTS = /^(?:ingredients?|what you(?:'|’)?ll need|you will need|shopping list)\s*:?$/i;
-const H_STEPS = /^(?:instructions?|directions?|method|steps?|preparation|prep(?:aration)? steps|how to make(?: it)?|cooking instructions)\s*:?$/i;
-const H_NOTES = /^(?:notes?|tips?|recipe notes?|chef(?:'|’)?s notes?|storage|substitutions?)\s*:?$/i;
+const H_INGREDIENTS = /^(?:ingredients?|what you(?:'|’)?ll need|you will need|shopping list)\s*(?:\([^)]*\))?\s*:?$/i;
+const H_STEPS = /^(?:instructions?|directions?|method|steps?|preparation|prep(?:aration)? steps|how to make(?: it)?|cooking instructions)\s*(?:\([^)]*\))?\s*:?$/i;
+const H_NOTES = /^(?:(?:important|helpful|cooking|recipe|chef(?:'|’)?s|meal[- ]prep|storage|serving|top|quick|pro|my)\s+)*(?:notes?|tips?|storage|substitutions?|storage (?:and|&) reheating)\s*:?$/i;
+/** "STEP 1" on a line of its own: the following lines are that step. */
+const STEP_MARKER = /^step\s*(\d{1,2})\s*[:.]?$/i;
+/** A running page header or table-of-contents link, not a recipe name. */
+const NOT_TITLE = /\bcook\s?book\b|\btable of contents\b|^page\s+\d/i;
+const CONTINUE = /^(?:continued?|cont(?:'|’)?d\.?|cont\.)\s*(?:from (?:previous|last) page)?$/i;
 const H_NUTRITION = /^(?:nutrition(?: facts| information| info)?|macros|per serving|nutritional information)\b.*$/i;
 const SERVINGS = /\b(?:serves|servings?|yield|yields|makes|portions?)\b\s*:?\s*(\d+)(?:\s*(?:-|–|to)\s*(\d+))?/i;
 const SERVINGS_AFTER = /\b(\d+)\s*(?:servings|portions|meals|containers)\b/i;
 const META = /^(?:prep|cook|total|active|inactive|rest|bake|chill|marinate|cooking|baking)\s*time\b|^(?:prep|cook|total|ready in)\s*:|^(?:course|cuisine|author|keyword|calories|difficulty|equipment)\s*:/i;
 const STEP_PREFIX = /^\s*(?:step\s*)?(\d{1,2})\s*[.):]\s*(?=[A-Za-z(])|^\s*step\s+(\d{1,2})\s*:?\s*/i;
-const FOOTER = /^(?:back to (?:the )?(?:table of )?contents\b.*|page \d+(?: of \d+)?|\d{1,3})$/i;
+const FOOTER = /^(?:(?:back|return) to (?:the )?(?:table of )?contents\b.*|page \d+(?: of \d+)?|\d{1,3})$/i;
 
 /** True for a section heading such as "Ingredients" or "Instructions". */
 export function isSectionHeading(text: string): boolean {
-  const t = stripBullet(text.trim());
+  const t = stripBullet(tidyLine(text));
   return H_INGREDIENTS.test(t) || H_STEPS.test(t) || H_NOTES.test(t);
 }
 const AMOUNT_START = new RegExp(`^\\s*(?:${NUM}|[lI|]\\s*\\/\\s*\\d|(?:a|an|one|two|three|four|five|six|half)\\s+(?:${Object.keys(UNIT_WORDS).filter((u) => /^[a-z]/i.test(u) && u.length > 1).join("|")}|${[...COUNT_NOUNS].join("|")}|large|medium|small|pinch|dash)\\b)`, "i");
@@ -433,61 +478,117 @@ function isGroupHeader(line: string): boolean {
 
 const cleanHeader = (t: string) => stripBullet(t).replace(/:$/, "").replace(/^for (?:the )?/i, "").trim().replace(/^\w/, (c) => c.toUpperCase());
 
+/** True when a line is written as a list bullet. */
+const bulleted = (line: string) => BULLET.test(line);
+
+/**
+ * A short label with no amount that heads the lines under it ("Pico de Gallo",
+ * "Taco Beef"): it isn't bulleted while the lines under it are, or it follows a
+ * blank line and is written in Title Case.
+ */
+function looksLikeUnmarkedHeader(line: string, next: string | undefined, afterBlank: boolean): boolean {
+  const t = stripBullet(line);
+  if (!next || bulleted(line) || looksLikeIngredient(line)) return false;
+  if (t.length > 45 || t.length < 3 || /[,.;!?]$|,/.test(t) || /^[a-z(]/.test(t)) return false;
+  if (t.replace(/\([^)]*\)/g, "").trim().split(/\s+/).length > 6) return false;
+  if (!looksLikeIngredient(next)) return false;
+  if (bulleted(next)) return true;
+  const words = t.replace(/\([^)]*\)/g, "").trim().split(/\s+/);
+  return afterBlank && words.every((w) => w.length <= 3 || /^[A-Z0-9]/.test(w));
+}
+
+/** "1 Tsp each: Salt, Pepper, Cumin" → one line per ingredient with that amount. */
+function splitEach(text: string): string[] | null {
+  const t = stripBullet(text);
+  const m = t.match(/^(.{1,25}?)\s+each\s*:?\s+(.+)$/i);
+  if (!m || !AMOUNT_START.test(m[1]!) || m[1]!.split(/\s+/).length > 3) return null;
+  const items = m[2]!.split(/\s*,\s*|\s+and\s+|\s*&\s*/i).map((x) => x.trim()).filter(Boolean);
+  if (items.length < 2) return null;
+  return items.map((x) => `${m[1]} ${x}`);
+}
+
 /** Reads a whole recipe. `text` is whatever was pasted or extracted. */
 export function parseRecipeText(text: string): ParsedRecipe {
   const lines = text
     .replace(/\r\n?/g, "\n")
-    .replace(/ /g, " ")
+    .replace(/\u00a0/g, " ")
     .split("\n")
-    .map((l) => l.replace(/\s+$/, ""));
+    .map(tidyLine);
 
   let title: string | null = null;
   let servings: number | null = null;
   let servingsRange = false;
   const notes: string[] = [];
   const steps: string[] = [];
-  const ingredientLines: { text: string; group: string | null; joined: boolean }[] = [];
+  const ingredientLines: { text: string; group: string | null; joined: boolean; bulleted: boolean }[] = [];
   let mode: "start" | "ingredients" | "steps" | "notes" | "nutrition" = "start";
   let sawIngredientHeader = false;
   let sawStepHeader = false;
   let group: string | null = null;
   let stepOpen = false; // last step may continue on the next line
   let numbered = false; // steps are numbered, so unnumbered lines continue the step above
+  let newStep = false; // a "STEP 2" marker: the next line starts a new step
+  // A notes heading that broke into the steps ("» Continue" after it): its bullet points come after the last step.
+  let notesBefore = 0;
+  let notesWaiting = false;
+  const nextLine = (i: number) => lines.slice(i + 1).find((l) => l.trim() !== "" && !FOOTER.test(l.trim()));
 
-  for (const rawLine of lines) {
+  for (let li = 0; li < lines.length; li++) {
+    const rawLine = lines[li]!;
     const line = rawLine.trim();
+    const afterBlank = li === 0 || lines[li - 1]!.trim() === "";
     if (!line) {
       stepOpen = false;
       continue;
     }
     if (FOOTER.test(line)) continue;
-    const s = line.match(SERVINGS_AFTER) ?? line.match(SERVINGS);
-    if (servings === null && s && line.length <= 60 && !looksLikeStep(line)) {
-      servings = Number(s[1]);
-      servingsRange = Boolean(s[2]);
-      if (mode !== "steps") continue;
+    const bare = stripBullet(line);
+    if (CONTINUE.test(bare)) {
+      // "» Continue": the steps carry on after a box (such as a notes box) that broke into them.
+      if (mode === "notes" && steps.length > 0) {
+        mode = "steps";
+        notesWaiting = notes.length === notesBefore;
+      }
+      continue;
     }
-    if (H_INGREDIENTS.test(stripBullet(line))) {
+    const s = line.match(SERVINGS_AFTER) ?? line.match(SERVINGS);
+    if (H_INGREDIENTS.test(bare)) {
       mode = "ingredients";
       sawIngredientHeader = true;
       group = null;
+      if (servings === null && s) {
+        servings = Number(s[1]);
+        servingsRange = Boolean(s[2]);
+      }
       continue;
     }
-    if (H_STEPS.test(stripBullet(line))) {
+    if (H_STEPS.test(bare)) {
       mode = "steps";
       sawStepHeader = true;
       stepOpen = false;
       continue;
     }
-    if (H_NOTES.test(stripBullet(line))) {
+    if (H_NOTES.test(bare)) {
       mode = "notes";
+      notesBefore = notes.length;
       continue;
     }
-    if (H_NUTRITION.test(stripBullet(line)) && (mode !== "steps" || stripBullet(line).split(/\s+/).length <= 3)) {
+    if (STEP_MARKER.test(bare)) {
+      mode = "steps";
+      numbered = true;
+      newStep = true;
+      continue;
+    }
+    if (servings === null && s && line.length <= 60 && !looksLikeStep(line) && !(mode === "ingredients" && looksLikeIngredient(line))) {
+      servings = Number(s[1]);
+      servingsRange = Boolean(s[2]);
+      if (mode !== "steps") continue;
+    }
+    if (H_NUTRITION.test(bare) && (mode !== "steps" || bare.split(/\s+/).length <= 3)) {
       mode = "nutrition";
       continue;
     }
-    if (META.test(stripBullet(line))) continue;
+    if (META.test(bare)) continue;
     if (mode === "nutrition") {
       if (looksLikeIngredient(line) && !/\b(kcal|calories|protein|carbs?|fat|fiber|sugar|sodium)\b/i.test(line)) mode = "ingredients";
       else continue;
@@ -496,10 +597,11 @@ export function parseRecipeText(text: string): ParsedRecipe {
     if (mode === "start") {
       if (looksLikeIngredient(line)) mode = "ingredients";
       else if (looksLikeStep(line)) mode = "steps";
+      else if (NOT_TITLE.test(bare)) continue;
       else if (title === null) {
-        title = stripBullet(line).replace(/\s+/g, " ");
+        title = bare.replace(/\s+/g, " ");
         continue;
-      } else if (isGroupHeader(line)) {
+      } else if (isGroupHeader(line) || looksLikeUnmarkedHeader(line, nextLine(li), afterBlank)) {
         mode = "ingredients";
         group = cleanHeader(line);
         continue;
@@ -510,65 +612,88 @@ export function parseRecipeText(text: string): ParsedRecipe {
     }
 
     if (mode === "ingredients") {
-      // Without a steps header, the first sentence-like line starts the steps.
       // Without a steps header, a step-like line starts the steps. Under an "Ingredients" header only a
       // numbered step or a full sentence does, so "Drizzle of: sesame oil" stays an ingredient.
       const stepLike = sawIngredientHeader
         ? /^\s*(?:step\s*)?\d{1,2}\s*[.):]\s*[A-Za-z]/i.test(line) || (line.split(/\s+/).length >= 9 && /[.!]$/.test(line))
         : looksLikeStep(line);
+      const prev = ingredientLines.at(-1);
+      const openParen = prev ? (prev.text.match(/\(/g)?.length ?? 0) > (prev.text.match(/\)/g)?.length ?? 0) : false;
       if (!sawStepHeader && !looksLikeIngredient(line) && stepLike) {
         mode = "steps";
-      } else if (isGroupHeader(line) && !looksLikeIngredient(line)) {
+      } else if (prev && !looksLikeIngredient(line) && (openParen || /^\(/.test(bare))) {
+        // "(or butter of choice)" under "20g Butter", or the rest of "(or any" on the next line.
+        prev.text = `${prev.text} ${bare}`;
+        prev.joined = true;
+        continue;
+      } else if ((isGroupHeader(line) && !looksLikeIngredient(line)) || looksLikeUnmarkedHeader(line, nextLine(li), afterBlank)) {
         group = cleanHeader(line);
         continue;
       } else {
-        const prev = ingredientLines.at(-1);
         // A wrapped line: a word or two in lowercase with no amount ("cheese" after "1 cup shredded cheddar"),
-        // or anything following a line that ends mid-phrase ("…, " / "and" / "or").
+        // a line without a bullet in a bulleted list, or anything following a line that ends mid-phrase.
         const wrapped =
-          prev && !looksLikeIngredient(line) && !BULLET.test(rawLine) &&
-          ((/^[a-z(]/.test(stripBullet(line)) && stripBullet(line).split(/\s+/).length <= 2) ||
+          prev && !looksLikeIngredient(line) && !bulleted(rawLine) &&
+          ((/^[a-z(]/.test(bare) && bare.split(/\s+/).length <= 2) ||
+            (prev.bulleted && !afterBlank) ||
             /(?:,|\band|\bor|\bof|\bwith|\bmixed|\bboneless|\bskinless|\bshredded|\bchopped|\bgrated|\bfrozen|\bfresh|\bground|\blow|\breduced|\bfat|\bfree|\bplain|\bpart)$/i.test(prev.text) ||
-            /^(?:or|and|\+)\s/i.test(stripBullet(line)));
+            /^(?:or|and|\+)\s/i.test(bare));
         if (wrapped && prev) {
-          prev.text = `${prev.text} ${stripBullet(line)}`;
+          prev.text = `${prev.text} ${bare}`;
           prev.joined = true;
         } else {
-          ingredientLines.push({ text: line, group, joined: false });
+          ingredientLines.push({ text: line, group, joined: false, bulleted: bulleted(rawLine) });
         }
         continue;
       }
     }
 
+    if (mode === "steps" && notesWaiting && numbered && afterBlank && bulleted(rawLine) && !STEP_PREFIX.test(bare)) {
+      mode = "notes";
+      notesWaiting = false;
+    }
     if (mode === "steps") {
       const m = line.match(STEP_PREFIX);
-      const body = m ? line.slice(m[0].length).trim() : stripBullet(line);
+      const body = m ? line.slice(m[0].length).trim() : bare;
       if (!body) continue;
       if (/^(?:enjoy|serve and enjoy)!?$/i.test(body) && steps.length > 0) {
         steps[steps.length - 1] = `${steps.at(-1)} ${body}`;
         continue;
       }
       if (m) numbered = true;
-      const startsNew = !numbered && STEP_VERBS.has(body.split(/\s+/)[0]!.toLowerCase().replace(/[^a-zé-]/g, "")) && !/^(?:in|when|once|then|while|after|using)$/i.test(body.split(/\s+/)[0]!);
-      if (!m && (stepOpen || numbered) && steps.length > 0 && !BULLET.test(rawLine) && !startsNew) {
+      const startsNew = newStep || (!numbered && STEP_VERBS.has(body.split(/\s+/)[0]!.toLowerCase().replace(/[^a-zé-]/g, "")) && !/^(?:in|when|once|then|while|after|using)$/i.test(body.split(/\s+/)[0]!));
+      const continues = steps.length > 0 && !m && !startsNew && (/^[a-z]/.test(body) || ((stepOpen || numbered) && !bulleted(rawLine)));
+      if (continues) {
         // "zero-" + "calorie" was one word split across lines.
         const prevStep = steps.at(-1)!;
         steps[steps.length - 1] = /[a-z]-$/.test(prevStep) && /^[a-z]/.test(body) ? `${prevStep}${body}` : `${prevStep} ${body}`;
       } else {
         steps.push(body);
       }
+      newStep = false;
       stepOpen = !/[.!?)]$/.test(body);
       continue;
     }
 
-    if (mode === "notes") notes.push(stripBullet(line));
+    if (mode === "notes") notes.push(bare);
   }
 
-  const ingredients = ingredientLines.map((l) => {
-    const p = parseIngredientLine(l.text, l.group);
-    if (l.joined) p.flags.push({ code: "joined_line", severity: "check", message: "Joined two lines into one ingredient. Check it." });
-    return p;
+  // One line per ingredient: "1 tsp each: salt, pepper" becomes two lines.
+  const expanded = ingredientLines.flatMap((l) => {
+    const parts = splitEach(l.text);
+    if (!parts) {
+      const p = parseIngredientLine(l.text, l.group);
+      if (l.joined) p.flags.push({ code: "joined_line", severity: "check", message: "Joined two lines into one ingredient. Check it." });
+      return [p];
+    }
+    return parts.map((t) => {
+      const p = parseIngredientLine(t, l.group);
+      p.flags.push({ code: "split_line", severity: "check", message: `Split from "${stripBullet(l.text)}". Check it.` });
+      return p;
+    });
   });
+  const ingredients = expandSubRecipes(expanded);
+
   const flags: ImportFlag[] = [];
   if (!title) flags.push({ code: "no_title", severity: "fix", message: "No recipe name found: enter one." });
   if (servings === null) flags.push({ code: "no_servings", severity: "fix", message: "How many servings the recipe makes wasn't found: enter it." });
@@ -576,4 +701,52 @@ export function parseRecipeText(text: string): ParsedRecipe {
   if (ingredients.length === 0) flags.push({ code: "no_ingredients", severity: "fix", message: "No ingredients found. Check that the ingredient list was included." });
   if (steps.length === 0) flags.push({ code: "no_steps", severity: "fix", message: "No instructions found: add them." });
   return { title, servings, ingredients, steps, notes, flags };
+}
+
+const normName = (s: string) => s.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
+/**
+ * A mix made in its own section ("Taco Spice Mix (1 Serving)") and then used by
+ * the serving elsewhere ("1 Serving Taco Spice Mix", "1.5 Serving Taco Spice
+ * Mix"): the mix's lines are scaled to the total used (2.5 servings) and the
+ * "serving" lines are dropped, so the nutrition counts what actually goes in.
+ */
+function expandSubRecipes(list: ParsedIngredient[]): ParsedIngredient[] {
+  const groups = new Map<string, { serves: number; uses: number[] }>();
+  for (const p of list) {
+    if (!p.group) continue;
+    const key = normName(p.group);
+    const serves = Number(p.group.match(/\((\d+(?:\.\d+)?)\s*servings?\)/i)?.[1] ?? 1) || 1;
+    if (!groups.has(key)) groups.set(key, { serves, uses: [] });
+  }
+  const isUse = (p: ParsedIngredient) =>
+    p.unit?.kind === "count" && p.unit.noun === "serving" && p.amount !== null && groups.has(normName(p.name)) && !(p.group && normName(p.group) === normName(p.name));
+  for (const p of list) if (isUse(p)) groups.get(normName(p.name))!.uses.push(p.amount!);
+  const out: ParsedIngredient[] = [];
+  for (const p of list) {
+    if (isUse(p)) continue;
+    const mix = p.group ? groups.get(normName(p.group)) : undefined;
+    if (mix && mix.uses.length > 0) {
+      const total = mix.uses.reduce((a, b) => a + b, 0);
+      const factor = total / mix.serves;
+      const mixName = p.group!.replace(/\s*\([^)]*\)\s*$/, "");
+      out.push({
+        ...p,
+        raw: `${p.raw} × ${fmt(factor)}`,
+        group: mixName,
+        amount: p.amount === null ? null : p.amount * factor,
+        amountMax: p.amountMax === null ? null : p.amountMax * factor,
+        flags: [
+          ...p.flags.filter((f) => f.code !== "split_line"),
+          { code: "sub_recipe", severity: "check", message: `${mixName} is used ${mix.uses.length > 1 ? `${mix.uses.map(fmt).join(" + ")} = ` : ""}${fmt(total)} serving${total === 1 ? "" : "s"} in this recipe, so this amount is × ${fmt(factor)}.` },
+        ],
+      });
+      continue;
+    }
+    if (p.unit?.kind === "count" && p.unit.noun === "serving") {
+      p.flags.push({ code: "unusual", severity: "fix", message: `"Serving" isn't a measurable amount: enter the grams (check the product label).` });
+    }
+    out.push(p);
+  }
+  return out;
 }

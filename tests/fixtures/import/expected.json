@@ -241,9 +241,9 @@
      "flags": []
     },
     {
-     "amount": null,
-     "unit": null,
-     "name": "juice of 1 lemon",
+     "amount": 1,
+     "unit": "count:lemon",
+     "name": "Lemon juice",
      "flags": [
       "unusual"
      ]
@@ -719,9 +719,9 @@
      "flags": []
     },
     {
-     "amount": null,
-     "unit": null,
-     "name": "Juice of 1 lemon",
+     "amount": 1,
+     "unit": "count:lemon",
+     "name": "Lemon juice",
      "flags": [
       "unusual"
      ]

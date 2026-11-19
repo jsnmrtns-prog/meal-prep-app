@@ -71,6 +71,18 @@ export function ImportScreen(): ReactElement {
     }
   };
 
+  const pasteClipboard = async () => {
+    setError([]);
+    try {
+      const t = await navigator.clipboard.readText();
+      if (!t.trim()) return setError(["The clipboard is empty. Copy the recipe first."]);
+      setText(t);
+      setSource(null);
+    } catch {
+      setError(["Couldn't read the clipboard. Press and hold in the box below and choose Paste."]);
+    }
+  };
+
   const copyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(AI_PROMPT);
@@ -92,6 +104,7 @@ export function ImportScreen(): ReactElement {
               if (!e.target.value) setSource(null);
             }} placeholder={"Paste the recipe here: title, servings, ingredients and steps."} />
           </Field>
+          <button className="small-button" onClick={() => void pasteClipboard()}>Paste from clipboard</button>
           <label className="small-button file-button">
             {busy ? "Reading file…" : "Open a PDF, Word or text file"}
             <input type="file" accept=".pdf,.docx,.txt,.text,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-label="Recipe file" onChange={(e) => {
@@ -203,6 +216,11 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
   if (steps.filter((s) => s.trim()).length === 0) blockers.push("Add at least one step.");
   if (included.length === 0) blockers.push("Keep at least one ingredient.");
   const waiting = rows.filter((r, i) => !(r.choice === "out" ? r.confirmed : r.confirmed && resolved[i]!.food && resolved[i]!.quantity));
+  // Lines with nothing to fix and a food and amount found: one tap accepts them all (their Check notes stay visible).
+  const easy = rows.map((r, i) => i).filter((i) => {
+    const r = rows[i]!;
+    return !r.confirmed && r.choice !== "out" && !r.parsed.flags.some((f) => f.severity === "fix") && resolved[i]!.food && resolved[i]!.quantity;
+  });
   if (waiting.length > 0) blockers.push(`${waiting.length} ${waiting.length === 1 ? "line needs" : "lines need"} checking below.`);
 
   const finish = () => {
@@ -244,6 +262,14 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
 
       <section className="section" data-testid="review-ingredients">
         <h2 className="section__title">Ingredients ({rows.length - waiting.length} of {rows.length} checked)</h2>
+        {easy.length > 0 && (
+          <div className="bulk-accept">
+            <button className="row-button" data-testid="accept-easy" onClick={() => setRows((rs) => rs.map((r, j) => (easy.includes(j) ? { ...r, confirmed: true } : r)))}>
+              Accept the {easy.length} {easy.length === 1 ? "line" : "lines"} with nothing to fix
+            </button>
+            <p className="footnote">Then read down the list: each line shows the food picked and any Check note. Tap Change on any that's wrong.</p>
+          </div>
+        )}
         <div className="card">
           {rows.map((r, i) => (
             <ReviewRow key={i} index={i} row={r} resolved={resolved[i]!} engine={engine} onChange={(p) => setRow(i, p)} />
@@ -308,6 +334,7 @@ function ReviewRow({ index, row, resolved, engine, onChange }: {
     return (
       <div className="review-row review-row--done" data-testid={`review-row-${index}`}>
         <p className="review-row__raw">{p.raw}</p>
+        {!out && p.flags.length > 0 && <FlagList flags={p.flags} />}
         <div className="review-row__actions">
           <span className="option__meta">{out ? "Left out" : `✓ ${resolved.food!.description}`}</span>
           <button className="small-button" onClick={() => onChange({ confirmed: false, ...(out ? { choice: suggestions[0]?.fdcId ?? null } : {}) })}>Change</button>

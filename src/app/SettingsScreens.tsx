@@ -316,7 +316,7 @@ export function LimitsScreen(): ReactElement {
               </Field>
             </div>
           ))}
-          <button className="small-button" onClick={() => setDraft(JSON.parse(JSON.stringify(DEFAULT_BOUNDS)) as Bounds)}>Reset to ½× – 2½×</button>
+          <button className="small-button" onClick={() => setDraft(JSON.parse(JSON.stringify(DEFAULT_BOUNDS)) as Bounds)}>Reset to ½× – 5×</button>
         </div>
       </section>
       <SaveBar disabled={!dirty} saved={saved} problems={problems} onSave={() => void save((s, d) => ({ ...s, bounds: d }))} />

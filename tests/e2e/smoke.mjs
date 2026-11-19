@@ -396,6 +396,23 @@ await check("M6: a PDF with two columns of ingredients opens and reads", async (
   assert.equal(await page.getByLabel("Recipe name").inputValue(), "SPICY CHICKEN PASTA");
 });
 
+await check("cookbook-style text: groups, steps and the Accept button for lines with nothing to fix", async () => {
+  const text = await readFile(new URL("../fixtures/import-files/cookbook-layout.txt", import.meta.url), "utf8");
+  await page.goto(`${url}#/import`);
+  await page.getByLabel("Recipe text").fill(text);
+  await page.getByRole("button", { name: "Read recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "Check the Import" }).waitFor();
+  assert.equal(await page.locator('[data-testid^="review-row-"]').count(), 13);
+  assert.equal(await page.getByLabel(/^Step \d+$/).count(), 3);
+  const accept = page.getByTestId("accept-easy");
+  const n = Number((await accept.textContent()).match(/\d+/)[0]);
+  assert.ok(n >= 10, `only ${n} lines with nothing to fix`);
+  await accept.click();
+  await page.getByText(`${n} of 13 checked`, { exact: false }).waitFor();
+  assert.equal(await page.getByTestId("accept-easy").count(), 0);
+  await page.screenshot({ path: join(outDir, "import-cookbook.png"), animations: "disabled", fullPage: true });
+});
+
 await check("M6: the AI shortcut shows the prompt and checks a pasted AI reply", async () => {
   await page.goto(`${url}#/import`);
   await page.getByTestId("ai-shortcut").getByText("Show the prompt").click();

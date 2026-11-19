@@ -19,11 +19,19 @@ const NOT_WANTED = /\b(with added solution|babyfood|baby food|infant|imitation|d
 /** Names people use that USDA words differently. */
 const SYNONYMS: [RegExp, string][] = [
   [/\bground beef (\d{2})\s*\/\s*\d{1,2}\b/i, "beef ground $1% lean meat raw"],
+  [/\b(\d{2})%(?: lean)?(?: \w+)?(?: (?:ground|mince|minced))+(?:\/(?:ground|mince|minced))? beef\b/i, "beef ground $1% lean meat raw"],
   [/\b(\d{2})% (?:lean )?ground beef\b/i, "beef ground $1% lean meat raw"],
   [/\b(\d{2})% (?:lean )?ground turkey\b/i, "turkey ground $1% lean raw"],
   [/\bground turkey (\d{2})%/i, "turkey ground $1% lean raw"],
   [/\b(?:scallions?|green onions?)\b/i, "onions spring or scallions raw"],
-  [/\b(?:red |yellow |green |orange )?bell peppers?\b/i, "peppers sweet raw"],
+  [/\b(red|yellow|green|orange) (?:bell )?peppers?\b/i, "peppers sweet $1 raw"],
+  [/\bbell peppers?\b/i, "peppers sweet raw"],
+  [/\b(onion|garlic|chili|curry) powder\b/i, "spices $1 powder"],
+  [/\bchilli powder\b/i, "spices chili powder"],
+  [/\bchipotle\b/i, "peppers hot chili red canned"],
+  [/\b(?:buffalo |louisiana |cayenne )?hot sauce\b|\bbuffalo sauce\b|\bfrank'?s\b/i, "sauce ready-to-serve pepper or hot"],
+  [/^(?:fresh |ripe |plum |vine )?tomato(?:e?s)?$/i, "tomatoes red ripe raw year round average"],
+  [/\b(lime|lemon) juice\b/i, "$1 juice raw"],
   [/\bjalape[nñ]os?\b/i, "peppers jalapeno raw"],
   [/\bchicken breasts?\b/i, "chicken breast boneless skinless raw"],
   [/\bchicken thighs?\b/i, "chicken thigh boneless skinless raw"],
@@ -72,7 +80,7 @@ function matchScore(description: string, terms: string[]): number {
   const w = description.toLowerCase().replace(/[^a-z0-9%]+/g, " ").trim().split(/\s+/);
   let score = 0;
   for (const t of terms) {
-    const i = w.findIndex((x) => x === t || x === `${t}s` || x === `${t}es` || (t.length >= 4 && x.startsWith(t)));
+    const i = w.findIndex((x) => x === t || x === `${t}s` || x === `${t}es` || (t.length >= 4 && x.startsWith(t) && x.length - t.length <= 3));
     score += i === -1 ? -6 : 10 - Math.min(i, 6);
   }
   return score - 0.6 * Math.max(0, w.length - terms.length);
@@ -209,6 +217,13 @@ export function quantityFor(
     if (food) {
       const r = gramsForAmount(food, 1, u.unit);
       if (!r.ok && r.reason === "ambiguous") {
+        // The recipe's own words pick the form ("ground cumin", "whole peppercorns"); black pepper
+        // measured by the spoon is ground unless it says otherwise.
+        const hint = ["ground", "whole", "leaves", "leaf", "chopped", "sliced", "diced", "minced", "shredded", "grated", "crushed"].find((w) => new RegExp(`\\b${w}\\b`, "i").test(p.name));
+        const pick =
+          (hint ? r.options.filter((o) => new RegExp(`\\b${hint}`, "i").test(o.label)) : []).at(0) ??
+          (/\bpepper, black\b/i.test(food.description) ? r.options.find((o) => /\bground\b/i.test(o.label)) : undefined);
+        if (pick) return { quantity: { kind: "volume", amount, unit: u.unit, portionLabel: pick.label }, problem: null, options: [] };
         return none(
           `USDA lists more than one weight per ${u.unit} for this food: choose one, or enter grams.`,
           r.options.map((o) => ({ label: `${o.amount} ${o.label} (${Math.round((o.grams / o.amount) * 10) / 10} g)`, quantity: { kind: "volume", amount, unit: u.unit, portionLabel: o.label } })),

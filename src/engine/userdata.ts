@@ -301,3 +301,19 @@ export function withSeedPackages(packages: PackageEntry[]): PackageEntry[] {
   });
   return [...merged, ...clone(SEED_PACKAGES).filter((p) => !keys.has(p.key))];
 }
+
+/** The old default upper limit (2½×), replaced by 5× in version 0.7.1. */
+const OLD_DEFAULT_MAX = 2.5;
+
+/**
+ * Brings saved settings up to date: adds new seed packages, and moves limits
+ * still at the old ½×–2½× default to the new default. Limits you changed stay.
+ */
+export function upgradeSettings(s: Settings): Settings {
+  const bounds = clone(s.bounds);
+  for (const lever of ["protein", "carb", "fat"] as const) {
+    const b = bounds[lever];
+    if (b && b.min === DEFAULT_BOUNDS[lever].min && b.max === OLD_DEFAULT_MAX) b.max = DEFAULT_BOUNDS[lever].max;
+  }
+  return { ...s, bounds, packages: withSeedPackages(s.packages) };
+}
