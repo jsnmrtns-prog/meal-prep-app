@@ -123,7 +123,7 @@ await check("first run shows setup, then the home screen", async () => {
   await page.getByRole("button", { name: "Next" }).click();
   await page.getByTestId("guide").waitFor();
   await page.getByRole("button", { name: "Start using the app" }).click();
-  await page.getByRole("heading", { level: 1, name: "Meal Prep" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Macrosmith" }).waitFor();
   await page.getByRole("button", { name: "Import a recipe" }).waitFor();
   await page.screenshot({ path: join(outDir, "home.png"), animations: "disabled" });
   // The same guide stays in Settings.
@@ -145,7 +145,7 @@ await check("all five tabs navigate", async () => {
     ["My Recipes", "My Recipes"],
     ["Shopping", "Shopping List"],
     ["Settings", "Settings"],
-    ["Home", "Meal Prep"],
+    ["Home", "Macrosmith"],
   ];
   for (const [label, title] of tabs) {
     await page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: label }).click();
@@ -646,7 +646,7 @@ await check("service worker installs and the app opens offline", async () => {
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
   await context.setOffline(true);
   await page.reload();
-  await page.getByRole("heading", { level: 1, name: "Meal Prep" }).waitFor({ timeout: 5000 });
+  await page.getByRole("heading", { level: 1, name: "Macrosmith" }).waitFor({ timeout: 5000 });
   await page.goto(`${url}#/shopping`);
   await page.getByRole("heading", { level: 1, name: "Shopping List" }).waitFor({ timeout: 5000 });
   await page.goto(`${url}#/foods/171077`);
@@ -657,7 +657,7 @@ await check("service worker installs and the app opens offline", async () => {
 await check("dark mode renders", async () => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto(`${url}#/home`);
-  await page.getByRole("heading", { level: 1, name: "Meal Prep" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Macrosmith" }).waitFor();
   await page.screenshot({ path: join(outDir, "home-dark.png"), animations: "disabled" });
   await page.emulateMedia({ colorScheme: "light" });
 });

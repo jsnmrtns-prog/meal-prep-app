@@ -519,7 +519,7 @@ export function BackupScreen(): ReactElement {
     // On iPhone the share sheet offers "Save to Files"; elsewhere the file downloads.
     if (navigator.canShare?.({ files: [file] })) {
       try {
-        await navigator.share({ files: [file], title: "Meal Prep backup" });
+        await navigator.share({ files: [file], title: "Macrosmith backup" });
         setStatus("Backup shared. Keep it somewhere safe, such as Files or iCloud Drive.");
         return;
       } catch (e) {

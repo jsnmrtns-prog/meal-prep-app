@@ -1,4 +1,4 @@
-# Meal Prep
+# Macrosmith
 
 Scale recipes to your macro targets, verify nutrition against USDA data, and build grocery lists. It runs as a Home Screen web app on iPhone.
 
@@ -64,6 +64,6 @@ Every push to `main` then runs the tests, builds the site and publishes it to
 
 1. Open the site address in **Safari**.
 2. Tap **Share**, then **Add to Home Screen**.
-3. Open Meal Prep from the Home Screen icon. In **Settings**, "Opened from" should say **Home Screen**.
+3. Open Macrosmith from the Home Screen icon. In **Settings**, "Opened from" should say **Home Screen**.
 
 Data is stored only on your iPhone. Home Screen web apps keep their own storage, separate from Safari tabs.

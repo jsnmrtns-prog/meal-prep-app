@@ -36,7 +36,7 @@ import {
 type TabId = "home" | "import" | "recipes" | "shopping" | "settings";
 
 const TABS: ReadonlyArray<{ id: TabId; label: string; title: string; Icon: () => ReactElement }> = [
-  { id: "home", label: "Home", title: "Meal Prep", Icon: HomeIcon },
+  { id: "home", label: "Home", title: "Macrosmith", Icon: HomeIcon },
   { id: "import", label: "Import", title: "Import Recipe", Icon: ImportIcon },
   { id: "recipes", label: "My Recipes", title: "My Recipes", Icon: RecipesIcon },
   { id: "shopping", label: "Shopping", title: "Shopping List", Icon: ShoppingIcon },
@@ -144,7 +144,7 @@ function Shell(): ReactElement {
       )}
       <InstallHint />
       <main className="screen" aria-labelledby="screen-title">
-        <h1 id="screen-title" className="large-title">
+        <h1 id="screen-title" className={`large-title${route.tab === "home" && route.screen.kind === "tab" ? " large-title--brand" : ""}`}>
           {titleFor(route)}
         </h1>
         {s.kind === "foods" && <FoodSearchScreen />}
@@ -262,7 +262,7 @@ function Onboarding(): ReactElement {
       <p className="onboarding__step">Step {step + 1} of 4</p>
       {step === 0 && (
         <>
-          <h2 className="food-title">Welcome</h2>
+          <h2 className="food-title">Welcome to Macrosmith</h2>
           <p className="lead">This app scales your meal-prep recipes to your calories and protein, checks every number against USDA data, and makes your shopping list.</p>
           <p className="lead">Everything you enter stays on this phone. Nothing is sent anywhere, and there's no account.</p>
           <button className="primary-action" onClick={() => setStep(1)}>Next</button>

@@ -6,15 +6,22 @@ import { mkdir } from "node:fs/promises";
 const out = new URL("../public/icons/", import.meta.url);
 await mkdir(out, { recursive: true });
 
-// A meal-prep container: one large compartment and two small ones.
+// Macrosmith: a meal-prep container on a dark tile, its compartments in the
+// app's green / orange / red, with a bold stripe across the top.
 const icon = (inset) => `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#2E7D4F"/>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3DDC6E"/><stop offset="0.58" stop-color="#FF8C42"/><stop offset="1" stop-color="#FF5C52"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0A0C0B"/>
   <g transform="translate(${inset} ${inset}) scale(${(512 - 2 * inset) / 512})">
-    <rect x="96" y="136" width="320" height="240" rx="44" fill="#FFFFFF"/>
-    <rect x="124" y="164" width="150" height="184" rx="22" fill="#2E7D4F" opacity="0.22"/>
-    <rect x="290" y="164" width="98" height="84" rx="20" fill="#2E7D4F" opacity="0.22"/>
-    <rect x="290" y="264" width="98" height="84" rx="20" fill="#2E7D4F" opacity="0.22"/>
+    <rect x="84" y="96" width="344" height="40" rx="20" fill="url(#g)"/>
+    <rect x="84" y="160" width="344" height="256" rx="46" fill="#F4F6F5"/>
+    <rect x="112" y="188" width="160" height="200" rx="26" fill="#FF5C52"/>
+    <rect x="288" y="188" width="112" height="92" rx="22" fill="#FF8C42"/>
+    <rect x="288" y="296" width="112" height="92" rx="22" fill="#3DDC6E"/>
   </g>
 </svg>`;
 

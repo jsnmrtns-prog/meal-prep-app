@@ -48,7 +48,7 @@ export async function packagePdf(title: string, blocks: Block[], lib?: PdfLib): 
   const { PDFDocument, StandardFonts, rgb } = lib ?? (await import("pdf-lib"));
   const doc = await PDFDocument.create();
   doc.setTitle(title);
-  doc.setCreator("Meal Prep");
+  doc.setCreator("Macrosmith");
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const charset = new Set(regular.getCharacterSet());
