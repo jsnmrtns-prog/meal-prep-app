@@ -182,8 +182,8 @@ export function ShoppingScreen(): ReactElement {
         </details>
       )}
 
-      <a className="primary-action" href="#/shopping/package" data-testid="send-to-cook">Send to your cook</a>
-      <p className="footnote footnote--tight">Every recipe with its amounts, plus this shopping list, in one message or PDF.</p>
+      <a className="primary-action" href="#/shopping/package" data-testid="send-to-cook">Share recipe package</a>
+      <p className="footnote footnote--tight">This shopping list plus every recipe with its amounts, in one PDF to print or send.</p>
 
       <div className="actions actions--center">
         <button className="action" onClick={() => void shareText("Shopping list", listText(built.planned, built.items)).then((r) => r === "copied" && alertCopied())}>Share list</button>
@@ -241,10 +241,10 @@ export function PackageScreen(): ReactElement {
     <div className="package" data-testid="package">
       <div className="no-print">
         <BackLink href="#/shopping">Shopping List</BackLink>
-        <p className="lead">Everything your cook needs: what to buy, then each recipe with your amounts in the steps.</p>
-        <button className="primary-action" data-testid="package-share" onClick={() => void shareText("Meal prep", text()).then((r) => r === "copied" && alertCopied())}>Send as text</button>
-        <button className="secondary-action" data-testid="package-print" onClick={() => window.print()}>Print or save as PDF</button>
-        <p className="footnote footnote--tight">On iPhone, Print opens the print screen; pinch out on the preview, or tap Share there, to send it as a PDF.</p>
+        <p className="lead">Everything needed to shop and cook: the shopping list, then each recipe with your amounts in the steps, each on its own page.</p>
+        <button className="primary-action" data-testid="package-print" onClick={() => window.print()}>Print or save as PDF</button>
+        <p className="footnote footnote--tight">On iPhone, tap the Share button at the top of the print screen to send the PDF in Messages, Mail or WhatsApp, or Save to Files.</p>
+        <button className="link-button" data-testid="package-share" onClick={() => void shareText("Meal prep", text()).then((r) => r === "copied" && alertCopied())}>Or send it as a text message instead</button>
       </div>
 
       <section className="section package__part">

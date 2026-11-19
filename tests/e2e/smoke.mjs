@@ -571,7 +571,7 @@ await check("shopping list: add recipes at a plan, they combine into one list by
   // The package for whoever shops and cooks: list + each recipe, as text or print/PDF.
   await page.goto(`${url}#/shopping`);
   await page.getByTestId("send-to-cook").click();
-  await page.getByRole("heading", { level: 1, name: "Prep Package" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Recipe Package" }).waitFor();
   const pkg = page.getByTestId("package");
   await pkg.getByTestId("package-list").getByText("Meat & seafood").waitFor();
   assert.equal(await pkg.getByTestId("package-recipe").count(), 2);

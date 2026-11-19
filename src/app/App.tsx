@@ -99,7 +99,7 @@ function titleFor(route: Route): string {
     case "recipe-versions": return "Versions";
     case "import-review": return "Check the Import";
     case "book": return "Cookbook";
-    case "package": return "Prep Package";
+    case "package": return "Recipe Package";
     case "settings":
       if (s.page === "presets" && s.id) return "Edit Preset";
       if (s.page === "labels" && s.id) return s.id === "new" ? "New Label Food" : "Edit Label Food";
