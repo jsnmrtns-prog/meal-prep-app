@@ -21,7 +21,9 @@ let pdfjsPromise: Promise<PdfJs> | null = null;
 
 async function loadPdfJs(): Promise<PdfJs> {
   pdfjsPromise ??= import("pdfjs-dist/legacy/build/pdf.mjs").then((m) => {
-    if (typeof document !== "undefined") m.GlobalWorkerOptions.workerSrc = new URL("./assets/pdf.worker.min.js", document.baseURI).href;
+    // Only in the browser; the engine tests load this file in Node.
+    const doc = (globalThis as { document?: { baseURI: string } }).document;
+    if (doc) m.GlobalWorkerOptions.workerSrc = new URL("./assets/pdf.worker.min.js", doc.baseURI).href;
     return m;
   });
   return pdfjsPromise;
