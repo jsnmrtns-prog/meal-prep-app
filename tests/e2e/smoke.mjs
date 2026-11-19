@@ -578,9 +578,24 @@ await check("shopping list: add recipes at a plan, they combine into one list by
   await pkg.getByTestId("package-recipe").first().getByText("Makes 6 containers", { exact: false }).waitFor();
   assert.ok((await pkg.getByTestId("package-recipe").first().locator(".amt").count()) >= 5, "amounts in the steps");
   await page.screenshot({ path: join(outDir, "package.png"), animations: "disabled", fullPage: true });
-  await page.emulateMedia({ media: "print" });
-  await page.screenshot({ path: join(outDir, "package-print.png"), animations: "disabled", fullPage: true });
-  await page.emulateMedia({ media: "screen" });
+  // The app builds the PDF itself (an iPhone Home Screen app can't print).
+  const pdfButton = pkg.getByTestId("package-pdf");
+  await pkg.getByRole("button", { name: "Share or save as PDF" }).waitFor();
+  const [download] = await Promise.all([page.waitForEvent("download"), pdfButton.click()]);
+  assert.equal(download.suggestedFilename(), "Recipe package.pdf");
+  const pdfPath = join(outDir, "package.pdf");
+  await download.saveAs(pdfPath);
+  const bytes = await readFile(pdfPath);
+  assert.equal(bytes.subarray(0, 5).toString(), "%PDF-");
+  assert.ok(bytes.length > 3000, `${bytes.length} bytes`);
+  // Where the phone can share files, the tap goes straight to the share sheet.
+  await page.evaluate(() => {
+    navigator.canShare = (d) => Array.isArray(d?.files);
+    navigator.share = async (d) => { window.__shared = `${d.files[0].name}|${d.files[0].type}|${d.files[0].size}`; };
+  });
+  await pdfButton.click();
+  const shared = await page.waitForFunction(() => window.__shared).then((h) => h.jsonValue());
+  assert.match(shared, /^Recipe package\.pdf\|application\/pdf\|\d{4,}$/);
   await page.goto(`${url}#/shopping`);
   await recipesCard.getByRole("button", { name: "Remove Taco Mac N Cheese" }).click();
   await recipesCard.getByText("Taco Mac N Cheese").waitFor({ state: "detached" });

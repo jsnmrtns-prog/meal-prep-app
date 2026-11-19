@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactElement, type ReactNode } from "react";
+import type { Block, Run } from "./packagePdf.ts";
 import {
   BIG_CHANGE,
   applyPreferences,
@@ -432,6 +433,37 @@ export function cookText(data: Computed, perMeal: PerMeal, notes: string[] = [])
     ...steps.map((st, i) => `${i + 1}. ${stepText(st)}`),
     ...(stepsDivide(recipe) ? [] : [`${steps.length + 1}. Divide into ${data.portioning.portions} containers, about ${weight(data.portioning.perContainerGrams)} each.`]),
   ].join("\n");
+}
+
+/** The cooking view as PDF blocks, for the recipe package. */
+export function cookBlocks(data: Computed, perMeal: PerMeal, notes: string[] = []): Block[] {
+  const recipe = data.recipe;
+  const gramsOf = new Map(data.calc.lines.map((l) => [l.lineId, l.grams]));
+  const lineOf = new Map(recipe.lines.map((l) => [l.id, l]));
+  const amt = (id: string, inStep = false) => cookAmount(lineOf.get(id)!, gramsOf.get(id) ?? 0, inStep);
+  const steps = cookingSteps(recipe, data.portioning.portions);
+  const out: Block[] = [
+    { t: "title", text: recipe.name },
+    { t: "sub", text: `Makes ${data.portioning.portions} containers, about ${weight(data.portioning.perContainerGrams)} each` },
+    { t: "sub", text: `Per container: ${r0(perMeal.kcal)} kcal · Protein ${r0(perMeal.protein)} g · Carbs ${r0(perMeal.carbs)} g · Fat ${r0(perMeal.fat)} g` },
+    { t: "heading", text: "Ingredients" },
+  ];
+  let lastGroup: string | undefined = "\u0000";
+  for (const l of recipe.lines) {
+    if (l.group !== lastGroup && l.group) out.push({ t: "group", text: l.group });
+    lastGroup = l.group;
+    out.push({ t: "row", left: l.name, right: amt(l.id), sub: l.optional ? "optional" : undefined });
+  }
+  for (const n of notes) out.push({ t: "note", text: n });
+  out.push({ t: "heading", text: "Steps" });
+  steps.forEach((st, i) => {
+    const runs: Run[] = st.parts.map((p) => (p.kind === "text" ? { text: p.text } : { text: ` (${amt(p.lineId, true)})`, bold: true }));
+    if (st.also.length) runs.push({ text: ` Also: ${st.also.map((id) => `${lineOf.get(id)!.name} (${amt(id)})`).join(", ")}.` });
+    out.push({ t: "step", n: i + 1, runs });
+  });
+  if (!stepsDivide(recipe))
+    out.push({ t: "step", n: steps.length + 1, runs: [{ text: "Divide into " }, { text: `${data.portioning.portions} containers`, bold: true }, { text: `, about ${weight(data.portioning.perContainerGrams)} each. Weigh the finished batch for exact portions.` }] });
+  return out;
 }
 
 export function CookView({ data, perMeal, notes, targets, forPrint = false }: { data: Computed; perMeal: PerMeal; notes: string[]; targets?: TargetResult[]; forPrint?: boolean }): ReactElement {

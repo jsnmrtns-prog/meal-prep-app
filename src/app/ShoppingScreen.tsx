@@ -1,6 +1,6 @@
 // The combined shopping list: the recipes you've added (each at the plan you
 // picked), merged into one list by store section, ticked off as you shop.
-import { useMemo, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 import {
   buildShoppingList,
   calculateRecipe,
@@ -12,7 +12,8 @@ import {
   type ShoppingSelection,
 } from "../engine/index.ts";
 import { imperial, weight } from "./format.ts";
-import { CookView, analyse, buyText, cookText, perPortionOf, prepared } from "./RecipeReport.tsx";
+import { CookView, analyse, buyText, cookBlocks, cookText, perPortionOf, prepared } from "./RecipeReport.tsx";
+import { packagePdf, sharePdf, type Block } from "./packagePdf.ts";
 import { useUserData } from "./store.tsx";
 import { BackLink, useEngine, type Engine } from "./ui.tsx";
 
@@ -203,6 +204,28 @@ function alertCopied(): void {
   setTimeout(() => el.remove(), 2500);
 }
 
+type Built = { planned: Planned[]; items: ShoppingItem[]; cooked: { p: Planned; data: ReturnType<typeof analyse>; perMeal: ReturnType<typeof perPortionOf> }[] };
+
+/** The package as PDF blocks: what's being prepped, the shopping list, then one recipe per page. */
+function packageBlocks(built: Built): Block[] {
+  const out: Block[] = [{ t: "title", text: "Meal prep" }, { t: "heading", text: "Prepping" }];
+  for (const p of built.planned) out.push({ t: "row", left: p.name, right: `${p.containers} containers`, sub: p.planLabel !== "Original amounts" ? `${p.planLabel} each` : undefined });
+  out.push({ t: "heading", text: "Shopping list" });
+  let last = "";
+  for (const item of built.items.filter((i) => i.buy.kind !== "pantry")) {
+    if (item.category !== last) out.push({ t: "group", text: item.category });
+    last = item.category;
+    out.push({ t: "row", left: item.name, right: buyText(item), box: true });
+  }
+  const pantry = built.items.filter((i) => i.buy.kind === "pantry");
+  if (pantry.length) {
+    out.push({ t: "group", text: "Check you have these" });
+    for (const item of pantry) out.push({ t: "row", left: item.name, right: buyText(item), box: true });
+  }
+  for (const { p, data, perMeal } of built.cooked) out.push({ t: "page" }, ...cookBlocks(data, perMeal, p.stepNotes));
+  return out;
+}
+
 /**
  * Everything someone else needs to shop and cook: what's being prepped, the
  * combined shopping list, then each recipe with its amounts written into the
@@ -225,6 +248,17 @@ export function PackageScreen(): ReactElement {
     return { planned, items: list.items, cooked };
   }, [engine, selection, recipes, settings]);
 
+  const [pdf, setPdf] = useState<File | "failed" | null>(null);
+  useEffect(() => {
+    if (!built) return;
+    let live = true;
+    setPdf(null);
+    packagePdf("Recipe package", packageBlocks(built))
+      .then((bytes) => live && setPdf(new File([bytes as BlobPart], "Recipe package.pdf", { type: "application/pdf" })))
+      .catch(() => live && setPdf("failed"));
+    return () => { live = false; };
+  }, [built]);
+
   if (selection.entries.length === 0) return <><BackLink href="#/shopping">Shopping List</BackLink><p className="lead">Add recipes to your shopping list first.</p></>;
   if (!built) return <p className="lead">Putting it together…</p>;
   const text = () =>
@@ -242,8 +276,10 @@ export function PackageScreen(): ReactElement {
       <div className="no-print">
         <BackLink href="#/shopping">Shopping List</BackLink>
         <p className="lead">Everything needed to shop and cook: the shopping list, then each recipe with your amounts in the steps, each on its own page.</p>
-        <button className="primary-action" data-testid="package-print" onClick={() => window.print()}>Print or save as PDF</button>
-        <p className="footnote footnote--tight">On iPhone, tap the Share button at the top of the print screen to send the PDF in Messages, Mail or WhatsApp, or Save to Files.</p>
+        <button className="primary-action" data-testid="package-pdf" disabled={!(pdf instanceof File)} onClick={() => { if (pdf instanceof File) void sharePdf(pdf); }}>
+          {pdf === null ? "Getting the PDF ready…" : pdf === "failed" ? "Couldn't make the PDF" : "Share or save as PDF"}
+        </button>
+        <p className="footnote footnote--tight">Opens the share sheet: send the PDF in Messages, Mail or WhatsApp, Save to Files, or Print it from there.</p>
         <button className="link-button" data-testid="package-share" onClick={() => void shareText("Meal prep", text()).then((r) => r === "copied" && alertCopied())}>Or send it as a text message instead</button>
       </div>
 
