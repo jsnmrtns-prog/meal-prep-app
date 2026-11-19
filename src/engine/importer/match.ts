@@ -51,7 +51,16 @@ const SYNONYMS: [RegExp, string][] = [
   [/\bpart[- ]skim ricotta\b/i, "cheese ricotta part skim milk"],
   [/\bpart[- ]skim mozzarella\b|\bmozzarella\b/i, "cheese mozzarella low moisture part-skim"],
   [/\blettuce\b/i, "lettuce iceberg raw"],
-  [/\b(?:crushed|diced|canned) tomatoes\b/i, "tomatoes red ripe canned"],
+  [/\b(?:canned (?:chopped |diced |crushed |whole |plum )?|crushed |diced )tomato(?:e?s)?\b(?! (?:sauce|paste|puree|purée|juice))/i, "tomatoes red ripe canned packed in tomato juice"],
+  [/\b(?:beef |chicken |vegetable )?(?:stock|bouillon) cubes?\b/i, "soup bouillon cubes and granules"],
+  [/\bwalnuts?\b(?! (?:oil|butter|milk|flour|extract))/i, "nuts walnuts english"],
+  [/\balmonds?\b(?! (?:oil|butter|milk|flour|extract))/i, "nuts almonds"],
+  [/\bpecans?\b(?! (?:oil|butter|milk|flour|extract))/i, "nuts pecans"],
+  [/\bcashews?\b(?! (?:oil|butter|milk|flour|extract))/i, "nuts cashew nuts raw"],
+  [/\bpistachios?\b(?! (?:oil|butter|milk|flour|extract))/i, "nuts pistachio nuts raw"],
+  [/\bpeanuts?\b(?! (?:oil|butter|flour))/i, "peanuts all types raw"],
+  [/^(?:white |granulated |caster |cane )?sugar$/i, "sugars granulated"],
+  [/\bcorn ?starch\b|\bcornflour\b/i, "cornstarch"],
   [/\b(?:hamburger |burger )?buns?\b/i, "rolls hamburger or hotdog"],
   [/^water$|^(?:cold|warm|hot|boiling) water$/i, "water tap"],
   [/^(?:black )?pepper$|\bground black pepper\b/i, "spices pepper black"],
@@ -130,6 +139,15 @@ export function suggestFoods(name: string, db: FoodDb, limit = 6, want?: MatchWa
     const m = name.match(re);
     if (m) queries.push(m[0].replace(re, q));
   }
+  // "cornstarch/cornflour", "scallions/shallots": each name on its own, the first one first.
+  const alts = name.split(/(?<=[a-z])\s*\/\s*(?=[a-z])/i);
+  if (alts.length > 1) {
+    for (const [re, q] of SYNONYMS) {
+      const m = alts[0]!.match(re);
+      if (m) queries.push(m[0].replace(re, q));
+    }
+    for (const a of alts) if (searchTerms(a).length) queries.push(searchTerms(a).join(" "));
+  }
   const terms = searchTerms(name);
   if (terms.length) queries.push(terms.join(" "));
   for (let k = 1; k < terms.length; k++) queries.push(terms.slice(k).join(" "));
@@ -158,10 +176,10 @@ export function wantFor(p: Pick<ParsedIngredient, "unit" | "sizeWord" | "package
   if (p.packageSize || p.unit?.kind === "mass") return undefined;
   if (p.unit?.kind === "volume") return { volume: true };
   const words = [p.unit?.kind === "count" ? p.unit.noun : null, p.sizeWord].filter((w): w is string => Boolean(w));
-  // "3 garlic cloves": the count word is the last word of the name.
+  // "3 garlic cloves": the count word is the last word of the name. "1 red pepper" with no size: any whole-item size will do.
   if (words.length === 0) {
-    const last = searchTerms(p.name).at(-1);
-    if (last) words.push(last);
+    const last = searchTerms(p.name.split(/\s*\/\s*/)[0]!).at(-1);
+    if (last) words.push(last, "whole", "large", "medium", "small");
   }
   return { countWords: words };
 }
@@ -185,6 +203,8 @@ export function guessRole(food: Food, name = ""): IngredientRole {
 }
 
 export function guessState(food: Food, name: string): MeasuredState {
+  // Canned foods are weighed as they come out of the can, like the USDA "canned" records.
+  if (/\bcanned\b/i.test(food.description) && !/\bcooked\b/i.test(name)) return "as_packaged";
   if (COOKED.test(name) || /\bcooked\b/i.test(food.description)) return COOKED.test(food.description) ? "cooked" : "raw";
   if (/frozen/i.test(food.description) || /\bfrozen\b/i.test(name)) return "frozen";
   if (food.category === "Cereal Grains and Pasta" && /\b(raw|dry)\b/i.test(food.description)) return "dry";
@@ -219,7 +239,7 @@ export function quantityFor(
       if (!r.ok && r.reason === "ambiguous") {
         // The recipe's own words pick the form ("ground cumin", "whole peppercorns"); black pepper
         // measured by the spoon is ground unless it says otherwise.
-        const hint = ["ground", "whole", "leaves", "leaf", "chopped", "sliced", "diced", "minced", "shredded", "grated", "crushed"].find((w) => new RegExp(`\\b${w}\\b`, "i").test(p.name));
+        const hint = ["ground", "whole", "leaves", "leaf", "mashed", "chopped", "sliced", "diced", "minced", "shredded", "grated", "crushed"].find((w) => new RegExp(`\\b${w}\\b`, "i").test(p.name));
         const pick =
           (hint ? r.options.filter((o) => new RegExp(`\\b${hint}`, "i").test(o.label)) : []).at(0) ??
           (/\bpepper, black\b/i.test(food.description) ? r.options.find((o) => /\bground\b/i.test(o.label)) : undefined);
@@ -236,7 +256,7 @@ export function quantityFor(
   if (!food) return none("Choose the USDA food first.");
   // Count: find a USDA portion matching the noun or size ("clove", "large", "medium").
   const portions = food.portions.filter((x) => x.grams > 0 && (x.unit === null || !["cup", "tbsp", "tsp", "ml", "l", "fl_oz", "g", "oz", "lb", "kg"].includes(x.unit)));
-  const words = [u?.kind === "count" ? u.noun : null, p.sizeWord, ...searchTerms(p.name).slice(-1)].filter((w): w is string => Boolean(w));
+  const words = [u?.kind === "count" ? u.noun : null, p.sizeWord, ...searchTerms(p.name.split(/\s*\/\s*/)[0]!).slice(-1)].filter((w): w is string => Boolean(w));
   for (const w of words) {
     // Best label first: exactly the word, then starting with it, then containing it.
     const re = new RegExp(`\\b${w}s?\\b`, "i");
@@ -247,7 +267,7 @@ export function quantityFor(
     if (hit) return { quantity: { kind: "count", amount, portionLabel: hit.label }, problem: null, options: [] };
   }
   const options = portions.map((x) => ({ label: `${x.label} (${Math.round((x.grams / x.amount) * 10) / 10} g each)`, quantity: { kind: "count" as const, amount, portionLabel: x.label } }));
-  const what = u?.kind === "count" ? `one ${u.noun}` : `one ${p.sizeWord ? `${p.sizeWord} ` : ""}${searchTerms(p.name).at(-1) ?? "item"}`;
+  const what = u?.kind === "count" ? `one ${u.noun}` : `one ${p.sizeWord ? `${p.sizeWord} ` : ""}${searchTerms(p.name.split(/\s*\/\s*/)[0]!).at(-1) ?? "item"}`;
   return none(options.length ? `Which USDA size is ${what}? Choose one, or enter grams.` : `USDA has no weight for ${what} of this food: enter grams.`, options);
 }
 

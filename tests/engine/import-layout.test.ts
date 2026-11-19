@@ -91,3 +91,13 @@ test("limits still at the old ½×–2½× default move to ½×–5×; changed l
   assert.deepEqual(up.bounds, { protein: { min: 0.5, max: 5 }, carb: { min: 0.5, max: 5 }, fat: { min: 0.75, max: 2.5 } });
   assert.deepEqual(upgradeSettings(s).bounds, s.bounds);
 });
+
+test("canned foods are matched to USDA canned records and measured as packaged", async () => {
+  const { guessState } = await import("../../src/engine/index.ts");
+  for (const line of ["1 (15 oz) can black beans, drained", "1 15oz. can black beans", "400g can chopped tomatoes"]) {
+    const p = parseRecipeText(`Ingredients\n${line}\nInstructions\nStir.`).ingredients[0]!;
+    const food = suggestFoods(p.name, db, 1, wantFor(p))[0]!;
+    assert.match(food.description, /\bcanned\b/i, line);
+    assert.equal(guessState(food, p.name), "as_packaged", line);
+  }
+});

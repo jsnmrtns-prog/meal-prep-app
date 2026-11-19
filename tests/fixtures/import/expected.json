@@ -753,7 +753,7 @@
     {
      "amount": 0.5,
      "unit": "cup",
-     "name": "onion chopped",
+     "name": "onion",
      "flags": [
       "ocr_fix"
      ]
@@ -928,7 +928,7 @@
     {
      "amount": 4,
      "unit": null,
-     "name": "potatos cubed",
+     "name": "potatos",
      "flags": []
     },
     {
@@ -996,7 +996,7 @@
     {
      "amount": 2,
      "unit": "count:clove",
-     "name": "garlic minced",
+     "name": "garlic",
      "flags": []
     },
     {
@@ -1056,7 +1056,7 @@
     {
      "amount": 8,
      "unit": "oz",
-     "name": "cooked ham or chicken diced",
+     "name": "cooked ham or chicken",
      "flags": [
       "alternatives"
      ]
@@ -1121,13 +1121,13 @@
     {
      "amount": 14,
      "unit": "oz",
-     "name": "smoked turkey sausage sliced",
+     "name": "smoked turkey sausage",
      "flags": []
     },
     {
      "amount": 2,
      "unit": null,
-     "name": "sweet potatos diced",
+     "name": "sweet potatos",
      "flags": []
     },
     {

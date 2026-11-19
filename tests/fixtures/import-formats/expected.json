@@ -1,0 +1,612 @@
+{
+ "a-glued": {
+  "title": "Weeknight Beef Chilli",
+  "servings": 4,
+  "steps": 2,
+  "notes": 0,
+  "ingredients": [
+   [
+    1,
+    "tbsp",
+    "olive oil",
+    []
+   ],
+   [
+    2,
+    null,
+    "onions",
+    []
+   ],
+   [
+    3,
+    null,
+    "garlic cloves",
+    []
+   ],
+   [
+    2,
+    "tbsp",
+    "mild chilli powder",
+    []
+   ],
+   [
+    2,
+    "tsp",
+    "ground cumin",
+    []
+   ],
+   [
+    750,
+    "g",
+    "lean minced beef",
+    []
+   ],
+   [
+    400,
+    "g",
+    "canned chopped tomato",
+    []
+   ],
+   [
+    2,
+    null,
+    "beef stock cubes",
+    []
+   ],
+   [
+    2,
+    null,
+    "red peppers",
+    []
+   ],
+   [
+    2,
+    "count:can",
+    "canned red kidney beans",
+    []
+   ]
+  ]
+ },
+ "b-split-lines": {
+  "title": "Turkey Salad Bowl",
+  "servings": 1,
+  "steps": 2,
+  "notes": 0,
+  "ingredients": [
+   [
+    0.125,
+    "cup",
+    "jarred mild salsa",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "extra virgin olive oil",
+    []
+   ],
+   [
+    0.25,
+    "lb",
+    "93% ground turkey",
+    []
+   ],
+   [
+    0.25,
+    "tsp",
+    "garlic powder",
+    []
+   ],
+   [
+    0.125,
+    "tsp",
+    "chili powder",
+    []
+   ],
+   [
+    0.125,
+    null,
+    "onion",
+    []
+   ],
+   [
+    1,
+    "oz",
+    "canned tomato sauce",
+    []
+   ],
+   [
+    2.5,
+    "cup",
+    "chopped romaine lettuce",
+    []
+   ],
+   [
+    null,
+    null,
+    "greek yogurt or sour cream",
+    ["to_taste", "alternatives"]
+   ]
+  ]
+ },
+ "c-subheading": {
+  "title": "Turkey Dressing Bowls",
+  "servings": 4,
+  "steps": 2,
+  "notes": 0,
+  "ingredients": [
+   [
+    0.5,
+    "cup",
+    "jarred mild salsa",
+    []
+   ],
+   [
+    4,
+    "tsp",
+    "extra virgin olive oil",
+    []
+   ],
+   [
+    1,
+    "lb",
+    "93% lean ground turkey",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "garlic powder",
+    []
+   ]
+  ]
+ },
+ "d-notes-dual": {
+  "title": "Crispy Sticky Beef",
+  "servings": 2,
+  "steps": 2,
+  "notes": 2,
+  "ingredients": [
+   [
+    300,
+    "g",
+    "beef rump steak",
+    []
+   ],
+   [
+    1,
+    "tbsp",
+    "soy sauce",
+    []
+   ],
+   [
+    null,
+    "cup",
+    "vegetable oil",
+    ["range"]
+   ],
+   [
+    0.25,
+    "cup",
+    "cornstarch/cornflour",
+    []
+   ],
+   [
+    0.5,
+    "tsp",
+    "ginger",
+    []
+   ],
+   [
+    2,
+    null,
+    "garlic cloves",
+    []
+   ],
+   [
+    2,
+    null,
+    "scallions/shallots",
+    []
+   ]
+  ]
+ },
+ "e-weights": {
+  "title": "Simple Banana Loaf",
+  "servings": 16,
+  "steps": 2,
+  "notes": 0,
+  "ingredients": [
+   [
+    454,
+    "g",
+    "thoroughly mashed banana",
+    []
+   ],
+   [
+    99,
+    "g",
+    "vegetable oil",
+    []
+   ],
+   [
+    200,
+    "g",
+    "brown sugar",
+    []
+   ],
+   [
+    2,
+    null,
+    "eggs",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "vanilla extract",
+    []
+   ],
+   [
+    120,
+    "g",
+    "unbleached all-purpose flour",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "baking soda",
+    []
+   ],
+   [
+    0.75,
+    "tsp",
+    "salt",
+    []
+   ],
+   [
+    57,
+    "g",
+    "chopped walnuts",
+    []
+   ]
+  ]
+ },
+ "f-packages-costs": {
+  "title": "Turkey Rice Bowls",
+  "servings": 4,
+  "steps": 3,
+  "notes": 0,
+  "ingredients": [
+   [
+    1,
+    "cup",
+    "long grain white rice",
+    []
+   ],
+   [
+    1,
+    "lb",
+    "ground turkey",
+    []
+   ],
+   [
+    1,
+    "count:package",
+    "taco seasoning",
+    []
+   ],
+   [
+    1,
+    "count:can",
+    "canned black beans",
+    []
+   ],
+   [
+    1.5,
+    "lb",
+    "ground turkey",
+    []
+   ],
+   [
+    4,
+    "oz",
+    "cheddar cheese",
+    []
+   ],
+   [
+    1.333,
+    "cup",
+    "salsa",
+    []
+   ],
+   [
+    2,
+    null,
+    "green onions",
+    []
+   ]
+  ]
+ },
+ "g-uk": {
+  "title": "Bean and beef chilli",
+  "servings": 4,
+  "steps": 2,
+  "notes": 0,
+  "ingredients": [
+   [
+    1,
+    "tbsp",
+    "oil",
+    []
+   ],
+   [
+    1,
+    null,
+    "onion",
+    []
+   ],
+   [
+    1,
+    null,
+    "red pepper",
+    []
+   ],
+   [
+    2,
+    null,
+    "garlic cloves",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "hot chilli powder",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "paprika",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "ground cumin",
+    []
+   ],
+   [
+    500,
+    "g",
+    "lean minced beef",
+    []
+   ],
+   [
+    1,
+    null,
+    "beef stock cube",
+    []
+   ],
+   [
+    400,
+    "g",
+    "canned chopped tomatoes",
+    []
+   ],
+   [
+    410,
+    "g",
+    "canned red kidney beans",
+    []
+   ],
+   [
+    200,
+    "g",
+    "onion",
+    []
+   ],
+   [
+    1,
+    "count:tin",
+    "canned chopped tomatoes",
+    []
+   ]
+  ]
+ },
+ "h-wprm-print": {
+  "title": "Chicken Rice Bowl",
+  "servings": 4,
+  "steps": 2,
+  "notes": 0,
+  "ingredients": [
+   [
+    1,
+    "lb",
+    "boneless skinless chicken breast",
+    []
+   ],
+   [
+    1,
+    "tbsp",
+    "olive oil",
+    []
+   ],
+   [
+    2,
+    "tsp",
+    "chili powder",
+    []
+   ],
+   [
+    1,
+    "cup",
+    "uncooked white rice",
+    []
+   ],
+   [
+    1,
+    "count:can",
+    "canned black beans",
+    []
+   ],
+   [
+    0.5,
+    "cup",
+    "plain Greek yogurt",
+    []
+   ]
+  ]
+ },
+ "i-number-servings": {
+  "title": "Chicken Burrito Bowl",
+  "servings": 2,
+  "steps": 2,
+  "notes": 2,
+  "ingredients": [
+   [
+    12,
+    "oz",
+    "chicken breast",
+    []
+   ],
+   [
+    1,
+    "cup",
+    "cooked white rice",
+    []
+   ],
+   [
+    1,
+    null,
+    "avocado",
+    []
+   ],
+   [
+    0.5,
+    null,
+    "lime",
+    []
+   ]
+  ]
+ },
+ "j-tasty": {
+  "title": "Pepper Turkey Skillet",
+  "servings": 4,
+  "steps": 2,
+  "notes": 0,
+  "ingredients": [
+   [
+    2,
+    "tbsp",
+    "oil",
+    []
+   ],
+   [
+    1,
+    null,
+    "red bell pepper",
+    []
+   ],
+   [
+    1,
+    null,
+    "yellow bell pepper",
+    []
+   ],
+   [
+    1,
+    null,
+    "red onion",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "salt",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "pepper",
+    []
+   ],
+   [
+    2,
+    "lb",
+    "ground turkey",
+    []
+   ]
+  ]
+ },
+ "k-pdf-messy": {
+  "title": "Yogurt Banana Bread",
+  "servings": null,
+  "steps": 1,
+  "notes": 0,
+  "ingredients": [
+   [
+    1,
+    null,
+    "eggs",
+    []
+   ],
+   [
+    1,
+    "cup",
+    "sugar",
+    []
+   ],
+   [
+    0.333,
+    "cup",
+    "vegetable oil",
+    []
+   ],
+   [
+    1,
+    "cup",
+    "mashed ripe bananas",
+    []
+   ],
+   [
+    2,
+    "tsp",
+    "vanilla extract",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "baking soda",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "baking powder",
+    []
+   ],
+   [
+    1,
+    "tsp",
+    "salt",
+    []
+   ],
+   [
+    2.667,
+    "cup",
+    "All-purpose Flour",
+    []
+   ],
+   [
+    1,
+    "cup",
+    "plain yogurt",
+    []
+   ]
+  ]
+ }
+}
