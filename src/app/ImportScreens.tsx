@@ -341,6 +341,10 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
 
   const resolved = rows.map((r) => resolveRow(r, engine));
   const [showSure, setShowSure] = useState(false);
+  // Already in My Recipes under the same name: replace it (its old version is kept in its history) or keep both.
+  const sameName = (a: string) => a.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const duplicate = title.trim() ? recipes.find((r) => sameName(r.recipe.name) === sameName(title)) : undefined;
+  const [keepBoth, setKeepBoth] = useState(false);
   const [showSteps, setShowSteps] = useState(false);
   const included = rows.map((r, i) => ({ r, i })).filter(({ r }) => r.choice !== "out");
   const blockers: string[] = [];
@@ -375,7 +379,7 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
         confirmed: notes,
       }];
     });
-    const id = recipeIdFor(title.trim(), new Set(recipes.map((r) => r.id)));
+    const id = duplicate && !keepBoth ? duplicate.id : recipeIdFor(title.trim(), new Set(recipes.map((r) => r.id)));
     const draft = recipeFromImport({ id, title: title.trim(), servings: servings!, lines, steps: cleanSteps, notes: parsed.notes, source });
     // What the recipe says about itself, shown next to the app's numbers on the report.
     const pr = parsed.printed;
@@ -393,6 +397,16 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
       <BackLink href="#/import">Import</BackLink>
       <p className="lead">{needIdx.length === 0 ? "Everything was read. Glance over it and continue." : `${needIdx.length} ${needIdx.length === 1 ? "line needs" : "lines need"} you. The rest look right.`}</p>
       {parsed.flags.length > 0 && <FlagList flags={parsed.flags} testId="recipe-flags" />}
+      {duplicate && (
+        <div className="card duplicate" data-testid="duplicate">
+          <p className="duplicate__text">You already have “{duplicate.recipe.name}”.</p>
+          <div className="chips" role="radiogroup" aria-label="Already saved">
+            <button className={`chip${!keepBoth ? " chip--on" : ""}`} role="radio" aria-checked={!keepBoth} onClick={() => setKeepBoth(false)}>Replace it</button>
+            <button className={`chip${keepBoth ? " chip--on" : ""}`} role="radio" aria-checked={keepBoth} onClick={() => setKeepBoth(true)}>Keep both</button>
+          </div>
+          <p className="footnote">{keepBoth ? "This one is saved as a second copy." : "The old one is kept in the recipe's history, so you can go back to it."}</p>
+        </div>
+      )}
       <div className="card card--form review-head">
         <Field label="Name"><input className="input" aria-label="Recipe name" value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
         <Field label="Servings the recipe makes"><NumberInput label="Servings" inputMode="numeric" value={servings} onChange={setServings} /></Field>

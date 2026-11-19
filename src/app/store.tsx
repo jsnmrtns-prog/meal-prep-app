@@ -9,6 +9,7 @@ import {
   revertSavedRecipe,
   updateSavedRecipe,
   upgradeSettings,
+  upgradeSavedLines,
   type Backup,
   type Recipe,
   type SavedRecipe,
@@ -74,9 +75,20 @@ async function loadEverything(): Promise<{ settings: Settings; recipes: SavedRec
     return { settings, recipes };
   }
   const settings = upgradeSettings(stored);
-  if (JSON.stringify(settings) === JSON.stringify(stored)) return { settings: stored, recipes: storedRecipes };
-  await write((kv) => kv.put(settings, SETTINGS_KEY));
-  return { settings, recipes: storedRecipes };
+  // Saved recipes pick up the current step-linking rules (amounts and foods stay as they are).
+  const recipes = storedRecipes.map((r) => {
+    const up = upgradeSavedLines(r.recipe);
+    return up === r.recipe ? r : { ...r, recipe: up };
+  });
+  const changedRecipes = recipes.filter((r, i) => r !== storedRecipes[i]);
+  const settingsChanged = JSON.stringify(settings) !== JSON.stringify(stored);
+  if (settingsChanged || changedRecipes.length) {
+    await write((kv, rs) => {
+      if (settingsChanged) kv.put(settings, SETTINGS_KEY);
+      for (const r of changedRecipes) rs.put(r);
+    });
+  }
+  return { settings: settingsChanged ? settings : stored, recipes };
 }
 
 async function write(fn: (kv: IDBObjectStore, rs: IDBObjectStore) => void): Promise<void> {

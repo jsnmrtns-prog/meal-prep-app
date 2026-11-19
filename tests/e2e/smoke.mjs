@@ -405,6 +405,27 @@ await check("M6: a pasted web recipe is read, every line checked, and saved with
   await page.screenshot({ path: join(outDir, "import-saved.png"), animations: "disabled", fullPage: true });
 });
 
+await check("importing a recipe you already have offers to replace it, and you end up with one copy", async () => {
+  const text = await readFile(new URL("../fixtures/import/01-web-chicken-burrito-bowls.txt", import.meta.url), "utf8");
+  await page.goto(`${url}#/import`);
+  await openTextBox();
+  await page.getByLabel("Recipe text").fill(text);
+  await page.getByRole("button", { name: "Read recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "Check the Import" }).waitFor();
+  const dup = page.getByTestId("duplicate");
+  await dup.getByText("You already have “Chicken Burrito Bowls”.").waitFor();
+  assert.equal(await dup.getByRole("radio", { name: "Replace it" }).getAttribute("aria-checked"), "true");
+  await page.screenshot({ path: join(outDir, "import-duplicate.png"), animations: "disabled", fullPage: false });
+  await clearNeeds();
+  await page.getByRole("button", { name: "Continue to the recipe" }).click();
+  await page.getByRole("button", { name: "Save recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.goto(`${url}#/recipes`);
+  await page.getByRole("heading", { level: 1, name: "My Recipes" }).waitFor();
+  await page.screenshot({ path: join(outDir, "recipes-after-dup.png"), animations: "disabled", fullPage: true });
+  assert.equal(await page.getByText("Chicken Burrito Bowls", { exact: true }).count(), 1);
+});
+
 await check("M6: a PDF with two columns of ingredients opens straight into the review", async () => {
   await page.goto(`${url}#/import`);
   await page.getByLabel("Recipe file").setInputFiles(new URL("../fixtures/import-files/two-column.pdf", import.meta.url).pathname);

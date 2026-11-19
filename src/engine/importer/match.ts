@@ -427,6 +427,41 @@ export function linkSteps(lines: { name: string; group: string | null }[], steps
   });
 }
 
+/** Notes about how import tidied the text; not worth keeping on a saved line. */
+const TIDY_NOTE = /^(?:Joined two lines into one ingredient|Split from "|Read ".*" as|Combined )/;
+
+/**
+ * Brings a saved recipe up to the current import rules without changing any
+ * amount or food: an ingredient with no step, or linked to a step that doesn't
+ * mention it, gets the step the app works out (marked as worked out), and
+ * import tidy-up notes are dropped. Returns the same object when nothing changes.
+ */
+export function upgradeSavedLines(recipe: Recipe): Recipe {
+  const steps = recipe.steps.map((s) => s.text);
+  let links: { steps: number[]; inferred: boolean }[] | null = null;
+  let changed = false;
+  const lines = recipe.lines.map((line, i) => {
+    let next = line;
+    const notes = line.assumptions?.map((a) => a.replace(/^Checked on import:\s*/, "")).filter((a) => !TIDY_NOTE.test(a));
+    if (notes && JSON.stringify(notes) !== JSON.stringify(line.assumptions)) {
+      next = { ...next, assumptions: notes };
+      if (notes.length === 0) delete next.assumptions;
+    }
+    const used = line.usedInSteps ?? [];
+    const ok = line.optional || (used.length > 0 && used.every((n) => steps[n - 1] !== undefined && (line.stepsInferred || stepMentionsLine(steps[n - 1]!, line.name, line.group))));
+    if (!ok && steps.length > 0) {
+      links ??= linkSteps(recipe.lines.map((l) => ({ name: l.name, group: l.group ?? null })), steps);
+      const l = links[i]!;
+      next = { ...next, usedInSteps: l.steps };
+      if (l.inferred) next.stepsInferred = true;
+      else delete next.stepsInferred;
+    }
+    if (next !== line) changed = true;
+    return next;
+  });
+  return changed ? { ...recipe, lines } : recipe;
+}
+
 /**
  * USDA's cooked-weight factor for dry rice and pasta (used for container
  * weights only); everything else starts as "weight unchanged".

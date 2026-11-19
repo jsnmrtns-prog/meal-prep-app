@@ -18,6 +18,8 @@ import {
   stepMentionsLine,
   stepsMentioning,
   linkSteps,
+  upgradeSavedLines,
+  type Recipe,
   type FoodDbFile,
 } from "../../src/engine/index.ts";
 
@@ -214,4 +216,22 @@ test("an ingredient the steps never name is placed where it most likely goes", (
     { steps: [2], inferred: true },
     { steps: [5], inferred: true },
   ]);
+});
+
+test("saved recipes pick up the step rules without changing amounts or foods", () => {
+  const recipe = {
+    id: "r", name: "Fried rice", portions: 4,
+    steps: [{ text: "Whisk the egg whites." }, { text: "Heat the pan and cook the white rice." }],
+    lines: [
+      { id: "w", name: "egg whites", food: { kind: "usda", fdcId: 1 }, quantity: { kind: "mass", amount: 200, unit: "g" }, state: "raw", role: "protein", usedInSteps: [1, 2], assumptions: ["Checked on import: Joined two lines into one ingredient. Check it.", "Checked on import: No amount given: using ¼ tsp."] },
+      { id: "o", name: "avocado oil", food: { kind: "usda", fdcId: 2 }, quantity: { kind: "mass", amount: 15, unit: "g" }, state: "raw", role: "fat", usedInSteps: [] },
+    ],
+  } as unknown as Recipe;
+  const up = upgradeSavedLines(recipe);
+  assert.deepEqual(up.lines[0]!.usedInSteps, [1]);
+  assert.deepEqual(up.lines[0]!.assumptions, ["No amount given: using ¼ tsp."]);
+  assert.deepEqual(up.lines[1]!.usedInSteps, [2]);
+  assert.equal(up.lines[1]!.stepsInferred, true);
+  assert.deepEqual(up.lines.map((l) => l.quantity), recipe.lines.map((l) => l.quantity));
+  assert.equal(upgradeSavedLines(up), up, "nothing more to change");
 });

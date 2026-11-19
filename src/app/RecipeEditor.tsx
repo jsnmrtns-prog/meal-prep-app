@@ -153,9 +153,10 @@ export function RecipeEditorScreen({ id }: { id: string | null }): ReactElement 
     }));
 
   const toSave: Recipe = useMemo(() => {
-    const idFor = existing ? existing.id : recipeIdFor(draft.name, new Set(recipes.map((r) => r.id)));
+    // An import keeps the ID chosen on the review screen: the same ID as a recipe you have means "replace it".
+    const idFor = existing ? existing.id : fromImport && draft.id ? draft.id : recipeIdFor(draft.name, new Set(recipes.map((r) => r.id)));
     return { ...draft, id: idFor, name: draft.name.trim() };
-  }, [draft, existing, recipes]);
+  }, [draft, existing, recipes, fromImport]);
 
   const problems = useMemo(() => {
     const p = recipeProblems(toSave);
@@ -192,7 +193,7 @@ export function RecipeEditorScreen({ id }: { id: string | null }): ReactElement 
   return (
     <>
       <BackLink href={existing ? `#/recipes/${encodeURIComponent(existing.id)}` : "#/recipes"}>{existing ? "Cancel" : "My Recipes"}</BackLink>
-      {fromImport && <p className="lead" data-testid="from-import">Imported and checked. Look over the result below, then tap Save recipe.</p>}
+      {fromImport && <p className="lead" data-testid="from-import">Imported and checked. Look over the result below, then tap Save recipe.{recipes.some((r) => r.id === draft.id) ? " Saving replaces your earlier copy (it stays in the recipe's history)." : ""}</p>}
       <section className="section">
         <h2 className="section__title">Recipe</h2>
         <div className="card card--form">
