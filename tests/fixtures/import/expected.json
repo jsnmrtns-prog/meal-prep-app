@@ -58,21 +58,21 @@
      "flags": []
     },
     {
-     "amount": null,
-     "unit": null,
+     "amount": 0.25,
+     "unit": "tsp",
      "name": "salt",
      "flags": [
       "split_line",
-      "to_taste"
+      "suggested"
      ]
     },
     {
-     "amount": null,
-     "unit": null,
+     "amount": 0.25,
+     "unit": "tsp",
      "name": "pepper",
      "flags": [
       "split_line",
-      "to_taste"
+      "suggested"
      ]
     },
     {
@@ -214,7 +214,7 @@
      "flags": []
     },
     {
-     "amount": null,
+     "amount": 1.5,
      "unit": null,
      "name": "jalapeños",
      "flags": [
@@ -430,11 +430,11 @@
      "flags": []
     },
     {
-     "amount": null,
-     "unit": null,
+     "amount": 0.25,
+     "unit": "tsp",
      "name": "Cooking spray",
      "flags": [
-      "no_amount"
+      "suggested"
      ]
     }
    ]
@@ -736,11 +736,11 @@
      ]
     },
     {
-     "amount": null,
-     "unit": null,
+     "amount": 0.25,
+     "unit": "tsp",
      "name": "Salt",
      "flags": [
-      "to_taste"
+      "suggested"
      ]
     }
    ]
@@ -794,12 +794,21 @@
      "flags": []
     },
     {
-     "amount": null,
-     "unit": null,
-     "name": "salt + pepper",
+     "amount": 0.25,
+     "unit": "tsp",
+     "name": "salt",
      "flags": [
-      "combined",
-      "no_amount"
+      "split_line",
+      "suggested"
+     ]
+    },
+    {
+     "amount": 0.25,
+     "unit": "tsp",
+     "name": "pepper",
+     "flags": [
+      "split_line",
+      "suggested"
      ]
     }
    ]
@@ -895,11 +904,11 @@
      ]
     },
     {
-     "amount": 1,
-     "unit": "count:pinch",
+     "amount": 0.0625,
+     "unit": "tsp",
      "name": "salt",
      "flags": [
-      "unusual"
+      "suggested"
      ]
     }
    ]
@@ -1043,7 +1052,7 @@
      ]
     },
     {
-     "amount": null,
+     "amount": 2.5,
      "unit": null,
      "name": "green onions",
      "flags": [
@@ -1065,7 +1074,7 @@
     {
      "amount": 8,
      "unit": "oz",
-     "name": "cooked ham or chicken",
+     "name": "cooked ham",
      "flags": [
       "alternatives"
      ]
@@ -1103,7 +1112,7 @@
      "flags": []
     },
     {
-     "amount": null,
+     "amount": 1.5,
      "unit": "tbsp",
      "name": "honey",
      "flags": [

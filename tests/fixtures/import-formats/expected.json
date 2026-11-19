@@ -124,10 +124,9 @@
    [
     null,
     null,
-    "greek yogurt or sour cream",
+    "greek yogurt",
     [
-     "to_taste",
-     "alternatives"
+     "to_taste"
     ]
    ]
   ]
@@ -695,28 +694,22 @@
     []
    ],
    [
-    null,
-    null,
+    1,
+    "tsp",
     "Chili Powder",
-    [
-     "no_amount"
-    ]
+    []
    ],
    [
-    null,
-    null,
+    0.25,
+    "tsp",
     "Salt",
-    [
-     "no_amount"
-    ]
+    []
    ],
    [
-    null,
-    null,
+    1,
+    "tsp",
     "Cumin",
-    [
-     "no_amount"
-    ]
+    []
    ],
    [
     250,
@@ -737,12 +730,10 @@
     []
    ],
    [
-    null,
-    null,
+    1,
+    "tbsp",
     "Fresh Coriander",
-    [
-     "no_amount"
-    ]
+    []
    ]
   ]
  },
@@ -803,12 +794,10 @@
     []
    ],
    [
-    null,
-    null,
+    1,
+    "tsp",
     "Red Pepper Flakes",
-    [
-     "no_amount"
-    ]
+    []
    ]
   ]
  },
@@ -867,28 +856,22 @@
     []
    ],
    [
-    null,
-    null,
+    0.25,
+    "tsp",
     "Olive Oil Spray",
-    [
-     "no_amount"
-    ]
+    []
    ],
    [
-    null,
-    null,
+    0.25,
+    "tsp",
     "Salt",
-    [
-     "to_taste"
-    ]
+    []
    ],
    [
-    null,
+    250,
     "g",
     "Red Cabbage",
-    [
-     "range"
-    ]
+    []
    ],
    [
     0.5,

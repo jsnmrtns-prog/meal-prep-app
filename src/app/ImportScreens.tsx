@@ -1,9 +1,10 @@
 // Import a recipe: paste text, open a file, or use the optional AI shortcut.
 // Then review every line (amount, unit, USDA food) before it becomes a recipe.
-import { useMemo, useState, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import {
   AI_PROMPT,
   approximateNote,
+  findRecipes,
   guessRole,
   guessState,
   looksLikeAiBlock,
@@ -15,6 +16,7 @@ import {
   stepsMentioning,
   suggestFoods,
   wantFor,
+  type BookRecipe,
   type Food,
   type ImportFlag,
   type ParsedIngredient,
@@ -24,6 +26,7 @@ import {
   type RecipeSource,
   type ReviewedLine,
 } from "../engine/index.ts";
+import { bookIdFor, deleteBook, getBook, listBooks, saveBook, type SavedBook } from "./books.ts";
 import { textFromFile } from "./fileText.ts";
 import { getImport, setDraft, setImport } from "./importState.ts";
 import { useUserData } from "./store.tsx";
@@ -31,44 +34,70 @@ import { BackLink, Field, NumberInput, Section, go, useEngine, type Engine } fro
 
 // ---------- Import ----------
 
+/** Puts a recipe's text through the reader and opens the review screen. Returns problems, if any. */
+function startReview(text: string, src: { kind: RecipeSource["kind"]; fileName?: string }): string[] {
+  const isAi = looksLikeAiBlock(text);
+  let parsed: ParsedRecipe;
+  if (isAi) {
+    const r = parseAiBlock(text);
+    if (!r.ok) return r.problems;
+    parsed = r.recipe;
+  } else {
+    parsed = parseRecipeText(text);
+    if (parsed.ingredients.length === 0 && parsed.steps.length === 0) {
+      return ["No recipe found in this text. Paste the whole recipe, including the ingredient list."];
+    }
+  }
+  const source: RecipeSource = { kind: isAi ? "ai" : src.kind, text, importedAt: new Date().toISOString() };
+  if (src.fileName) source.fileName = src.fileName;
+  setImport({ parsed, source });
+  go("/import/review");
+  return [];
+}
+
 export function ImportScreen(): ReactElement {
   const [text, setText] = useState("");
-  const [source, setSource] = useState<{ kind: RecipeSource["kind"]; fileName?: string } | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [showText, setShowText] = useState(false);
+  const [progress, setProgress] = useState<{ name: string; page: number; pages: number } | null>(null);
   const [error, setError] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
+  const [books, setBooks] = useState<SavedBook[]>([]);
+  const abort = useRef<AbortController | null>(null);
 
-  const read = () => {
-    setError([]);
-    const isAi = looksLikeAiBlock(text);
-    let parsed: ParsedRecipe;
-    if (isAi) {
-      const r = parseAiBlock(text);
-      if (!r.ok) return setError(r.problems);
-      parsed = r.recipe;
-    } else {
-      parsed = parseRecipeText(text);
-      if (parsed.ingredients.length === 0 && parsed.steps.length === 0) {
-        return setError(["No recipe found in this text. Paste the whole recipe, including the ingredient list."]);
-      }
+  useEffect(() => {
+    void listBooks().then(setBooks).catch(() => setBooks([]));
+    return () => abort.current?.abort();
+  }, []);
+
+  const read = (t: string, src: { kind: RecipeSource["kind"]; fileName?: string }) => {
+    const problems = startReview(t, src);
+    if (problems.length) {
+      setError(problems);
+      setText(t);
+      setShowText(true);
     }
-    const src: RecipeSource = { kind: isAi ? "ai" : source?.kind ?? "paste", text, importedAt: new Date().toISOString() };
-    if (source?.fileName) src.fileName = source.fileName;
-    setImport({ parsed, source: src });
-    go("/import/review");
   };
 
   const openFile = async (f: File) => {
-    setBusy(true);
     setError([]);
+    abort.current?.abort();
+    const ctl = new AbortController();
+    abort.current = ctl;
+    setProgress({ name: f.name, page: 0, pages: 0 });
     try {
-      const r = await textFromFile(f);
-      setText(r.text);
-      setSource({ kind: r.kind, fileName: f.name });
+      const r = await textFromFile(f, (p) => setProgress({ name: f.name, page: p.page, pages: p.pages }), ctl.signal);
+      if (r.kind !== "pdf") return read(r.text, { kind: r.kind, fileName: f.name });
+      const found = findRecipes(r.pages);
+      if (found.length === 1) return read(found[0]!.text, { kind: "pdf", fileName: f.name });
+      if (found.length === 0) return read(r.pages.join("\n\n"), { kind: "pdf", fileName: f.name });
+      // A cookbook: keep the list of its recipes and show it.
+      const book: SavedBook = { id: bookIdFor(f), name: f.name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ").trim(), fileName: f.name, pageCount: r.pages.length, scannedAt: new Date().toISOString(), recipes: found };
+      await saveBook(book);
+      go(`/import/book/${encodeURIComponent(book.id)}`);
     } catch (e) {
-      setError([e instanceof Error ? e.message : String(e)]);
+      if (!(e instanceof DOMException && e.name === "AbortError")) setError([e instanceof Error ? e.message : String(e)]);
     } finally {
-      setBusy(false);
+      setProgress(null);
     }
   };
 
@@ -76,11 +105,14 @@ export function ImportScreen(): ReactElement {
     setError([]);
     try {
       const t = await navigator.clipboard.readText();
-      if (!t.trim()) return setError(["The clipboard is empty. Copy the recipe first."]);
-      setText(t);
-      setSource(null);
+      if (!t.trim()) {
+        setShowText(true);
+        return setError(["The clipboard is empty. Copy the recipe first, or paste it in the box below."]);
+      }
+      read(t, { kind: "paste" });
     } catch {
-      setError(["Couldn't read the clipboard. Press and hold in the box below and choose Paste."]);
+      setShowText(true);
+      setError(["Couldn't read the clipboard here. Press and hold in the box below and choose Paste."]);
     }
   };
 
@@ -95,54 +127,138 @@ export function ImportScreen(): ReactElement {
 
   return (
     <>
-      <p className="lead">The app reads recipes itself. You'll check every line before anything is saved.</p>
-      <section className="section" data-testid="import-paste">
-        <h2 className="section__title">Paste or open a recipe</h2>
-        <div className="card card--form">
-          <Field label="Recipe text" hint={source?.fileName ? `Read from ${source.fileName}. Fix anything here, then tap Read recipe.` : "From a website, notes, a photo (Live Text) or an AI reply."}>
-            <textarea className="input input--area input--tall" aria-label="Recipe text" value={text} rows={10} onChange={(e) => {
-              setText(e.target.value);
-              if (!e.target.value) setSource(null);
-            }} placeholder={"Paste the recipe here: title, servings, ingredients and steps."} />
-          </Field>
-          <button className="small-button" onClick={() => void pasteClipboard()}>Paste from clipboard</button>
-          <label className="small-button file-button">
-            {busy ? "Reading file…" : "Open a PDF, Word or text file"}
-            <input type="file" accept=".pdf,.docx,.txt,.text,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-label="Recipe file" onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) void openFile(f);
-              e.target.value = "";
-            }} />
-          </label>
-        </div>
-      </section>
-      {error.length > 0 && <div className="warning-box" data-testid="import-error">{error.map((p) => <p key={p}>{p}</p>)}</div>}
-      <button className="primary-action" disabled={!text.trim() || busy} onClick={read}>Read recipe</button>
+      <p className="lead">Bring in a recipe. You'll check every line before anything is saved.</p>
+      <div className="import-options" data-testid="import-paste">
+        <button className="import-option" onClick={() => void pasteClipboard()} disabled={progress !== null}>
+          <span className="import-option__title">Paste a recipe</span>
+          <span className="import-option__hint">Copied from a website, notes, a social post or Live Text</span>
+        </button>
+        <label className={`import-option${progress ? " import-option--busy" : ""}`}>
+          <span className="import-option__title">Open a file</span>
+          <span className="import-option__hint">A recipe or a whole cookbook (PDF), Word or text file</span>
+          <input type="file" accept=".pdf,.docx,.txt,.text,application/pdf,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-label="Recipe file" disabled={progress !== null} onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void openFile(f);
+            e.target.value = "";
+          }} />
+        </label>
+      </div>
 
-      <Section title="From a photo (Live Text)">
+      {progress && (
+        <div className="card import-progress" role="status" data-testid="import-progress">
+          <p>{progress.pages > 1 ? `Reading page ${progress.page} of ${progress.pages}…` : `Opening ${progress.name}…`}</p>
+          <progress max={progress.pages || 1} value={progress.page} />
+          {progress.pages > 20 && <p className="footnote">A whole cookbook takes a minute or so. The list of its recipes is kept, so this only happens once.</p>}
+          <button className="small-button" onClick={() => abort.current?.abort()}>Stop</button>
+        </div>
+      )}
+
+      {error.length > 0 && <div className="warning-box" data-testid="import-error">{error.map((p) => <p key={p}>{p}</p>)}</div>}
+
+      {showText || text ? (
+        <section className="section">
+          <div className="card card--form">
+            <Field label="Recipe text" hint="Paste or type the recipe: name, servings, ingredients and steps.">
+              <textarea className="input input--area input--tall" aria-label="Recipe text" value={text} rows={10} autoFocus onChange={(e) => setText(e.target.value)} />
+            </Field>
+            <button className="primary-action" disabled={!text.trim()} onClick={() => read(text, { kind: "paste" })}>Read recipe</button>
+          </div>
+        </section>
+      ) : (
+        <button className="link-button import-type-link" onClick={() => setShowText(true)}>Type or paste the text yourself</button>
+      )}
+
+      {books.length > 0 && (
+        <section className="section" data-testid="cookbooks">
+          <h2 className="section__title">Your cookbooks</h2>
+          <div className="card">
+            {books.map((b) => (
+              <a key={b.id} className="row row--link" href={`#/import/book/${encodeURIComponent(b.id)}`}>
+                <span className="row__label">{b.name}<span className="row__sub">{b.recipes.length} recipes</span></span>
+                <span className="chevron" aria-hidden="true">›</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <details className="help-fold">
+        <summary>From a photo (Live Text)</summary>
         <ol className="steps">
           <li>Open the photo in Photos (or point the Camera at the recipe).</li>
           <li>Tap the Live Text button (the lines-in-a-box icon), then <strong>Select All</strong> and <strong>Copy</strong>.</li>
-          <li>Paste it in the box above and tap <strong>Read recipe</strong>. Handwriting may need a few fixes.</li>
+          <li>Come back here and tap <strong>Paste a recipe</strong>. Handwriting may need a few fixes.</li>
         </ol>
-      </Section>
+      </details>
 
-      <section className="section" data-testid="ai-shortcut">
-        <h2 className="section__title">AI shortcut (optional)</h2>
-        <div className="card">
-          <ol className="steps">
-            <li>Tap <strong>Copy the AI prompt</strong>.</li>
-            <li>In ChatGPT or Claude, paste it and attach the recipe photo, PDF or text.</li>
-            <li>Copy the AI's whole reply, paste it in the box above, and tap <strong>Read recipe</strong>.</li>
-          </ol>
-          <button className="row-button" onClick={() => void copyPrompt()}>{copied ? "Prompt copied ✓" : "Copy the AI prompt"}</button>
-          <details className="more more--padded">
-            <summary>Show the prompt</summary>
-            <pre className="prompt" data-testid="ai-prompt">{AI_PROMPT}</pre>
-          </details>
-        </div>
+      <details className="help-fold" data-testid="ai-shortcut">
+        <summary>Use ChatGPT or Claude (optional)</summary>
+        <ol className="steps">
+          <li>Tap <strong>Copy the AI prompt</strong>.</li>
+          <li>In ChatGPT or Claude, paste it and attach the recipe photo, PDF or text.</li>
+          <li>Copy the AI's whole reply, come back here and tap <strong>Paste a recipe</strong>.</li>
+        </ol>
+        <button className="row-button" onClick={() => void copyPrompt()}>{copied ? "Prompt copied ✓" : "Copy the AI prompt"}</button>
+        <details className="more more--padded">
+          <summary>Show the prompt</summary>
+          <pre className="prompt" data-testid="ai-prompt">{AI_PROMPT}</pre>
+        </details>
         <p className="footnote">The AI only copies the recipe out. The app checks its reply line by line against its own reading and flags any difference. All the nutrition math is done by the app.</p>
-      </section>
+      </details>
+    </>
+  );
+}
+
+// ---------- Cookbook ----------
+
+export function BookScreen({ id }: { id: string }): ReactElement {
+  const [book, setBook] = useState<SavedBook | null | undefined>(undefined);
+  const [query, setQuery] = useState("");
+  const [error, setError] = useState<string[]>([]);
+  const { recipes } = useUserData();
+  useEffect(() => {
+    void getBook(id).then((b) => setBook(b ?? null)).catch(() => setBook(null));
+  }, [id]);
+  if (book === undefined) return <p className="lead">Loading…</p>;
+  if (book === null) {
+    return (
+      <>
+        <BackLink href="#/import">Import</BackLink>
+        <p className="lead">This cookbook isn't saved on this phone. Open the PDF again from the Import tab.</p>
+      </>
+    );
+  }
+  const imported = new Set(recipes.map((r) => `${r.recipe.source?.fileName ?? ""}|${r.recipe.name.toLowerCase()}`));
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = book.recipes.filter((r) => words.every((w) => r.title.toLowerCase().includes(w)));
+  const pick = (r: BookRecipe) => {
+    const problems = startReview(r.text, { kind: "pdf", fileName: book.fileName });
+    if (problems.length) setError(problems);
+  };
+  return (
+    <>
+      <BackLink href="#/import">Import</BackLink>
+      <p className="lead">{book.recipes.length} recipes found in {book.pageCount} pages. Tap one to import it.</p>
+      <input className="input search" type="search" aria-label="Search recipes" placeholder="Search recipes" value={query} onChange={(e) => setQuery(e.target.value)} />
+      {error.length > 0 && <div className="warning-box">{error.map((p) => <p key={p}>{p}</p>)}</div>}
+      <div className="card" data-testid="book-recipes">
+        {shown.map((r) => (
+          <button key={r.pages.join("-")} className="row row--link row--button" onClick={() => pick(r)}>
+            <span className="row__label">
+              {r.title}
+              <span className="row__sub">
+                {r.pages.length > 1 ? `Pages ${r.pages[0]}–${r.pages.at(-1)}` : `Page ${r.pages[0]}`}
+                {r.printed ? ` · book says ${r.printed.kcal} kcal${r.printed.per === "recipe" ? " in total" : " per serving"}` : ""}
+                {imported.has(`${book.fileName}|${r.title.toLowerCase()}`) ? " · ✓ in My Recipes" : ""}
+              </span>
+            </span>
+            <span className="chevron" aria-hidden="true">›</span>
+          </button>
+        ))}
+        {shown.length === 0 && <p className="empty">No recipe matches “{query}”.</p>}
+      </div>
+      <p className="footnote">Only the recipe text is kept on this phone, not the PDF.</p>
+      <button className="link-button link-button--danger" onClick={() => void deleteBook(book.id).then(() => go("/import"))}>Remove this cookbook from the list</button>
     </>
   );
 }
@@ -238,12 +354,19 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
         role: guessRole(res.food, r.parsed.name),
         optional: r.parsed.optional,
         group: r.parsed.group,
-        usedInSteps: stepsMentioning(r.parsed.name, cleanSteps),
+        usedInSteps: stepsMentioning(r.parsed.name, cleanSteps, r.parsed.group),
         confirmed: notes,
       }];
     });
     const id = recipeIdFor(title.trim(), new Set(recipes.map((r) => r.id)));
-    setDraft(recipeFromImport({ id, title: title.trim(), servings: servings!, lines, steps: cleanSteps, notes: parsed.notes, source }));
+    const draft = recipeFromImport({ id, title: title.trim(), servings: servings!, lines, steps: cleanSteps, notes: parsed.notes, source });
+    // What the recipe says about itself, shown next to the app's numbers on the report.
+    const pr = parsed.printed;
+    if (pr && pr.protein !== null && pr.carbs !== null && pr.fat !== null) {
+      const div = pr.per === "recipe" ? servings! : 1;
+      draft.printedPerServing = { kcal: Math.round(pr.kcal / div), protein: Math.round((pr.protein / div) * 10) / 10, carbs: Math.round((pr.carbs / div) * 10) / 10, fat: Math.round((pr.fat / div) * 10) / 10 };
+    }
+    setDraft(draft);
     setImport(null);
     go("/recipes/new");
   };

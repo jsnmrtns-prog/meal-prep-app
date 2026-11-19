@@ -6,6 +6,7 @@
 import { gramsForAmount, type Food, type FoodDb } from "../fooddb.ts";
 import type { IngredientLine, IngredientRole, LineCook, MeasuredState, Quantity, Recipe, RecipeSource } from "../recipe.ts";
 import type { ParsedIngredient, ParsedUnit } from "./parse.ts";
+import { stepMentionsLine } from "../audit.ts";
 
 const PREP_WORDS = new Set([
   "chopped", "diced", "minced", "sliced", "shredded", "grated", "crushed", "cubed", "halved", "quartered", "julienned",
@@ -26,6 +27,10 @@ const SYNONYMS: [RegExp, string][] = [
   [/\b(?:scallions?|green onions?)\b/i, "onions spring or scallions raw"],
   [/\b(?:chili|chilli|red pepper) flakes\b|\bcrushed red pepper\b/i, "spices pepper red or cayenne"],
   [/\b(red|yellow|green|orange) (?:bell )?peppers?\b(?! flakes)/i, "peppers sweet $1 raw"],
+  [/(?<!(?:peanut|almond|nut|cashew|seed|apple|cocoa|shea) )\b(?:reduced[- ]fat|light|lite|low[- ]fat|half[- ]fat) butter\b/i, "butter light stick with salt"],
+  [/\bsesame seeds?\b/i, "seeds sesame seeds whole dried"],
+  [/\b(?:ginger powder|ground ginger|dried ginger)\b/i, "spices ginger ground"],
+  [/^(?:any |regular |dairy |cow'?s )?milk(?: of choice)?$/i, "milk reduced fat fluid 2% milkfat with added vitamin a and vitamin d"],
   [/\blime wedges?\b/i, "limes raw"],
   [/\blemon wedges?\b/i, "lemons raw without peel"],
   [/\bparsley flakes\b|\bdried parsley\b/i, "spices parsley dried"],
@@ -317,13 +322,17 @@ export function quantityFor(
 }
 
 /** Which steps mention an ingredient (by its main words). */
-export function stepsMentioning(name: string, steps: string[]): number[] {
+export function stepsMentioning(name: string, steps: string[], group?: string | null): number[] {
   const words = searchTerms(name).filter((w) => w.length >= 4 && !/^\d/.test(w));
-  if (words.length === 0) return [];
   const hits: number[] = [];
   steps.forEach((s, i) => {
     const t = s.toLowerCase();
     if (words.some((w) => new RegExp(`\\b${w.replace(/[-]/g, "\\-")}(?:s|es)?\\b`).test(t))) hits.push(i + 1);
+  });
+  if (hits.length) return hits;
+  // "Season with 1 serving of taco spice mix", "blend yogurt, mayo…": the section's name or another name for the food.
+  steps.forEach((s, i) => {
+    if (stepMentionsLine(s, name, group)) hits.push(i + 1);
   });
   return hits;
 }

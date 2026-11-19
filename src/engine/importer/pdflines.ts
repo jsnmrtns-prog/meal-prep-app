@@ -36,7 +36,7 @@ function rowText(pieces: TextPiece[]): string {
 /**
  * Lines of text in reading order. Where part of a page is laid out in two
  * columns (common for ingredient lists), the left column is read before the
- * right one, band by band.
+ * right one, band by band (three or more columns work the same way).
  */
 export function piecesToLines(pages: TextPiece[][]): string[] {
   const out: string[] = [];
@@ -50,40 +50,56 @@ export function piecesToLines(pages: TextPiece[][]): string[] {
       if (last && Math.abs(last.y - p.y) <= Math.max(2, Math.min(p.height, last.height) * 0.4)) last.pieces.push(p);
       else rows.push({ y: p.y, height: p.height, pieces: [p] });
     }
-    /** Where a row splits into two columns: the start of the piece after a wide gap. */
-    const splitOf = (r: Row): number | null => {
+    /** Where a row splits into columns: the start of each piece after a wide gap. */
+    const splitsOf = (r: Row): number[] => {
       const s = [...r.pieces].sort((a, b) => a.x - b.x);
+      const xs: number[] = [];
       for (let k = 1; k < s.length; k++) {
         const gap = s[k]!.x - (s[k - 1]!.x + s[k - 1]!.width);
-        if (gap > Math.max(15, s[k]!.height * 1.5)) return s[k]!.x;
+        if (gap > Math.max(15, s[k]!.height * 1.5)) xs.push(s[k]!.x);
       }
-      return null;
+      return xs;
     };
-    // A piece that runs well past the split belongs to full-width text (a small overrun is a long ingredient).
+    // A piece that runs well past a split belongs to full-width text (a small overrun is a long ingredient).
     const crossesAt = (r: Row, x: number) => r.pieces.some((p) => p.x < x - 3 && p.x + p.width > x + Math.max(10, p.height * 2));
     let i = 0;
     let prevY = Number.NaN;
     while (i < rows.length) {
       const r = rows[i]!;
       if (!Number.isNaN(prevY) && prevY - r.y > r.height * 1.8) out.push("");
-      const split = splitOf(r);
-      if (split !== null && !isSectionHeading(rowText(r.pieces))) {
-        // A two-column band runs until a row crosses the split, a heading appears, or there's a big gap.
+      const first = splitsOf(r);
+      if (first.length > 0 && !(first.length === 1 && isSectionHeading(rowText(r.pieces)))) {
+        // A band of columns runs until a row crosses a split, a main heading appears, or there's a big gap.
+        // Columns can be two, three or more ("Chicken:  Veggies:  Tacos:").
+        const splits = [...first];
         const band: Row[] = [r];
         i++;
         while (i < rows.length) {
           const next = rows[i]!;
-          if (crossesAt(next, split) || isSectionHeading(rowText(next.pieces))) break;
+          if (splits.some((x) => crossesAt(next, x)) || isSectionHeading(rowText(next.pieces))) break;
           if (band.at(-1)!.y - next.y > next.height * 3) break;
+          for (const x of splitsOf(next)) {
+            // A column that first shows up lower down (the row above had nothing in it).
+            // Columns are never this narrow: a nearby split is a bullet and its text, not a new column.
+            if (splits.some((s) => Math.abs(s - x) < 40)) continue;
+            if (band.some((b) => crossesAt(b, x))) continue;
+            splits.push(x);
+          }
           band.push(next);
           i++;
         }
-        for (const side of [(p: TextPiece) => p.x < split - 3, (p: TextPiece) => p.x >= split - 3]) {
+        splits.sort((a, b) => a - b);
+        const bounds = [Number.NEGATIVE_INFINITY, ...splits.map((x) => x - 3), Number.POSITIVE_INFINITY];
+        for (let c = 0; c + 1 < bounds.length; c++) {
+          let any = false;
           for (const row of band) {
-            const part = row.pieces.filter(side);
-            if (part.length) out.push(rowText(part));
+            const part = row.pieces.filter((p) => p.x >= bounds[c]! && p.x < bounds[c + 1]!);
+            if (part.length) {
+              out.push(rowText(part));
+              any = true;
+            }
           }
-          out.push("");
+          if (any) out.push("");
         }
         prevY = band.at(-1)!.y;
         continue;

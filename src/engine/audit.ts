@@ -193,16 +193,18 @@ function independentGrams(line: IngredientLine, db: FoodDb): number | null {
   // Volume: same-unit portion (optionally the named one); otherwise convert through mL.
   const pool = portions.filter((p) => p.unit !== null && p.unit in ML_PER && (q.portionLabel === undefined || p.label === q.portionLabel));
   const sameUnit = pool.filter((p) => p.unit === q.unit);
+  // USDA weights are rounded to 0.1 g, so two portions only conflict beyond 1% plus that rounding.
+  const slack = (a: { grams: number }, b: { grams: number }) => 0.01 + 0.05 / a.grams + 0.05 / b.grams;
   if (sameUnit.length > 1) {
     const d = sameUnit.map((p) => p.grams / p.amount);
-    if (d.some((x) => Math.abs(x - d[0]!) / d[0]! > 0.01)) return null; // conflicting USDA weights: no sound basis
+    if (d.some((x, k) => Math.abs(x - d[0]!) / d[0]! > slack(sameUnit[k]!, sameUnit[0]!))) return null; // conflicting USDA weights: no sound basis
   }
   const same = sameUnit[0];
   if (same) return (q.amount * same.grams) / same.amount;
   const any = pool[0];
   if (!any || any.unit === null) return null;
   const dens = pool.map((p) => p.grams / (p.amount * (ML_PER[p.unit ?? ""] ?? Number.NaN)));
-  if (dens.some((x) => Math.abs(x - dens[0]!) / dens[0]! > 0.01)) return null;
+  if (dens.some((x, k) => Math.abs(x - dens[0]!) / dens[0]! > slack(pool[k]!, pool[0]!))) return null;
   return q.amount * (ML_PER[q.unit] ?? Number.NaN) * (any.grams / (any.amount * (ML_PER[any.unit] ?? Number.NaN)));
 }
 
@@ -245,7 +247,8 @@ function nutritionAudit(recipe: Recipe, calc: CalcResult, db: FoodDb): AuditResu
         continue;
       }
       const audited = Number(microContribution(calcLine.grams, per100)) / 1_000_000;
-      if (Math.abs(audited - reported) > 2 * TOLERANCE + Math.abs(reported) * 1e-9) {
+      // The audit works in millionths: grams rounded to 1e-6 g carry up to per100 × 1e-8 of rounding.
+      if (Math.abs(audited - reported) > 2 * TOLERANCE + Math.abs(per100) * 1e-8 + Math.abs(reported) * 1e-9) {
         fails.push(`"${line.name}" ${key}: calculation ${reported}, audit ${audited}.`);
       }
     }
@@ -340,7 +343,35 @@ function significantWords(name: string): string[] {
     .filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
 }
 
+/** Short or other names recipes use for the same food in their steps. */
+const WORD_ALIASES: Record<string, string[]> = {
+  mayonnaise: ["mayo"], mayo: ["mayonnaise"], yoghurt: ["yogurt"], yogurt: ["yoghurt"],
+  coriander: ["cilantro"], cilantro: ["coriander"], chilli: ["chili"], chili: ["chilli"],
+  scallions: ["green onion", "spring onion"], scallion: ["green onion", "spring onion"],
+  courgette: ["zucchini"], zucchini: ["courgette"], aubergine: ["eggplant"], eggplant: ["aubergine"],
+  mince: ["ground"], ground: ["mince", "minced"], parmigiano: ["parmesan"], parmesan: ["parm", "parmigiano"],
+  potatoes: ["fries", "chips", "wedges"], potato: ["fries", "chips", "wedges"],
+};
+
+/**
+ * True when a step names the ingredient, another name for it ("mayo" for
+ * mayonnaise), or the section it belongs to ("season with taco spice mix").
+ */
+export function stepMentionsLine(stepText: string, name: string, group?: string | null): boolean {
+  const words = significantWords(name);
+  if (words.some((w) => mentions(stepText, w) || (WORD_ALIASES[w] ?? []).some((a) => mentions(stepText, a)))) return true;
+  if (!group) return false;
+  const g = significantWords(group);
+  if (g.length === 0) return false;
+  const text = ` ${stepText.toLowerCase().replace(/[^a-z0-9%]+/g, " ")} `;
+  if (text.includes(` ${g.join(" ")} `)) return true;
+  // "Chipotle Spicy Sauce" → "the spicy sauce", "Taco Spice Mix" → "taco spice": all but a generic last word.
+  const core = g.filter((w) => !["sauce", "mix", "dressing", "marinade", "topping", "toppings", "base", "seasoning"].includes(w));
+  return core.length >= 1 && core.length < g.length && core.every((w) => mentions(stepText, w)) && (core.length >= 2 || mentions(stepText, g.at(-1)!));
+}
+
 function mentions(stepText: string, word: string): boolean {
+  if (word.includes(" ")) return ` ${stepText.toLowerCase().replace(/[^a-z0-9%]+/g, " ")} `.includes(` ${word} `);
   const text = ` ${stepText.toLowerCase().replace(/[^a-z0-9%]+/g, " ")} `;
   const stem = word.endsWith("es") && word.length > 4 ? word.slice(0, -2) : word.endsWith("s") && word.length > 3 ? word.slice(0, -1) : word;
   return text.includes(` ${word} `) || new RegExp(` ${stem}(s|es)? `).test(text);
@@ -366,7 +397,7 @@ function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: Pl
         continue;
       }
       const words = significantWords(line.name);
-      if (words.length > 0 && !words.some((w) => mentions(step.text, w))) {
+      if (words.length > 0 && !stepMentionsLine(step.text, line.name, line.group)) {
         fails.push(`Step ${n} doesn't mention "${line.name}".`);
       }
     }
@@ -405,6 +436,7 @@ function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: Pl
   }
 
   // d) Items add up, and packages cover what's needed without an extra package.
+  const noPackage: string[] = [];
   for (const item of plan.shopping.items) {
     const usable = item.lineIds.reduce((s, id) => s + (calcGrams.get(id) ?? 0), 0);
     if (Math.abs(item.usableGrams - usable) > eps * item.lineIds.length) fails.push(`"${item.name}": item total ${item.usableGrams} g, ingredients ${usable} g.`);
@@ -420,8 +452,12 @@ function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: Pl
       if (b.count * b.eachGrams < item.purchaseGrams - eps) fails.push(`"${item.name}": ${b.count} × ${b.label} doesn't cover ${item.purchaseGrams} g.`);
     } else if (b.kind === "by_weight" || b.kind === "pantry" || b.kind === "unknown_package") {
       if (Math.abs(b.grams - item.purchaseGrams) > eps) fails.push(`"${item.name}": amount to buy doesn't match the purchase total.`);
-      if (b.kind === "unknown_package") warns.push(`"${item.name}": no package size set.`);
+      if (b.kind === "unknown_package") noPackage.push(item.name);
     }
+  }
+  // One note for all of them: a list of foods without a store package size isn't a problem, only a reminder.
+  if (noPackage.length) {
+    warns.push(`No store package size yet for ${noPackage.length === 1 ? `"${noPackage[0]}"` : `${noPackage.length} foods (${noPackage.map((n) => `"${n}"`).join(", ")})`}: the shopping list shows the amount to buy instead. Add sizes under Settings → Packages.`);
   }
 
   // e) Cooked weights reconcile.

@@ -24,7 +24,7 @@ const SETTINGS_KEY = "settings";
 /** Your two recipes from the PDFs, added to the library on first run. */
 export const REFERENCE_RECIPES = [teriyaki.recipe, taco.recipe] as unknown as Recipe[];
 
-function openDb(): Promise<IDBDatabase> {
+export function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {

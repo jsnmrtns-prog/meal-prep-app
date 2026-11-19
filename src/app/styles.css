@@ -612,3 +612,46 @@ ul.flags[data-testid="recipe-flags"] { margin: 0 0 16px; padding: 12px 14px; bor
 
 .bulk-accept { margin: 0 0 10px; }
 .bulk-accept .footnote { margin-top: 4px; }
+
+/* ---------- Import (0.7.2): two big choices, text box on demand, folded help ---------- */
+.import-options { display: grid; gap: 10px; margin: 0 0 14px; }
+.import-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-height: 72px;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.import-option:active { opacity: 0.7; }
+.import-option:disabled, .import-option--busy { opacity: 0.5; }
+.import-option__title { font-size: 17px; font-weight: 600; color: var(--accent); }
+.import-option__hint { font-size: 14px; color: var(--text-2); }
+.import-option input[type="file"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.import-progress { padding: 14px 16px; margin: 0 0 14px; }
+.import-progress p { margin: 0 0 8px; }
+.import-progress progress { width: 100%; height: 6px; accent-color: var(--accent); }
+.import-progress .footnote { text-align: left; }
+.import-progress .small-button { margin-top: 10px; }
+.card--form .primary-action { margin: 12px 0 0; }
+.help-fold { margin: 12px 0 0; background: var(--card); border-radius: var(--radius); padding: 0 16px; }
+.help-fold > summary { min-height: 48px; display: flex; align-items: center; color: var(--accent); cursor: pointer; list-style: none; }
+.help-fold > summary::-webkit-details-marker { display: none; }
+.help-fold > summary::after { content: "›"; margin-left: auto; color: var(--tab-inactive); font-size: 20px; transition: transform 0.15s; }
+.help-fold[open] > summary::after { transform: rotate(90deg); }
+.help-fold .steps { padding: 0 0 12px 20px; }
+.help-fold .row-button { padding-left: 0; }
+.help-fold .footnote { text-align: left; padding-bottom: 12px; }
+.search { margin: 0 0 12px; }
+.row--button { width: 100%; border: 0; background: none; font: inherit; text-align: left; cursor: pointer; }
+.row--button + .row--button { border-top: 0.5px solid var(--separator); }
+.link-button--danger { color: #d1342f; display: block; margin: 16px auto 0; }
+.import-type-link { display: block; margin: 0 0 22px; }

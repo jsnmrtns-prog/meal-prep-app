@@ -3,7 +3,7 @@ import { ENGINE_VERSION, MAJOR_ALLERGENS, describePreset, type Allergen } from "
 import { HomeIcon, ImportIcon, RecipesIcon, SettingsIcon, ShoppingIcon } from "./icons.tsx";
 import { FoodDetailScreen, FoodSearchScreen } from "./FoodLookup.tsx";
 import { loadFoodDb } from "./foodData.ts";
-import { ImportReviewScreen, ImportScreen } from "./ImportScreens.tsx";
+import { BookScreen, ImportReviewScreen, ImportScreen } from "./ImportScreens.tsx";
 import { RecipeEditorScreen } from "./RecipeEditor.tsx";
 import { RecipeLibrary, RecipeReportScreen, RecipeVersionsScreen } from "./RecipeReport.tsx";
 import {
@@ -49,6 +49,7 @@ type Screen =
   | { kind: "recipe-edit"; id: string | null }
   | { kind: "recipe-versions"; id: string }
   | { kind: "import-review" }
+  | { kind: "book"; id: string }
   | { kind: "settings"; page: string; id: string | null };
 
 interface Route {
@@ -74,6 +75,7 @@ export function routeFromHash(hash: string): Route {
     return { tab: "settings", screen: b && Number.isInteger(id) ? { kind: "food", fdcId: id } : { kind: "foods" } };
   }
   if (a === "import" && b === "review") return { tab: "import", screen: { kind: "import-review" } };
+  if (a === "import" && b === "book" && c) return { tab: "import", screen: { kind: "book", id: decodeURIComponent(c) } };
   if (a === "recipes" && b) {
     if (b === "new") return { tab: "recipes", screen: { kind: "recipe-edit", id: null } };
     if (c === "edit") return { tab: "recipes", screen: { kind: "recipe-edit", id: b } };
@@ -93,6 +95,7 @@ function titleFor(route: Route): string {
     case "recipe-edit": return s.id ? "Edit Recipe" : "New Recipe";
     case "recipe-versions": return "Versions";
     case "import-review": return "Check the Import";
+    case "book": return "Cookbook";
     case "settings":
       if (s.page === "presets" && s.id) return "Edit Preset";
       if (s.page === "labels" && s.id) return s.id === "new" ? "New Label Food" : "Edit Label Food";
@@ -144,6 +147,7 @@ function Shell(): ReactElement {
         {s.kind === "recipe-edit" && <RecipeEditorScreen key={key} id={s.id} />}
         {s.kind === "recipe-versions" && <RecipeVersionsScreen key={key} id={s.id} />}
         {s.kind === "import-review" && <ImportReviewScreen key={key} />}
+        {s.kind === "book" && <BookScreen key={key} id={s.id} />}
         {s.kind === "settings" && <SettingsPage key={key} page={s.page} id={s.id} />}
         {s.kind === "tab" && tab === "home" && <HomeScreen />}
         {s.kind === "tab" && tab === "import" && <ImportScreen />}

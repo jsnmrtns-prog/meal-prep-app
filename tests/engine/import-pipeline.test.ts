@@ -59,7 +59,7 @@ test("PDF with a two-column ingredient list is read in the right order", async (
     ["Pasta", 280, "g", "penne"],
     ["Pasta", 60, "g", "light cream"],
     ["Pasta", 30, "g", "grated parmesan"],
-    ["Pasta", null, null, "chili flakes"],
+    ["Pasta", 1, "tsp", "chili flakes"],
   ]);
   assert.equal(r.steps.length, 4);
   assert.match(r.steps[0]!, /^Season the chicken breast .* about 6 minutes per side\. Slice\.$/);
@@ -74,7 +74,7 @@ test("Word document is read", async () => {
   assert.equal(r.ingredients.length, 6);
   assert.equal(r.steps.length, 3);
   assert.deepEqual(r.ingredients[3]!.packageSize, { amount: 15, unit: "oz" });
-  assert.deepEqual(r.ingredients[5]!.flags.map((f) => f.code), ["to_taste"]);
+  assert.deepEqual(r.ingredients[5]!.flags.map((f) => f.code), ["suggested"]);
 });
 
 // The user's own recipe PDFs are not in the repository; this runs only where they're present.
@@ -83,11 +83,11 @@ test("your two recipe PDFs read correctly", { skip: !userPdfs.every(existsSync) 
   const teriyaki = parseRecipeText(await pdfLines(new Uint8Array(read(new URL(`file://${userPdfs[0]}`)))));
   assert.equal(teriyaki.servings, 5);
   assert.equal(teriyaki.steps.length, 6);
-  assert.deepEqual(teriyaki.ingredients.map((i) => i.amount), [710, 30, 5, 15, 3, 60, 24, 60, 1, 8, 15, 300, 300, 2, 200, null]);
+  assert.deepEqual(teriyaki.ingredients.map((i) => i.amount), [710, 30, 5, 15, 3, 60, 24, 60, 1, 8, 15, 300, 300, 2, 200, 1, 1]);
   const taco = parseRecipeText(await pdfLines(new Uint8Array(read(new URL(`file://${userPdfs[1]}`)))));
   assert.equal(taco.servings, 5);
   assert.equal(taco.steps.length, 5);
-  assert.deepEqual(taco.ingredients.map((i) => i.amount), [2, 2, 1, 454, 30, 50, null, 330, 350, 25, 50, 10, 50]);
+  assert.deepEqual(taco.ingredients.map((i) => i.amount), [2, 2, 1, 454, 30, 50, 1, 1, 330, 350, 25, 50, 10, 50]);
   const velveeta = taco.ingredients.find((i) => /Velveeta/.test(i.name))!;
   assert.deepEqual(velveeta.flags.map((f) => f.code).sort(), ["alternatives", "joined_line"]);
 });

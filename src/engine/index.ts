@@ -19,3 +19,4 @@ export * from "./importer/pdflines.ts";
 export * from "./importer/match.ts";
 export * from "./importer/aiblock.ts";
 export * from "./importer/docx.ts";
+export * from "./importer/book.ts";

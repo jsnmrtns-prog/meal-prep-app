@@ -226,7 +226,9 @@ export function gramsForAmount(food: Food, amount: number, unit: string, portion
   const density = (p: (typeof candidates)[number]) => p.grams / (p.amount * ML_PER_VOLUME_UNIT[p.unit]);
   const first = candidates[0]!;
   const d0 = density(first);
-  const distinct = candidates.some((p) => Math.abs(density(p) - d0) / d0 > DENSITY_TOLERANCE);
+  // USDA rounds gram weights to 0.1 g, so small portions ("¼ tsp = 1.2 g") carry a few percent of rounding:
+  // weights that agree once that rounding is allowed for are the same weight, not a choice.
+  const distinct = candidates.some((p) => Math.abs(density(p) - d0) / d0 > DENSITY_TOLERANCE + 0.05 / p.grams + 0.05 / first.grams);
   if (distinct) return { ok: false, reason: "ambiguous", options: candidates };
 
   const grams = first.unit === unit

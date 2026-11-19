@@ -139,7 +139,7 @@ export function parseAiBlock(text: string): AiBlockResult {
   if (!title) flags.push({ code: "no_title", severity: "fix", message: "No recipe name found: enter one." });
   if (servings === null) flags.push({ code: "no_servings", severity: "fix", message: "How many servings the recipe makes wasn't found: enter it." });
   if (steps.length === 0) flags.push({ code: "no_steps", severity: "fix", message: "No instructions found: add them." });
-  return { ok: true, recipe: { title, servings, ingredients, steps, notes, flags } };
+  return { ok: true, recipe: { title, servings, ingredients, steps, notes, flags, printed: null } };
 }
 
 function describe(amount: number | null, max: number | null, unit: unknown): string {
