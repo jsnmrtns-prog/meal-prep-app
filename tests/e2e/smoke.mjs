@@ -271,6 +271,8 @@ await check("the recipe opens on a simple cooking view: summary, ingredients, st
   await page.evaluate(() => sessionStorage.setItem("keepFoldsClosed", "1"));
   await page.reload();
   const cook = page.getByTestId("cook");
+  await page.getByTestId("recipe-summary").getByText(/^Chicken thighs with white rice and mixed vegetables/).waitFor();
+  await page.getByTestId("recipe-summary").getByText(/Stove · Asian-style/).waitFor();
   await cook.getByText("Makes 5 containers", { exact: false }).waitFor();
   await cook.getByText("588 kcal", { exact: false }).waitFor();
   assert.ok((await page.getByTestId("cook-ingredients").locator(".row").count()) >= 10);
@@ -511,6 +513,9 @@ await check("M6: a whole cookbook PDF becomes a list of its recipes; one opens i
   const list = page.getByTestId("book-recipes");
   for (const t of ["Lemon Herb Turkey Rice Bowls", "Smoky Chicken Wraps", "GARLIC BEEF NOODLES"]) await list.getByText(t).waitFor();
   await list.getByText("book says 512 kcal", { exact: false }).waitFor();
+  // Each recipe has a short summary of what it is, before you open it.
+  assert.ok((await list.locator(".row__summary").count()) >= 3, "summaries in the book list");
+  await list.locator(".row__summary", { hasText: /^Ground turkey|^Turkey/ }).first().waitFor();
   await page.screenshot({ path: join(outDir, "import-book.png"), animations: "disabled", fullPage: true });
   await page.getByLabel("Search recipes").fill("wraps");
   assert.equal(await list.getByText("Lemon Herb Turkey Rice Bowls").count(), 0);

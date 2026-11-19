@@ -2,6 +2,8 @@
 // Then review every line (amount, unit, USDA food) before it becomes a recipe.
 import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import {
+  summarizeText,
+  summaryDetails,
   AI_PROMPT,
   approximateNote,
   findRecipes,
@@ -246,6 +248,7 @@ export function BookScreen({ id }: { id: string }): ReactElement {
           <button key={r.pages.join("-")} className="row row--link row--button" onClick={() => pick(r)}>
             <span className="row__label">
               {r.title}
+              <BookSummary recipe={r} />
               <span className="row__sub">
                 {r.pages.length > 1 ? `Pages ${r.pages[0]}–${r.pages.at(-1)}` : `Page ${r.pages[0]}`}
                 {r.printed ? ` · book says ${r.printed.kcal} kcal${r.printed.per === "recipe" ? " in total" : " per serving"}` : ""}
@@ -261,6 +264,14 @@ export function BookScreen({ id }: { id: string }): ReactElement {
       <button className="link-button link-button--danger" onClick={() => void deleteBook(book.id).then(() => go("/import"))}>Remove this cookbook from the list</button>
     </>
   );
+}
+
+/** A one-line summary under a cookbook recipe's name, so you can tell what it is before opening it. */
+function BookSummary({ recipe }: { recipe: BookRecipe }): ReactElement | null {
+  const sum = useMemo(() => summarizeText(recipe.title, recipe.text), [recipe]);
+  const details = summaryDetails(sum);
+  if (!sum.dish && !details) return null;
+  return <span className="row__summary">{[sum.dish, details].filter(Boolean).join(" ")}</span>;
 }
 
 // ---------- Review ----------

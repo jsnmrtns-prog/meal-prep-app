@@ -14,6 +14,7 @@ export * from "./presets.ts";
 export * from "./swaps.ts";
 export * from "./optimizer.ts";
 export * from "./cooking.ts";
+export * from "./summary.ts";
 export * from "./userdata.ts";
 export * from "./importer/parse.ts";
 export * from "./importer/pdflines.ts";

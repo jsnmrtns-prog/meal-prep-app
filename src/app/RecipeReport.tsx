@@ -9,6 +9,8 @@ import {
   cookingSteps,
   describePreset,
   stepsDivide,
+  summarizeSaved,
+  summaryDetails,
   optimizeRecipe,
   portionRecipe,
   type AuditReport,
@@ -115,9 +117,11 @@ export function RecipeLibrary(): ReactElement {
 function LibraryRow({ saved, engine, settings }: { saved: SavedRecipe; engine: Engine | null; settings: Settings }): ReactElement {
   const sum = useMemo(() => (engine ? quickSummary(saved.recipe, engine, settings) : null), [engine, saved, settings]);
   const s = sum ? STATUS_TEXT[sum.status] : null;
+  const dish = useMemo(() => summarizeSaved(saved.recipe).dish, [saved]);
   return (
     <a className="food-row" href={`#/recipes/${encodeURIComponent(saved.id)}`}>
       <span className="food-row__name">{saved.favorite ? "★ " : ""}{saved.recipe.name}</span>
+      {dish && <span className="food-row__summary">{dish}</span>}
       <span className="food-row__meta">
         {sum
           ? `${r0(sum.kcal)} kcal · P ${r0(sum.protein)} g · C ${r0(sum.carbs)} g · F ${r0(sum.fat)} g per serving · `
@@ -126,6 +130,20 @@ function LibraryRow({ saved, engine, settings }: { saved: SavedRecipe; engine: E
         {saved.origin === "reference" && <span className="badge badge--muted">Reference</span>}
       </span>
     </a>
+  );
+}
+
+/** What the recipe is, in a sentence or two, worked out from its ingredients and steps. */
+function RecipeSummaryCard({ recipe }: { recipe: Recipe }): ReactElement | null {
+  const sum = useMemo(() => summarizeSaved(recipe), [recipe]);
+  const details = summaryDetails(sum);
+  if (!sum.dish && !details && !sum.intro) return null;
+  return (
+    <div className="recipe-summary" data-testid="recipe-summary">
+      {sum.dish && <p className="recipe-summary__dish">{sum.dish}</p>}
+      {details && <p className="recipe-summary__details">{details}</p>}
+      {sum.intro && <p className="recipe-summary__intro">“{sum.intro}”</p>}
+    </div>
   );
 }
 
@@ -231,6 +249,7 @@ export function RecipeReportScreen({ id, presetId }: { id: string; presetId: str
     <>
       <BackLink href="#/recipes">My Recipes</BackLink>
       <h2 className="food-title">{saved.favorite ? "★ " : ""}{recipe.name}</h2>
+      <RecipeSummaryCard recipe={saved.recipe} />
       <RecipeActions saved={saved} />
       <PresetPicker recipeId={saved.id} presetId={presetId} presets={settings.presets} />
       <AddToList recipeId={saved.id} presetId={presetId} />
