@@ -40,7 +40,7 @@ export const STATUS_TEXT: Record<RecipeStatus, { label: string; tone: "good" | "
   needs_review: { label: "Needs review", tone: "bad", detail: "A check failed. See the findings below." },
 };
 
-interface Computed {
+export interface Computed {
   recipe: Recipe;
   calc: CalcResult;
   report: AuditReport;
@@ -390,7 +390,7 @@ function Fold({ title, testId, children }: { title: string; testId: string; chil
   );
 }
 
-const perPortionOf = (calc: CalcResult) => ({ kcal: calc.perPortion.kcal.value, protein: calc.perPortion.protein.value, carbs: calc.perPortion.carbs.value, fat: calc.perPortion.fat.value });
+export const perPortionOf = (calc: CalcResult) => ({ kcal: calc.perPortion.kcal.value, protein: calc.perPortion.protein.value, carbs: calc.perPortion.carbs.value, fat: calc.perPortion.fat.value });
 
 /** A count label as you'd say it: "1 lime yields" → "lime", "slice (2/3 oz)" → "slices". */
 function countLabel(label: string, n: number): string {
@@ -409,7 +409,32 @@ function cookAmount(line: IngredientLine, g: number, inStep = false): string {
   return `${amountText(q.amount)} ${countLabel(q.portionLabel, q.amount)}`;
 }
 
-function CookView({ data, perMeal, notes, targets }: { data: Computed; perMeal: { kcal: number; protein: number; carbs: number; fat: number }; notes: string[]; targets?: TargetResult[] }): ReactElement {
+type PerMeal = { kcal: number; protein: number; carbs: number; fat: number };
+
+/** The cooking view as plain text, for sharing. */
+export function cookText(data: Computed, perMeal: PerMeal, notes: string[] = []): string {
+  const recipe = data.recipe;
+  const gramsOf = new Map(data.calc.lines.map((l) => [l.lineId, l.grams]));
+  const lineOf = new Map(recipe.lines.map((l) => [l.id, l]));
+  const amt = (id: string, inStep = false) => cookAmount(lineOf.get(id)!, gramsOf.get(id) ?? 0, inStep);
+  const steps = cookingSteps(recipe, data.portioning.portions);
+  const stepText = (st: (typeof steps)[number]) =>
+    st.parts.map((p) => (p.kind === "text" ? p.text : ` (${amt(p.lineId, true)})`)).join("") + (st.also.length ? ` Also: ${st.also.map((id) => `${lineOf.get(id)!.name} (${amt(id)})`).join(", ")}.` : "");
+  return [
+    recipe.name,
+    `Makes ${data.portioning.portions} containers, about ${weight(data.portioning.perContainerGrams)} each · ${r0(perMeal.kcal)} kcal · P ${r0(perMeal.protein)} g · C ${r0(perMeal.carbs)} g · F ${r0(perMeal.fat)} g per container`,
+    ...notes,
+    "",
+    "Ingredients",
+    ...recipe.lines.map((l) => `• ${l.name}: ${amt(l.id)}`),
+    "",
+    "Steps",
+    ...steps.map((st, i) => `${i + 1}. ${stepText(st)}`),
+    ...(stepsDivide(recipe) ? [] : [`${steps.length + 1}. Divide into ${data.portioning.portions} containers, about ${weight(data.portioning.perContainerGrams)} each.`]),
+  ].join("\n");
+}
+
+export function CookView({ data, perMeal, notes, targets, forPrint = false }: { data: Computed; perMeal: PerMeal; notes: string[]; targets?: TargetResult[]; forPrint?: boolean }): ReactElement {
   const recipe = data.recipe;
   const gramsOf = new Map(data.calc.lines.map((l) => [l.lineId, l.grams]));
   const lineOf = new Map(recipe.lines.map((l) => [l.id, l]));
@@ -426,7 +451,7 @@ function CookView({ data, perMeal, notes, targets }: { data: Computed; perMeal: 
         <p className="cook__macros">
           <strong>{r0(perMeal.kcal)} kcal{tick("kcal")}</strong> · P {r0(perMeal.protein)} g{tick("protein")} · C {r0(perMeal.carbs)} g{tick("carbs")} · F {r0(perMeal.fat)} g <span className="cook__per">per container</span>
         </p>
-        <span className={`badge badge--${s.tone}`}>{s.label}</span>
+        {!forPrint && <span className={`badge badge--${s.tone}`}>{s.label}</span>}
       </div>
 
       <h3 className="section__title">Ingredients</h3>
@@ -460,23 +485,11 @@ function CookView({ data, perMeal, notes, targets }: { data: Computed; perMeal: 
           {!stepsDivide(recipe) && <li>Divide into <strong className="amt">{data.portioning.portions} containers</strong>, about {weight(data.portioning.perContainerGrams)} each. Weigh the finished batch for exact portions.</li>}
         </ol>
       </div>
-      <div className="actions actions--center">
-        <button className="action" data-testid="share-recipe" onClick={() => {
-          const stepText = (st: (typeof steps)[number]) => st.parts.map((p) => (p.kind === "text" ? p.text : ` (${cookAmount(lineOf.get(p.lineId)!, gramsOf.get(p.lineId) ?? 0, true)})`)).join("") + (st.also.length ? ` Also: ${st.also.map((id) => `${lineOf.get(id)!.name} (${amt(id)})`).join(", ")}.` : "");
-          const text = [
-            recipe.name,
-            `Makes ${data.portioning.portions} containers, about ${weight(data.portioning.perContainerGrams)} each · ${r0(perMeal.kcal)} kcal · P ${r0(perMeal.protein)} g · C ${r0(perMeal.carbs)} g · F ${r0(perMeal.fat)} g per container`,
-            "",
-            "Ingredients",
-            ...recipe.lines.map((l) => `• ${l.name}: ${amt(l.id)}`),
-            "",
-            "Steps",
-            ...steps.map((st, i) => `${i + 1}. ${stepText(st)}`),
-            ...(stepsDivide(recipe) ? [] : [`${steps.length + 1}. Divide into ${data.portioning.portions} containers, about ${weight(data.portioning.perContainerGrams)} each.`]),
-          ].join("\n");
-          void shareText(recipe.name, text);
-        }}>Share recipe</button>
-      </div>
+      {!forPrint && (
+        <div className="actions actions--center">
+          <button className="action" data-testid="share-recipe" onClick={() => void shareText(recipe.name, cookText(data, perMeal))}>Share recipe</button>
+        </div>
+      )}
     </section>
   );
 }

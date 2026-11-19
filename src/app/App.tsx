@@ -5,7 +5,7 @@ import { FoodDetailScreen, FoodSearchScreen } from "./FoodLookup.tsx";
 import { loadFoodDb } from "./foodData.ts";
 import { BookScreen, ImportReviewScreen, ImportScreen } from "./ImportScreens.tsx";
 import { RecipeEditorScreen } from "./RecipeEditor.tsx";
-import { ShoppingScreen } from "./ShoppingScreen.tsx";
+import { PackageScreen, ShoppingScreen } from "./ShoppingScreen.tsx";
 import { RecipeLibrary, RecipeReportScreen, RecipeVersionsScreen } from "./RecipeReport.tsx";
 import {
   ALLERGEN_LABEL,
@@ -51,6 +51,7 @@ type Screen =
   | { kind: "recipe-versions"; id: string }
   | { kind: "import-review" }
   | { kind: "book"; id: string }
+  | { kind: "package" }
   | { kind: "settings"; page: string; id: string | null };
 
 interface Route {
@@ -76,6 +77,7 @@ export function routeFromHash(hash: string): Route {
     return { tab: "settings", screen: b && Number.isInteger(id) ? { kind: "food", fdcId: id } : { kind: "foods" } };
   }
   if (a === "import" && b === "review") return { tab: "import", screen: { kind: "import-review" } };
+  if (a === "shopping" && b === "package") return { tab: "shopping", screen: { kind: "package" } };
   if (a === "import" && b === "book" && c) return { tab: "import", screen: { kind: "book", id: decodeURIComponent(c) } };
   if (a === "recipes" && b) {
     if (b === "new") return { tab: "recipes", screen: { kind: "recipe-edit", id: null } };
@@ -97,6 +99,7 @@ function titleFor(route: Route): string {
     case "recipe-versions": return "Versions";
     case "import-review": return "Check the Import";
     case "book": return "Cookbook";
+    case "package": return "Prep Package";
     case "settings":
       if (s.page === "presets" && s.id) return "Edit Preset";
       if (s.page === "labels" && s.id) return s.id === "new" ? "New Label Food" : "Edit Label Food";
@@ -149,6 +152,7 @@ function Shell(): ReactElement {
         {s.kind === "recipe-versions" && <RecipeVersionsScreen key={key} id={s.id} />}
         {s.kind === "import-review" && <ImportReviewScreen key={key} />}
         {s.kind === "book" && <BookScreen key={key} id={s.id} />}
+        {s.kind === "package" && <PackageScreen key={key} />}
         {s.kind === "settings" && <SettingsPage key={key} page={s.page} id={s.id} />}
         {s.kind === "tab" && tab === "home" && <HomeScreen />}
         {s.kind === "tab" && tab === "import" && <ImportScreen />}

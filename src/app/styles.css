@@ -698,3 +698,13 @@ ul.flags[data-testid="recipe-flags"] { margin: 0 0 16px; padding: 12px 14px; bor
 .add-list--on { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px; background: rgba(46,125,80,0.1); color: var(--accent); font-weight: 600; }
 .add-list--on .link-button { margin: 0; }
 .card a.row__label { color: inherit; text-decoration: none; }
+.package__title { font-size: 22px; margin: 18px 0 8px; }
+@media print {
+  .tab-bar, .banner, .no-print, .large-title, .back-link, .actions, button { display: none !important; }
+  body, .app, .screen { background: #fff !important; color: #000 !important; }
+  .screen { padding: 0 !important; }
+  .card { box-shadow: none !important; border: 1px solid #ddd; break-inside: auto; }
+  .package__recipe { break-before: page; }
+  .row, .cook__steps li { break-inside: avoid; }
+  .cook__steps .amt, .cook__also { color: #000 !important; }
+}

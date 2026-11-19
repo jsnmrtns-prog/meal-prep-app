@@ -1,6 +1,6 @@
 {
   "name": "meal-prep-app",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "private": true,
   "description": "Meal-prep recipe scaling, USDA nutrition verification and grocery lists, as a Home Screen web app.",
   "type": "module",
