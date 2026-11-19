@@ -77,6 +77,8 @@ export interface IngredientLine {
   cook?: LineCook;
   /** Step numbers (1-based) that use this ingredient. Required unless optional. */
   usedInSteps?: number[];
+  /** True when the app picked the steps because the recipe doesn't name this ingredient in them. */
+  stepsInferred?: boolean;
   /** Overrides the package-size table for this line. */
   packageKey?: string;
 }

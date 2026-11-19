@@ -490,7 +490,7 @@ function AuditSection({ report }: { report: AuditReport }): ReactElement {
             </span>
           </div>
         ))}
-        {report.audits.filter((a) => a.status === "fail").flatMap((a) => a.findings.map((f) => <div key={`${a.id}-${f}`} className="ingredient__assumption finding">{a.id}: {f}</div>))}
+        {report.audits.filter((a) => a.status === "fail").flatMap((a) => a.findings.slice(0, a.problems).map((f) => <div key={`${a.id}-${f}`} className="ingredient__assumption finding">{a.id}: {f}</div>))}
       </div>
       <p className="footnote">USDA data releases: Foundation Foods and SR Legacy · engine {report.engineVersion}</p>
     </section>

@@ -281,6 +281,8 @@ function snapDecimal(n: number | null, text: string): number | null {
  */
 export function tidyLine(line: string): string {
   let t = line.replace(/\s+/g, " ").trim();
+  // A stray bracket inside an amount: "45g (3 (Tbsp) sesame oil" → "45g (3 Tbsp) sesame oil".
+  t = t.replace(/\((\s*[\d¼½¾⅓⅔⅛.\/ ]+?)\s*\(\s*(?=[A-Za-z]+\))/g, "($1 ");
   t = t.replace(/\b(?:[A-Z] ){2,}[A-Z]\b/g, (m) => m.replace(/ /g, ""));
   t = t.replace(/^(?:(?:z|[»«›‹]+|[◆■►▶❖✦➢])\s+)+(?=\S)/, "• ");
   t = t.replace(/(^|\s)(?:z|[»«›‹]+|[◆■►▶❖✦➢])(?=\s|$)/g, "$1").replace(/\s+/g, " ").trim();
@@ -519,12 +521,20 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
   // Name and prep note: "chicken breast, diced" / "onion (diced)".
   let name = rest.trim();
   let prep: string | null = null;
-  const comma = name.indexOf(",");
+  // A comma inside brackets isn't the name/prep split: "veggies (carrots, mushrooms, onions)".
+  let depth = 0;
+  let comma = -1;
+  for (let i = 0; i < name.length; i++) {
+    const ch = name[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") depth = Math.max(0, depth - 1);
+    else if (ch === "," && depth === 0) { comma = i; break; }
+  }
   if (comma > 0) {
     prep = name.slice(comma + 1).trim() || null;
     name = name.slice(0, comma).trim();
   }
-  const paren = name.match(/\(([^)]*)\)\s*$/);
+  const paren = name.match(/\(([^)]*)\)?\s*$/);
   if (paren && paren.index! > 0) {
     prep = [paren[1]!.trim(), prep].filter(Boolean).join(", ") || null;
     name = name.slice(0, paren.index).trim();
@@ -626,6 +636,8 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
   if (u?.kind === "count" && VAGUE.has(u.noun)) {
     flags.push({ code: "unusual", severity: "fix", message: `"${u.noun}" isn't a measurable amount: enter it in teaspoons or grams.` });
   }
+  // "Salt or to taste", "water or more as needed": the amount given is used.
+  name = name.replace(/\s+or\s+(?:more\s+|less\s+)?(?:to taste|as needed|as desired|more|less)\b.*$/i, "").trim();
   if (/\b(?:white|yellow|red|green|orange|gold|golden|russet|sweet|brown|black|purple|baby|regular|large|small|medium) or (?:white|yellow|red|green|orange|gold|golden|russet|sweet|brown|black|purple|baby|regular|large|small|medium) \w/i.test(name)) {
     flags.push({ code: "alternatives", severity: "check", message: "Gives two kinds of the same food: check the one picked." });
   } else if (/\bor\b/i.test(name)) {
@@ -639,6 +651,10 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
     if (others.length === 1 && !/\d/.test(right) && lw.length <= 5 && rw.length <= 6 && chosen) {
       flags.push({ code: "alternatives", severity: "check", message: `Gives a choice: using ${chosen}. Change the food if you use ${right.replace(/^(?:any|a)\s+/i, "")}.` });
       name = chosen;
+    } else if (left!.trim()) {
+      // A longer choice: the first option, close enough.
+      flags.push({ code: "alternatives", severity: "check", message: `Gives a choice: using ${left!.trim()}. Change the food if you use another option.` });
+      name = left!.trim();
     } else {
       flags.push({ code: "alternatives", severity: "fix", message: "Lists more than one option: keep the one you'll use." });
     }
@@ -771,7 +787,7 @@ const NOTE_START = /^(?:any |use |such as|e\.g\.|like |ideally|preferably|if |ho
 const CONTINUES_NAME = /^(?:reggiano|cheese|yog(?:h)?urt|milk|cream|breasts?|thighs?|fillets?|powder|flakes|seeds|juice|sauce|paste|oil|stock|broth|onions?|peppers?|beef|chicken|turkey|pork|rice|pasta|noodles|beans|tomatoes|potatoes|cheddar|mozzarella|parmesan|seasoning|mix|syrup|vinegar|leaves)$/i;
 
 /** A line that stops mid-name: the next line finishes it ("Low Fat Cottage" / "Cheese"). */
-const WRAP_END = /(?:,|\band|\bor|\bof|\bwith|\b&|\bmixed|\bboneless|\bskinless|\bshredded|\bchopped|\bgrated|\bfrozen|\bfresh|\bfreshly|\bground|\blow|\breduced|\bfat|\bfree|\bplain|\bpart|\bcottage|\bgreek|\bdiced|\bsliced|\bmedium|\blarge|\bsmall|\bwhite|\bcooked|\buncooked|\bdry|\braw|\blean|\bsmoked|\bevaporated|\blight|\bextra|\bvirgin|\bwhole|\bsour|\bheavy|\bbrown|\bsweet|\bred|\bgreen|\byellow|\bchicken|\bbeef|\bturkey|\bpork|\bcream|\b\(brand:?|-)$/i;
+const WRAP_END = /(?:,|\bday-old|\band|\bor|\bof|\bwith|\b&|\bmixed|\bboneless|\bskinless|\bshredded|\bchopped|\bgrated|\bfrozen|\bfresh|\bfreshly|\bground|\blow|\breduced|\bfat|\bfree|\bplain|\bpart|\bcottage|\bgreek|\bdiced|\bsliced|\bmedium|\blarge|\bsmall|\bwhite|\bcooked|\buncooked|\bdry|\braw|\blean|\bsmoked|\bevaporated|\blight|\bextra|\bvirgin|\bwhole|\bsour|\bheavy|\bbrown|\bsweet|\bred|\bgreen|\byellow|\bchicken|\bbeef|\bturkey|\bpork|\bcream|\b\(brand:?|-)$/i;
 
 /** True when a line is written as a list bullet. */
 const bulleted = (line: string) => BULLET.test(line);
@@ -1142,15 +1158,19 @@ export function parseRecipeText(text: string): ParsedRecipe {
         // A wrapped line: a word or two in lowercase with no amount ("cheese" after "1 cup shredded cheddar"),
         // a line without a bullet in a bulleted list, or anything following a line that ends mid-phrase.
         // A note on its own line under the ingredient ("large, halved and sliced", "drained", "we like just bouillon").
-        if (prev && !looksLikeIngredient(line) && !bulleted(rawLine) && /^[a-z]/.test(bare) && (bare.includes(",") || NOTE_START.test(bare)) && !/,$/.test(prev.text)) {
+        const midName = prev ? WRAP_END.test(prev.text) && !/,$/.test(prev.text) : false;
+        if (prev && !midName && !looksLikeIngredient(line) && !bulleted(rawLine) && /^[a-z]/.test(bare) && (bare.includes(",") || NOTE_START.test(bare)) && !/,$/.test(prev.text)) {
           prev.text = /,|\(/.test(stripBullet(prev.text).replace(/^\S+\s+\S+/, "")) ? `${prev.text}; ${bare}` : `${prev.text}, ${bare}`;
           prev.joined = true;
           continue;
         }
         // "20g Parmigiano" / "Reggiano": a food name finished on the next line.
         const finishesName = prev && !bulleted(rawLine) && !looksLikeIngredient(line) && bare.split(/\s+/).length <= 2 && CONTINUES_NAME.test(bare) && AMOUNT_START.test(stripBullet(prev.text)) && !afterBlank;
+        // "300g day-old" / "cooked white rice (300g": the name goes on, and its only amount is in brackets.
+        const outsideParens = bare.replace(/\([^)]*\)?/g, " ");
+        const nameGoesOn = prev && midName && !bulleted(rawLine) && /^[a-z]/.test(bare) && !looksLikeIngredient(outsideParens) && !AMOUNT_START.test(bare);
         const wrapped =
-          prev && !looksLikeIngredient(line) && !bulleted(rawLine) && (finishesName ||
+          nameGoesOn || prev && !looksLikeIngredient(line) && !bulleted(rawLine) && (finishesName ||
           ((/^[a-z(]/.test(bare) && bare.split(/\s+/).length <= 2) ||
             (prev.bulleted && !afterBlank) ||
             WRAP_END.test(prev.text) ||
@@ -1201,11 +1221,30 @@ export function parseRecipeText(text: string): ParsedRecipe {
     if (mode === "notes") notes.push(bare);
   }
 
+  /** "300g cooked white rice (300g dry weight, ~700g cooked)": the dry weight is what the nutrition needs. */
+  const preferDryWeight = (p: ParsedIngredient): ParsedIngredient => {
+    const m = p.raw.match(/(\d+(?:\.\d+)?)\s*(g|grams?|oz|ounces?)\s*(?:\(|,)?\s*(?:dry|uncooked|raw)(?:\s+weight)?\b/i) ?? p.raw.match(/\b(?:dry|uncooked|raw)\s+weight[:\s]*(\d+(?:\.\d+)?)\s*(g|grams?|oz|ounces?)\b/i);
+    if (!m || !/\bcooked\b/i.test(p.name) || /\buncooked\b/i.test(p.name)) return p;
+    if (!/\b(?:rice|pasta|noodles|quinoa|couscous|oats|lentils|beans|spaghetti|penne|macaroni|orzo)\b/i.test(p.name)) return p;
+    const amount = Number(m[1]);
+    const unit = /^o/i.test(m[2]!) ? "oz" : "g";
+    const name = p.name.replace(/\b(?:day-old\s+)?cooked\b/i, "uncooked").replace(/\s+/g, " ").trim();
+    return {
+      ...p,
+      amount,
+      amountMax: null,
+      unit: { kind: "mass", unit },
+      name,
+      prep: [p.prep?.replace(/^\(|\)$/g, ""), "cooked before use"].filter(Boolean).join("; "),
+      flags: [...p.flags.filter((f) => f.severity !== "fix" && f.code !== "amounts_disagree"), { code: "unusual", severity: "check", message: `Uses the dry weight given (${amount} ${unit} uncooked); the app works out the cooked weight.` }],
+    };
+  };
+
   // One line per ingredient: "1 tsp each: salt, pepper" becomes two lines.
   const expanded = ingredientLines.flatMap((l) => {
     const parts = splitEach(l.text) ?? splitList(l.text);
     if (!parts) {
-      const p = parseIngredientLine(l.text, l.group);
+      const p = preferDryWeight(parseIngredientLine(l.text, l.group));
       if (l.joined) p.flags.push({ code: "joined_line", severity: "check", message: "Joined two lines into one ingredient. Check it." });
       return [p];
     }
@@ -1215,7 +1254,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
       return p;
     });
   });
-  const ingredients = expandSubRecipes(expanded).map(suggestAmount);
+  const ingredients = tidyUnmeasured(expandSubRecipes(expanded).map(suggestAmount), notes, servings);
 
   const flags: ImportFlag[] = [];
   if (!title) flags.push({ code: "no_title", severity: "fix", message: "No recipe name found: enter one." });
@@ -1225,6 +1264,68 @@ export function parseRecipeText(text: string): ParsedRecipe {
   if (ingredients.length === 0) flags.push({ code: "no_ingredients", severity: "fix", message: "No ingredients found. Check that the ingredient list was included." });
   if (steps.length === 0) flags.push({ code: "no_steps", severity: "fix", message: "No instructions found: add them." });
   return { title, servings, ingredients, steps, notes, flags, printed: findPrintedNutrition(text) };
+}
+
+const SERVE_GROUP = /\b(?:to serve|serve with|serving|for serving|garnish|garnishes|toppings?|sides?|extra sides?|optional|to finish)\b/i;
+const HEADERISH = /(?:\bbig batch\b|\bstores? for\b|^(?:to serve|serve with|for serving|garnish(?:es)?|toppings?|extra sides?|sides?|optional extras?)$|\b(?:sauce|marinade|mix|glaze|dressing|slaw|seasoning|rub|base|bowls?|mac n cheese|salad)$)/i;
+const PROSE = /(?:[.!?:]$|\b(?:you|your|i|we|my|keep|until|minutes?|mins|goal|always|never|do not|don't|if the|once it|for desired|when serving|rule of thumb)\b)/i;
+const TOPPING_VEG = /\b(?:lettuce|tomato(?:es)?|cherry tomatoes|onions?|red onions?|pickled red onions?|pickles?|gherkins?|cabbage|carrots?|cucumbers?|spinach|rocket|arugula|greens|salad|jalape(?:ñ|n)os?|radish(?:es)?|sprouts|herbs?|parsley|cilantro|coriander|mint|basil|lime wedges?|lemon wedges?|chillis?|chilies?)\b/i;
+const ONE_EACH = /\b(?:buns?|rolls?|tortillas?|wraps?|pitas?|flatbreads?|naan|bagels?|english muffins?|slices? of bread|bread slices?|burger buns?|brioche)\b/i;
+
+/**
+ * Lines with no amount, sorted out without asking where the meaning is clear:
+ * sentences from the book become notes; a title such as "Chipotle Sauce (big
+ * batch)" becomes the section name for the lines after it; a serving
+ * suggestion ("To serve: shredded lettuce") is left out of the nutrition; a
+ * bun, wrap or tortilla with no number is one per serving. Real foods with
+ * no amount elsewhere still ask.
+ */
+function tidyUnmeasured(list: ParsedIngredient[], notes: string[], servings: number | null): ParsedIngredient[] {
+  const out: ParsedIngredient[] = [];
+  let renamed: { from: string | null; to: string } | null = null;
+  for (let i = 0; i < list.length; i++) {
+    let p = list[i]!;
+    if (renamed && p.group === renamed.from) p = { ...p, group: renamed.to };
+    else renamed = null;
+    const noAmount = p.amount === null && p.flags.some((f) => f.code === "no_amount");
+    if (!noAmount) {
+      out.push(p);
+      continue;
+    }
+    const bare = p.raw.replace(/^[•\-–*\s]+/, "");
+    const outside = bare.replace(/\([^)]*\)?/g, " ").replace(/\s+/g, " ").trim();
+    const words = bare.split(/\s+/).filter(Boolean);
+    const outsideWords = outside.split(/\s+/).filter(Boolean);
+    if ((outsideWords.length >= 4 && PROSE.test(outside)) || (/^[a-z]/.test(bare) && outsideWords.length >= 5 && !/,/.test(bare))) {
+      notes.push(p.raw.replace(/^[•\-–*\s]+/, ""));
+      continue;
+    }
+    const firstWord = words[0]?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+    if (STEP_VERBS.has(firstWord) && words.length >= 3) {
+      notes.push(p.raw.replace(/^[•\-–*\s]+/, ""));
+      continue;
+    }
+    const next = list[i + 1];
+    if (HEADERISH.test(p.name.replace(/\s*\([^)]*\)\s*$/, "").trim()) || /\(big batch|stores? for/i.test(p.raw)) {
+      if (next && next.group === p.group) renamed = { from: p.group, to: p.name.replace(/\s*\((?:big batch|stores?)[^)]*\)\s*$/i, "").trim() };
+      continue;
+    }
+    const strip = (q: ParsedIngredient) => q.flags.filter((f) => f.code !== "no_amount");
+    if ((p.group && SERVE_GROUP.test(p.group)) || SERVE_GROUP.test(p.raw) || p.optional) {
+      out.push({ ...p, optional: true, flags: [...strip(p), { code: "optional", severity: "check", message: "Serving suggestion with no amount: left out of the nutrition. Add an amount to count it." }] });
+      continue;
+    }
+    if (TOPPING_VEG.test(p.name) && !/\b(?:rice|pasta|potatoes|beans|chicken|beef|cheese)\b/i.test(p.name)) {
+      out.push({ ...p, optional: true, flags: [...strip(p), { code: "optional", severity: "check", message: "Topping with no amount: left out of the nutrition (very few calories). Add an amount to count it." }] });
+      continue;
+    }
+    if (ONE_EACH.test(p.name) && servings) {
+      out.push({ ...p, amount: servings, unit: { kind: "count", noun: p.name.split(/\s+/).at(-1)!.toLowerCase().replace(/s$/, "") }, flags: [...strip(p), { code: "suggested", severity: "check", message: `No number given: using one per serving (${servings}). Change it if you use more.` }] });
+      continue;
+    }
+    out.push(p);
+  }
+  return out;
 }
 
 const normName = (s: string) => s.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9]+/g, " ").trim();

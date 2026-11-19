@@ -36,6 +36,8 @@ export interface AuditResult {
   status: AuditStatus;
   /** Problems (fail) and things to know (warn), in plain language. */
   findings: string[];
+  /** How many of the findings (the first ones) are problems; the rest are notes. */
+  problems: number;
 }
 
 /**
@@ -83,12 +85,13 @@ export function auditRecipe(
     portionAudit(recipe, calc, db, options.targets),
     options.plan
       ? consistencyAudit(recipe, calc, db, options.plan)
-      : { id: 5, name: "Consistency audit", status: "pending", findings: ["Shopping and cooked-weight plan not provided."] },
+      : { id: 5, name: "Consistency audit", status: "pending", findings: ["Shopping and cooked-weight plan not provided."], problems: 0 },
   ];
 
   if (calc.inputsHash !== recipeInputsHash(recipe, db.version)) {
     audits[0]!.status = "fail";
-    audits[0]!.findings.push("The calculation is stale: the recipe changed after it was calculated.");
+    audits[0]!.findings.unshift("The calculation is stale: the recipe changed after it was calculated.");
+    audits[0]!.problems++;
   }
 
   return {
@@ -172,7 +175,7 @@ function ingredientAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, profile: 
     if (excluded) fails.push(`"${line.name}" conflicts with your preference "${excluded.label}".`);
   });
 
-  return { id: 1, name: "Ingredient audit", status: fails.length ? "fail" : warns.length ? "warn" : "pass", findings: [...fails, ...warns] };
+  return { id: 1, name: "Ingredient audit", status: fails.length ? "fail" : warns.length ? "warn" : "pass", findings: [...fails, ...warns], problems: fails.length };
 }
 
 function describeQuantity(line: IngredientLine): string {
@@ -253,7 +256,7 @@ function nutritionAudit(recipe: Recipe, calc: CalcResult, db: FoodDb): AuditResu
       }
     }
   });
-  return { id: 2, name: "Nutrition audit", status: fails.length ? "fail" : "pass", findings: fails };
+  return { id: 2, name: "Nutrition audit", status: fails.length ? "fail" : "pass", findings: fails, problems: fails.length };
 }
 
 // ---------- 3. Recipe audit ----------
@@ -278,7 +281,7 @@ function recipeTotalsAudit(calc: CalcResult): AuditResult {
   if (Math.abs(grams - calc.batchGrams) > TOLERANCE * calc.lines.length + 1e-9) {
     fails.push(`Batch weight: total ${calc.batchGrams} g, sum of ingredients ${grams} g.`);
   }
-  return { id: 3, name: "Recipe audit", status: fails.length ? "fail" : "pass", findings: fails };
+  return { id: 3, name: "Recipe audit", status: fails.length ? "fail" : "pass", findings: fails, problems: fails.length };
 }
 
 // ---------- 4. Portion audit ----------
@@ -293,7 +296,7 @@ function portionAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, targets?: Ma
     if (Math.abs(batch / recipe.portions - per) > 1e-6) fails.push(`${key}: batch ÷ ${recipe.portions} = ${batch / recipe.portions}, per portion = ${per}.`);
     if (calc.perPortion[key].complete !== calc.batch[key].complete) fails.push(`${key}: completeness differs between batch and portion.`);
   }
-  return { id: 4, name: "Portion audit", status: fails.length ? "fail" : "pass", findings: fails };
+  return { id: 4, name: "Portion audit", status: fails.length ? "fail" : "pass", findings: fails, problems: fails.length };
 }
 
 /**
@@ -334,13 +337,20 @@ function targetFindings(recipe: Recipe, db: FoodDb, t: MacroPreset): string[] {
 // ---------- 5. Consistency audit ----------
 const STOP_WORDS = new Set(["and", "the", "with", "for", "fresh", "minced", "diced", "chopped", "sliced", "drizzle", "large", "small", "medium", "packet"]);
 
+/** Describing words that don't identify a food on their own: "white" in "white rice" isn't "egg whites". */
+const DESCRIBING = new Set(["white", "whites", "red", "green", "yellow", "black", "brown", "cooked", "uncooked", "raw", "frozen", "mixed", "dried", "dry", "ground", "lean", "light", "low", "fat", "free", "reduced", "plain", "whole", "boneless", "skinless", "day", "old", "extra", "virgin", "sweet", "smoked", "shredded", "grated", "lite", "zero", "calorie", "sugar", "unsweetened", "natural", "organic", "canned", "fine", "coarse", "hot", "mild",
+  // Kinds of thing many foods share: "oil" in "sesame oil" isn't the avocado oil.
+  "oil", "sauce", "powder", "juice", "vinegar", "paste", "seeds", "flakes", "stock", "broth", "seasoning", "spray", "extract", "mix"]);
+
 function significantWords(name: string): string[] {
-  return name
+  const words = name
     .toLowerCase()
     .replace(/\(.*?\)/g, " ")
     .replace(/[^a-z0-9%]+/g, " ")
     .split(" ")
     .filter((w) => w.length >= 3 && !STOP_WORDS.has(w));
+  const core = words.filter((w) => !DESCRIBING.has(w) && !/^\d/.test(w));
+  return core.length > 0 ? core : words;
 }
 
 /** Short or other names recipes use for the same food in their steps. */
@@ -396,6 +406,7 @@ function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: Pl
         fails.push(`"${line.name}" points to step ${n}, which doesn't exist.`);
         continue;
       }
+      if (line.stepsInferred) continue;
       const words = significantWords(line.name);
       if (words.length > 0 && !stepMentionsLine(step.text, line.name, line.group)) {
         fails.push(`Step ${n} doesn't mention "${line.name}".`);
@@ -437,6 +448,7 @@ function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: Pl
 
   // d) Items add up, and packages cover what's needed without an extra package.
   const noPackage: string[] = [];
+  const typical: string[] = [];
   for (const item of plan.shopping.items) {
     const usable = item.lineIds.reduce((s, id) => s + (calcGrams.get(id) ?? 0), 0);
     if (Math.abs(item.usableGrams - usable) > eps * item.lineIds.length) fails.push(`"${item.name}": item total ${item.usableGrams} g, ingredients ${usable} g.`);
@@ -447,7 +459,7 @@ function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: Pl
       if (b.count * b.packageGrams < item.purchaseGrams - eps) fails.push(`"${item.name}": ${b.count} × ${b.label} doesn't cover ${item.purchaseGrams} g.`);
       if ((b.count - 1) * b.packageGrams >= item.purchaseGrams - eps) fails.push(`"${item.name}": one package fewer would be enough.`);
       if (Math.abs(b.totalGrams - b.count * b.packageGrams) > eps) fails.push(`"${item.name}": package total is wrong.`);
-      if (!b.verified) warns.push(`"${item.name}": package size (${b.label}) is a typical size, not verified for your store.`);
+      if (!b.verified) typical.push(`${item.name} (${b.label})`);
     } else if (b.kind === "each") {
       if (b.count * b.eachGrams < item.purchaseGrams - eps) fails.push(`"${item.name}": ${b.count} × ${b.label} doesn't cover ${item.purchaseGrams} g.`);
     } else if (b.kind === "by_weight" || b.kind === "pantry" || b.kind === "unknown_package") {
@@ -458,6 +470,10 @@ function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: Pl
   // One note for all of them: a list of foods without a store package size isn't a problem, only a reminder.
   if (noPackage.length) {
     warns.push(`No store package size yet for ${noPackage.length === 1 ? `"${noPackage[0]}"` : `${noPackage.length} foods (${noPackage.map((n) => `"${n}"`).join(", ")})`}: the shopping list shows the amount to buy instead. Add sizes under Settings → Packages.`);
+  }
+
+  if (typical.length) {
+    warns.push(`Typical U.S. package sizes used for ${typical.join(", ")}. Change them under Settings → Packages if your store's differ.`);
   }
 
   // e) Cooked weights reconcile.
@@ -480,5 +496,5 @@ function consistencyAudit(recipe: Recipe, calc: CalcResult, db: FoodDb, plan: Pl
   if (Math.abs(por.perContainerGrams * recipe.portions - batch) > 1e-6) fails.push(`Container weight × ${recipe.portions} doesn't equal the batch weight.`);
   if (!por.measured && por.assumptions.length > 0) warns.push("Container weights are estimates: weigh the finished batch and divide by the number of containers.");
 
-  return { id: 5, name: "Consistency audit", status: fails.length ? "fail" : warns.length ? "warn" : "pass", findings: [...fails, ...warns] };
+  return { id: 5, name: "Consistency audit", status: fails.length ? "fail" : warns.length ? "warn" : "pass", findings: [...fails, ...warns], problems: fails.length };
 }

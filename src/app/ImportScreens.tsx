@@ -13,7 +13,7 @@ import {
   quantityFor,
   recipeFromImport,
   recipeIdFor,
-  stepsMentioning,
+  linkSteps,
   suggestFoods,
   wantFor,
   type BookRecipe,
@@ -299,13 +299,15 @@ function resolveRow(r: Row, engine: Engine) {
 /** A line the app is sure about: food and amount found, nothing to fix, not a stand-in. These start ticked. */
 function isSure(r: Row, engine: Engine): boolean {
   const res = resolveRow(r, engine);
-  return r.choice !== "out" && !r.parsed.flags.some((f) => f.severity === "fix") && !approximateNote(r.parsed.name) && !!res.food && !!res.quantity;
+  return r.choice !== "out" && !r.parsed.flags.some((f) => f.severity === "fix") && !!res.food && !!res.quantity;
 }
 
 function initialRows(parsed: ParsedRecipe, engine: Engine): Row[] {
   return parsed.ingredients.map((p) => {
     const top = p.name ? suggestFoods(p.name, engine.db, 1, wantFor(p))[0] : undefined;
     const row: Row = { parsed: p, choice: top ? top.fdcId : null, override: null, confirmed: false, search: "" };
+    // A topping or serving suggestion with no amount is left out (it says so on the line).
+    if (p.optional && p.amount === null) return { ...row, choice: "out", confirmed: true };
     return { ...row, confirmed: isSure(row, engine) };
   });
 }
@@ -349,15 +351,17 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
   const isDone = (r: Row, i: number) => (r.choice === "out" ? r.confirmed : r.confirmed && !!resolved[i]!.food && !!resolved[i]!.quantity);
   const needIdx = rows.map((_, i) => i).filter((i) => !isDone(rows[i]!, i));
   const doneIdx = rows.map((_, i) => i).filter((i) => isDone(rows[i]!, i));
-  const assumed = doneIdx.filter((i) => rows[i]!.choice !== "out" && rows[i]!.parsed.flags.some((f) => !QUIET_FLAGS.has(f.code))).length;
+  const assumed = doneIdx.filter((i) => rows[i]!.choice === "out" || rows[i]!.parsed.flags.some((f) => !QUIET_FLAGS.has(f.code)) || !!resolved[i]!.q?.assumed).length;
   if (needIdx.length > 0) blockers.push(`${needIdx.length} ${needIdx.length === 1 ? "line needs" : "lines need"} you above.`);
 
   const finish = () => {
     const cleanSteps = steps.map((s) => s.trim()).filter(Boolean);
+    const links = linkSteps(rows.map((r) => ({ name: r.parsed.name, group: r.parsed.group })), cleanSteps);
     const lines: ReviewedLine[] = rows.flatMap((r, i) => {
       const res = resolved[i]!;
       if (r.choice === "out" || !res.food || !res.quantity) return [];
-      const notes = r.parsed.flags.map((f) => `Checked on import: ${f.message}`);
+      // Only notes that say something about the amount or food are kept; how the text was tidied isn't.
+      const notes = [...r.parsed.flags.filter((f) => !QUIET_FLAGS.has(f.code)).map((f) => f.message), ...(res.q?.assumed && !r.override ? [res.q.assumed] : []), ...(approximateNote(r.parsed.name) ? [approximateNote(r.parsed.name)!] : [])];
       return [{
         name: r.parsed.name,
         food: res.food,
@@ -366,7 +370,8 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
         role: guessRole(res.food, r.parsed.name),
         optional: r.parsed.optional,
         group: r.parsed.group,
-        usedInSteps: stepsMentioning(r.parsed.name, cleanSteps, r.parsed.group),
+        usedInSteps: links[i]!.steps,
+        ...(links[i]!.inferred ? { stepsInferred: true } : {}),
         confirmed: notes,
       }];
     });
@@ -413,7 +418,9 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
             {showSure && doneIdx.map((i) => {
               const r = rows[i]!;
               const out = r.choice === "out";
-              const notes = out ? [] : r.parsed.flags.filter((f) => !QUIET_FLAGS.has(f.code));
+              const notes = out
+                ? r.parsed.flags.filter((f) => f.code === "optional")
+                : [...r.parsed.flags.filter((f) => !QUIET_FLAGS.has(f.code)), ...(resolved[i]!.q?.assumed && !r.override ? [{ code: "suggested" as const, severity: "check" as const, message: resolved[i]!.q!.assumed! }] : []), ...(approximateNote(r.parsed.name) ? [{ code: "unusual" as const, severity: "check" as const, message: approximateNote(r.parsed.name)! }] : [])];
               return (
                 <button key={i} className="sure-row" data-testid={`review-row-${i}`} onClick={() => setRow(i, { confirmed: false, ...(out ? { choice: null } : {}) })}>
                   <span className="sure-row__line">{r.parsed.raw}</span>

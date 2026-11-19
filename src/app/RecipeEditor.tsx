@@ -270,17 +270,24 @@ export function RecipeEditorScreen({ id }: { id: string | null }): ReactElement 
 function CheckSummary({ data }: { data: ReturnType<typeof analyse> }): ReactElement {
   const s = STATUS_TEXT[data.report.status];
   const pp = data.calc.perPortion;
-  const findings = data.report.audits.flatMap((a) => (a.status === "fail" || a.status === "warn" ? a.findings.map((f) => ({ a: a.id, f, fail: a.status === "fail" })) : []));
+  const fixes = data.report.audits.flatMap((a) => a.findings.slice(0, a.problems).map((f) => ({ a: a.id, f })));
+  const notes = data.report.audits.flatMap((a) => (a.status === "pending" ? [] : a.findings.slice(a.problems).map((f) => ({ a: a.id, f }))));
   return (
     <>
       <div className={`status status--${s.tone} status--flat`} data-testid="editor-status">
         <strong>{s.label}</strong>
         <span>{Math.round(pp.kcal.value)} kcal · P {round(pp.protein.value)} g · C {round(pp.carbs.value)} g · F {round(pp.fat.value)} g per serving</span>
       </div>
-      {findings.length > 0 && (
-        <div className="empty">
-          {findings.map(({ a, f, fail }) => <p key={`${a}${f}`} className={`note ${fail ? "note--bad" : ""}`}>{fail ? "Fix: " : "Note: "}{f}</p>)}
+      {fixes.length > 0 && (
+        <div className="empty" data-testid="editor-fixes">
+          {fixes.map(({ a, f }) => <p key={`${a}${f}`} className="note note--bad">Fix: {f}</p>)}
         </div>
+      )}
+      {notes.length > 0 && (
+        <details className="more check-notes" data-testid="editor-notes">
+          <summary>{notes.length} {notes.length === 1 ? "note" : "notes"} · nothing you need to do</summary>
+          {notes.map(({ a, f }) => <p key={`${a}${f}`} className="note">{f}</p>)}
+        </details>
       )}
     </>
   );
@@ -440,7 +447,7 @@ function IngredientForm({ line, steps, engine, settings, takenIds, onChange, onD
                 const set = new Set(line.usedInSteps ?? []);
                 if (e.target.checked) set.add(i + 1);
                 else set.delete(i + 1);
-                upd({ usedInSteps: [...set].sort((a, b) => a - b) });
+                upd({ usedInSteps: [...set].sort((a, b) => a - b), stepsInferred: false });
               }}
             />
             Step {i + 1}{s.text ? `: ${s.text.slice(0, 40)}${s.text.length > 40 ? "…" : ""}` : ""}

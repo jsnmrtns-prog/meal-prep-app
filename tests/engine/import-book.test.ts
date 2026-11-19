@@ -17,6 +17,7 @@ import {
   parseRecipeText,
   stepMentionsLine,
   stepsMentioning,
+  linkSteps,
   type FoodDbFile,
 } from "../../src/engine/index.ts";
 
@@ -122,7 +123,7 @@ test("a choice uses the first option; '15g (0.7oz)' keeps the grams; '(or to tas
 test("an ingredient is linked to a step that names its section or another name for it", () => {
   const steps = ["Season the potatoes with 1 serving of taco spice mix.", "Blend the yogurt, mayo and chipotle paste.", "Top with the chipotle spicy sauce."];
   assert.deepEqual(stepsMentioning("Oregano", steps, "Taco Spice Mix"), [1]);
-  assert.deepEqual(stepsMentioning("50% Fat Mayonnaise", steps, "Chipotle Spicy Sauce"), [2, 3]);
+  assert.deepEqual(stepsMentioning("50% Fat Mayonnaise", steps, "Chipotle Spicy Sauce"), [2]);
   assert.ok(stepMentionsLine(steps[2]!, "Honey", "Chipotle Spicy Sauce"));
   assert.ok(!stepMentionsLine("Cook the rice.", "Honey", "Chipotle Spicy Sauce"));
 });
@@ -135,11 +136,82 @@ test("USDA spoon weights that differ only by rounding are one weight, not a choi
 
 const books = ["/mnt/user-data/uploads/The_Meal_Prep_Cookbook_V5.pdf", "/mnt/user-data/uploads/Jalal_s_Cookbook_V3.pdf", "/mnt/user-data/uploads/0bf303ce-Stealth_Health_Meal_Prep_Cookbook_2026_Update.pdf"];
 test("your three cookbooks: every recipe is found with a name and steps", { skip: !books.every(existsSync) && "cookbooks not available here" }, async () => {
-  const want = [129, 141, 110];
+  const want = [128, 141, 110];
   for (const [k, f] of books.entries()) {
     const found = findRecipes(await pdfPages(pdfjs as never, await openAsBlob(f)));
     assert.equal(found.length, want[k], f);
     assert.ok(found.filter((r) => r.title.startsWith("Recipe on page")).length <= 1, f);
     assert.ok(found.every((r) => parseRecipeText(r.text).steps.length > 0), f);
   }
+});
+
+test("Stealth-style wrapped lines: dry weight for cooked rice, names finished on the next line, a stray bracket", () => {
+  const text = `CHICKEN FRIED RICE
+
+Per Serving (makes 5)
+500 Calories
+41G Protein
+47G Carbs
+17G Fat
+
+INGREDIENTS
+Chicken/Marinade:
+710g (25oz) chicken breast
+30g (2 Tbsp) soy sauce
+To taste: salt
+Egg & Veggie Mix
+200g (~¾ cup) egg whites
+3 eggs
+300g (~2 cups) mixed frozen
+veggies (carrots, mushrooms,
+onions or chefs choice)
+
+Rice Base:
+300g (1 ⅔ cups) day-old
+cooked white rice (300g
+dry weight, ~700g
+cooked)
+45g (3 (Tbsp) sesame oil
+
+INSTRUCTIONS
+1.In a large bowl, combine diced chicken breast with soy sauce and salt.
+2.In a bowl, whisk together egg whites and eggs until fully combined. Set aside.
+3.Add mixed frozen veggies to the pan and cook until softened.
+4.Add day-old cooked white rice to the pan. Pour in sesame oil.`;
+  const r = parseRecipeText(text);
+  const by = (n: string) => r.ingredients.find((i) => i.name === n);
+  assert.deepEqual(r.ingredients.map((i) => i.name), ["chicken breast", "soy sauce", "salt", "egg whites", "eggs", "mixed frozen veggies", "uncooked white rice", "sesame oil"]);
+  assert.equal(by("mixed frozen veggies")?.prep, "carrots, mushrooms, onions or chefs choice");
+  const rice = by("uncooked white rice")!;
+  assert.equal(rice.amount, 300);
+  assert.ok(rice.flags.every((f) => f.severity === "check"));
+  assert.ok(rice.flags.some((f) => /dry weight given/.test(f.message)));
+  assert.equal(by("sesame oil")?.amount, 45);
+  // "white" in "white rice" isn't "egg whites".
+  assert.deepEqual(stepsMentioning("egg whites", r.steps, "Egg & Veggie Mix"), [2]);
+  assert.deepEqual(stepsMentioning("uncooked white rice", r.steps, "Rice Base"), [4]);
+});
+
+test("an ingredient the steps never name is placed where it most likely goes", () => {
+  const steps = [
+    "Preheat the oven to 400°F.",
+    "Toss the chicken with the paprika and garlic.",
+    "Heat a skillet over medium heat and cook the chicken for 6 minutes.",
+    "Bake the potatoes for 25 minutes.",
+    "Serve with the chicken.",
+  ];
+  const lines = [
+    { name: "chicken breast", group: "Marinade" },
+    { name: "cumin", group: "Marinade" }, // same section as the chicken → step 2
+    { name: "olive oil", group: null }, // oil → the first heating step
+    { name: "black pepper", group: null }, // seasoning → where things are tossed
+    { name: "fresh parsley", group: null }, // garnish → where it's served
+  ];
+  assert.deepEqual(linkSteps(lines, steps), [
+    { steps: [2, 3, 5], inferred: false },
+    { steps: [2], inferred: true },
+    { steps: [1], inferred: true },
+    { steps: [2], inferred: true },
+    { steps: [5], inferred: true },
+  ]);
 });

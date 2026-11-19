@@ -172,13 +172,16 @@ test("food suggestions: the expected USDA food is first for common ingredients",
   assert.ok(garlic.portions.some((p) => p.label === "clove"), "prefers the garlic record that has a clove weight");
 });
 
-test("counts need a matching USDA portion; without one the app asks instead of guessing", () => {
+test("counts without a size use large eggs or a medium size, and say so; the other sizes stay on offer", () => {
   const egg = db.get(171287);
   assert.deepEqual(quantityFor({ amount: 2, unit: null, sizeWord: "large", packageSize: null, name: "eggs" }, egg).quantity, { kind: "count", amount: 2, portionLabel: "large" });
   const noSize = quantityFor({ amount: 2, unit: null, sizeWord: null, packageSize: null, name: "eggs" }, egg);
-  assert.equal(noSize.quantity, null);
-  assert.match(noSize.problem!, /Which USDA size is one egg\? Choose one, or enter grams/);
-  assert.ok(noSize.options.some((o) => o.quantity.kind === "count" && o.quantity.portionLabel === "large"));
+  assert.deepEqual(noSize.quantity, { kind: "count", amount: 2, portionLabel: "large" });
+  assert.match(noSize.assumed!, /No size given: used USDA "large"/);
+  assert.ok(noSize.options.length > 1);
+  const onion = db.get(170000);
+  const o = quantityFor({ amount: 1, unit: null, sizeWord: null, packageSize: null, name: "onion" }, onion);
+  assert.equal(o.quantity?.kind === "count" && o.quantity.portionLabel.startsWith("medium"), true, JSON.stringify(o.quantity));
   assert.deepEqual(quantityFor({ amount: 1, unit: { kind: "count", noun: "can" }, sizeWord: null, packageSize: { amount: 15, unit: "oz" }, name: "black beans" }, null).quantity, { kind: "mass", amount: 15, unit: "oz" });
 });
 

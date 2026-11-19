@@ -29,6 +29,35 @@ const SYNONYMS: [RegExp, string][] = [
   [/\b(red|yellow|green|orange) (?:bell )?peppers?\b(?! flakes)/i, "peppers sweet $1 raw"],
   [/(?<!(?:peanut|almond|nut|cashew|seed|apple|cocoa|shea) )\b(?:reduced[- ]fat|light|lite|low[- ]fat|half[- ]fat) butter\b/i, "butter light stick with salt"],
   [/\bsesame seeds?\b/i, "seeds sesame seeds whole dried"],
+  // Names cookbooks use that USDA files under another word.
+  [/\bparmigiano(?:[- ]+reggiano)?\b|\bparmesan\b/i, "cheese parmesan grated"],
+  [/\blemon zest\b|\bzest of (?:\d+ |a |one )?lemons?\b/i, "lemon peel raw"],
+  [/\borange zest\b|\bzest of (?:\d+ |a |one )?(?:large )?oranges?\b/i, "orange peel raw"],
+  [/\blime zest\b|\bzest of (?:\d+ |a |one )?limes?\b/i, "lemon peel raw"],
+  [/^(?!.*\b(?<!un)cooked\b).*\b(?:basmati|jasmine)\b/i, "rice white long-grain regular raw enriched"],
+  [/^(?=.*\b(?<!un)cooked\b).*\b(?:basmati|jasmine)\b/i, "rice white long-grain regular enriched cooked"],
+  [/\b(?:linguine|fettuccine|rigatoni|lasagna sheets?|lasagne|tagliatelle|pappardelle|fusilli|farfalle|orecchiette|bucatini|ziti|cavatappi|conchiglie|shells)\b/i, "pasta dry enriched"],
+  [/\b(?:tomato )?passata\b/i, "tomato puree canned"],
+  [/\bsweetcorn\b|\bsweet corn\b/i, "corn sweet yellow canned whole kernel drained solids"],
+  [/\bgherkins?\b|\bdill pickles?\b/i, "pickles cucumber dill"],
+  [/\bpickle juice\b/i, "pickles cucumber dill"],
+  [/\bcorn ?flakes\b/i, "cereals corn flakes"],
+  [/\b(?:italian |panko |seasoned )?bread ?crumbs\b|\bpanko\b/i, "bread crumbs dry grated seasoned"],
+  [/\bmirin\b/i, "sake"],
+  [/\bpico de gallo\b|\bpico\b/i, "sauce salsa ready-to-serve"],
+  [/\barrabbiata\b|\bmarinara\b/i, "sauce pasta spaghetti marinara ready-to-serve"],
+  [/\bandouille\b|\bsmoked sausage\b/i, "sausage smoked link sausage pork"],
+  [/\bturkey rashers?\b|\bturkey bacon\b/i, "bacon turkey unprepared"],
+  [/\b(?:wholemeal|whole wheat|wholewheat) (?:tortillas?|wraps?)\b/i, "tortillas whole wheat"],
+  [/\b(?:flour |plain )?(?:tortillas?|wraps?)\b/i, "tortillas flour shelf stable"],
+  [/\bgochujang\b|\bsiracha\b|\bsriracha\b/i, "sauce hot chile sriracha"],
+  [/\bgochugaru\b|\b(?:ancho|guajillo|dried) chil(?:e|i|li)e?s\b/i, "spices pepper red or cayenne"],
+  [/\bsumac\b/i, "spices paprika"],
+  [/\btzatziki\b/i, "yogurt greek plain nonfat"],
+  [/\bstrawberries\b|\bsrawberries\b/i, "strawberries raw"],
+  [/\bpasta water\b|\bboiled water\b/i, "water tap drinking"],
+  [/\bolive o\|?il+\b|\bolive oill\b/i, "oil olive salad or cooking"],
+  [/\bpea(?:u|nu)t butter\b/i, "peanut butter smooth style without salt"],
   [/\b(?:ginger powder|ground ginger|dried ginger)\b/i, "spices ginger ground"],
   [/^(?:any |regular |dairy |cow'?s )?milk(?: of choice)?$/i, "milk reduced fat fluid 2% milkfat with added vitamin a and vitamin d"],
   [/\blime wedges?\b/i, "limes raw"],
@@ -117,6 +146,12 @@ const APPROXIMATE: [RegExp, string][] = [
   [/\bgarlic salt\b/i, "USDA has no garlic salt"],
   [/\bprotein pasta\b|\bchickpea pasta\b|\blentil pasta\b/i, "USDA has no protein pasta"],
   [/\bhollandaise\b/i, "USDA has no hollandaise"],
+  [/\bgochujang\b/i, "USDA has no gochujang (sriracha used)"],
+  [/\bgochugaru\b|\b(?:ancho|guajillo) chil/i, "USDA has no gochugaru or dried Mexican chiles (cayenne used)"],
+  [/\bsumac\b/i, "USDA has no sumac (paprika used)"],
+  [/\btzatziki\b/i, "USDA has no tzatziki (Greek yogurt used)"],
+  [/\bmirin\b/i, "USDA has no mirin (sake used)"],
+  [/\blime zest\b|\bzest of (?:\d+ |a |one )?limes?\b/i, "USDA has no lime peel (lemon peel used)"],
 ];
 
 /** A note when the suggested food can only be a stand-in, so it isn't accepted without a look. */
@@ -272,8 +307,9 @@ export interface QuantityChoice {
 export function quantityFor(
   p: Pick<ParsedIngredient, "amount" | "unit" | "sizeWord" | "packageSize" | "name"> & { prep?: string | null },
   food: Food | null,
-): { quantity: Quantity | null; problem: string | null; options: QuantityChoice[] } {
+): { quantity: Quantity | null; problem: string | null; options: QuantityChoice[]; /** A size or weight the app picked itself, to mention on the line. */ assumed?: string } {
   const none = (problem: string, options: QuantityChoice[] = []) => ({ quantity: null, problem, options });
+  const g1 = (n: number) => Math.round(n * 10) / 10;
   if (p.amount === null) return none("Enter an amount.");
   const amount = p.amount;
   if (p.packageSize) return { quantity: { kind: "mass", amount: amount * p.packageSize.amount, unit: p.packageSize.unit }, problem: null, options: [] };
@@ -294,10 +330,17 @@ export function quantityFor(
           (!/\bwhipped\b/i.test(p.name) ? r.options.find((o) => /\bfluid\b/i.test(o.label)) : undefined) ??
           (/\bpepper, black\b/i.test(food.description) ? r.options.find((o) => /\bground\b/i.test(o.label)) : undefined);
         if (pick) return { quantity: { kind: "volume", amount, unit: u.unit, portionLabel: pick.label }, problem: null, options: [] };
-        return none(
-          `USDA lists more than one weight per ${u.unit} for this food: choose one, or enter grams.`,
-          r.options.map((o) => ({ label: `${o.amount} ${o.label} (${Math.round((o.grams / o.amount) * 10) / 10} g)`, quantity: { kind: "volume", amount, unit: u.unit, portionLabel: o.label } })),
-        );
+        // Nothing in the recipe says which: use the middle weight (close enough for a spoonful) and say so.
+        const byWeight = [...r.options].sort((a, b) => a.grams / a.amount - b.grams / b.amount);
+        const mid = byWeight[Math.floor((byWeight.length - 1) / 2)]!;
+        // Two USDA weights can share a name ("cup"): then the chosen weight is written in grams.
+        const unique = r.options.filter((o) => o.label === mid.label).length === 1;
+        return {
+          quantity: unique ? { kind: "volume", amount, unit: u.unit, portionLabel: mid.label } : { kind: "mass", amount: Math.round(((amount * mid.grams) / mid.amount) * 10) / 10, unit: "g" },
+          problem: null,
+          options: r.options.map((o) => ({ label: `${o.amount} ${o.label} (${g1(o.grams / o.amount)} g)`, quantity: { kind: "volume", amount, unit: u.unit, portionLabel: o.label } })),
+          assumed: `USDA has more than one weight per ${u.unit}; used "${mid.label}" (${g1(mid.grams / mid.amount)} g).`,
+        };
       }
       if (!r.ok) return none(`USDA has no ${u.unit === "tbsp" ? "tablespoon" : u.unit === "tsp" ? "teaspoon" : u.unit} weight for this food: choose another USDA food or enter grams.`);
     }
@@ -317,17 +360,29 @@ export function quantityFor(
     if (hit) return { quantity: { kind: "count", amount, portionLabel: hit.label }, problem: null, options: [] };
   }
   const options = portions.map((x) => ({ label: `${x.label} (${Math.round((x.grams / x.amount) * 10) / 10} g each)`, quantity: { kind: "count" as const, amount, portionLabel: x.label } }));
+  // No size given: large eggs (what U.S. recipes mean), medium for anything else, or the middle size.
+  if (portions.length > 0) {
+    const sized = portions.filter((x) => /\b(?:small|medium|large|extra large|jumbo)\b/i.test(x.label));
+    const pool = sized.length ? sized : portions.filter((x) => !/\b(?:serving|package|container|nlea|cup|slice|piece|strip)\b/i.test(x.label));
+    const isEgg = /^egg\b/i.test(food.description);
+    const pick =
+      (isEgg ? pool.find((x) => /^large\b/i.test(x.label)) : undefined) ??
+      pool.find((x) => /^medium\b/i.test(x.label)) ??
+      [...pool].sort((a, b) => a.grams / a.amount - b.grams / b.amount)[Math.floor((pool.length - 1) / 2)];
+    if (pick) {
+      const noun = u?.kind === "count" ? u.noun : searchTerms(p.name.split(/\s*\/\s*/)[0]!).at(-1) ?? "item";
+      return { quantity: { kind: "count", amount, portionLabel: pick.label }, problem: null, options, assumed: `${p.sizeWord ? `USDA has no "${p.sizeWord}" size` : "No size given"}: used USDA "${pick.label}" (${g1(pick.grams / pick.amount)} g each) for ${noun}.` };
+    }
+  }
   const what = u?.kind === "count" ? `one ${u.noun}` : `one ${p.sizeWord ? `${p.sizeWord} ` : ""}${searchTerms(p.name.split(/\s*\/\s*/)[0]!).at(-1) ?? "item"}`;
   return none(options.length ? `Which USDA size is ${what}? Choose one, or enter grams.` : `USDA has no weight for ${what} of this food: enter grams.`, options);
 }
 
 /** Which steps mention an ingredient (by its main words). */
 export function stepsMentioning(name: string, steps: string[], group?: string | null): number[] {
-  const words = searchTerms(name).filter((w) => w.length >= 4 && !/^\d/.test(w));
   const hits: number[] = [];
   steps.forEach((s, i) => {
-    const t = s.toLowerCase();
-    if (words.some((w) => new RegExp(`\\b${w.replace(/[-]/g, "\\-")}(?:s|es)?\\b`).test(t))) hits.push(i + 1);
+    if (stepMentionsLine(s, name)) hits.push(i + 1);
   });
   if (hits.length) return hits;
   // "Season with 1 serving of taco spice mix", "blend yogurt, mayo…": the section's name or another name for the food.
@@ -335,6 +390,41 @@ export function stepsMentioning(name: string, steps: string[], group?: string | 
     if (stepMentionsLine(s, name, group)) hits.push(i + 1);
   });
   return hits;
+}
+
+const OIL = /\b(?:oil|butter|ghee|spray|lard)\b/i;
+const SEASONING = /\b(?:salt|pepper|paprika|cumin|oregano|thyme|basil|rosemary|chili|chilli|cayenne|garlic powder|onion powder|seasoning|spice|spices|cinnamon|turmeric|coriander|curry|flakes|powder|msg|bouillon)\b/i;
+const GARNISH = /\b(?:garnish|parsley|cilantro|coriander leaves|chives|green onions?|scallions?|spring onions?|sesame seeds|lime wedges?|lemon wedges?|microgreens)\b/i;
+const HEAT_STEP = /\b(?:heat|preheat|pan|skillet|wok|fry|saute|sauté|sear|cook|grill|bake|oven|air fryer|roast)\b/i;
+const SEASON_STEP = /\b(?:season|seasoning|spices?|marinade|marinate|sprinkle|rub|toss|coat|combine|mix)\b/i;
+const FINISH_STEP = /\b(?:garnish|top|serve|sprinkle|finish)\b/i;
+
+/**
+ * Steps for every ingredient. Where the recipe names it, those steps; where it
+ * doesn't, the app works out the likely step: where the rest of its section is
+ * used, where the oil goes in the pan, where things are seasoned, or where it's
+ * served. `inferred` marks the ones the app chose.
+ */
+export function linkSteps(lines: { name: string; group: string | null }[], steps: string[]): { steps: number[]; inferred: boolean }[] {
+  const named = lines.map((l) => stepsMentioning(l.name, steps, l.group));
+  if (steps.length === 0) return named.map((s) => ({ steps: s, inferred: false }));
+  const first = (re: RegExp) => steps.findIndex((s) => re.test(s)) + 1 || null;
+  const last = (re: RegExp) => {
+    for (let i = steps.length - 1; i >= 0; i--) if (re.test(steps[i]!)) return i + 1;
+    return null;
+  };
+  return lines.map((l, i) => {
+    if (named[i]!.length) return { steps: named[i]!, inferred: false };
+    // Where the rest of its section is used first.
+    const siblings = l.group ? lines.map((o, j) => (j !== i && o.group === l.group ? named[j]! : [])).flat() : [];
+    let pick: number | null = null;
+    if (GARNISH.test(l.name)) pick = last(FINISH_STEP) ?? steps.length;
+    else if (siblings.length) pick = Math.min(...siblings);
+    else if (OIL.test(l.name)) pick = first(HEAT_STEP);
+    else if (SEASONING.test(l.name)) pick = first(SEASON_STEP) ?? first(HEAT_STEP);
+    pick ??= first(/\b(?:add|combine|mix|stir|toss)\b/i) ?? 1;
+    return { steps: [pick], inferred: true };
+  });
 }
 
 /**
@@ -361,6 +451,8 @@ export interface ReviewedLine {
   optional: boolean;
   group: string | null;
   usedInSteps: number[];
+  /** The app chose the steps (the recipe doesn't name this ingredient in them). */
+  stepsInferred?: boolean;
   /** Flags the user confirmed, kept as notes on the line. */
   confirmed: string[];
 }
@@ -397,6 +489,7 @@ export function recipeFromImport(args: {
         usedInSteps: l.usedInSteps,
         cook: defaultCookFor(l.food!, l.state),
       };
+      if (l.stepsInferred) line.stepsInferred = true;
       if (l.group) line.group = l.group;
       if (l.optional) line.optional = true;
       if (l.confirmed.length) line.assumptions = l.confirmed;

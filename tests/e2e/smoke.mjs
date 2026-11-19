@@ -390,6 +390,12 @@ await check("M6: a pasted web recipe is read, every line checked, and saved with
   await page.getByTestId("from-import").waitFor();
   const status = await page.getByTestId("editor-status").locator("strong").textContent();
   assert.ok(status === "Verified with assumptions" || status === "Verified", `status ${status}`);
+  // Nothing to fix; the notes are folded away.
+  assert.equal(await page.getByTestId("editor-fixes").count(), 0);
+  await page.getByTestId("editor-notes").locator("summary").getByText(/nothing you need to do/).waitFor();
+  await page.getByTestId("editor-notes").locator("summary").click();
+  await page.getByTestId("editor-status").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(outDir, "import-editor-checks.png"), animations: "disabled", fullPage: false });
   await page.getByRole("button", { name: "Save recipe" }).click();
   await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
   await page.getByRole("heading", { name: "Chicken Burrito Bowls" }).waitFor();
