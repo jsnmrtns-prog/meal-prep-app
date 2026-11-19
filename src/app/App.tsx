@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from "react";
+import { Guide, GuideScreen } from "./Guide.tsx";
 import { ENGINE_VERSION, MAJOR_ALLERGENS, describePreset, firstPreset, type Allergen } from "../engine/index.ts";
 import { HomeIcon, ImportIcon, RecipesIcon, SettingsIcon, ShoppingIcon } from "./icons.tsx";
 import { FoodDetailScreen, FoodSearchScreen } from "./FoodLookup.tsx";
@@ -67,6 +68,7 @@ const SETTINGS_PAGES: Record<string, string> = {
   packages: "Package Sizes",
   labels: "Label Foods",
   backup: "Backup",
+  guide: "How to Use",
 };
 
 export function routeFromHash(hash: string): Route {
@@ -186,6 +188,7 @@ function SettingsPage({ page, id }: { page: string; id: string | null }): ReactE
     case "packages": return <PackagesScreen />;
     case "labels": return id ? <LabelFoodEditorScreen id={id === "new" ? null : id} /> : <LabelFoodsScreen />;
     case "backup": return <BackupScreen />;
+    case "guide": return <GuideScreen />;
     default: return <SettingsMenu />;
   }
 }
@@ -256,7 +259,7 @@ function Onboarding(): ReactElement {
   };
   return (
     <div className="onboarding" data-testid="onboarding">
-      <p className="onboarding__step">Step {step + 1} of 3</p>
+      <p className="onboarding__step">Step {step + 1} of 4</p>
       {step === 0 && (
         <>
           <h2 className="food-title">Welcome</h2>
@@ -291,7 +294,7 @@ function Onboarding(): ReactElement {
             <Field label="Meals per batch"><NumberInput label="Meals per batch" inputMode="numeric" value={meals} onChange={setMeals} /></Field>
           </div>
           {!planOk && <p className="warning">Check the numbers: protein and carbs can't add up to more calories than the meal has.</p>}
-          <button className="primary-action" disabled={!planOk} onClick={() => void finish()}>Start using the app</button>
+          <button className="primary-action" disabled={!planOk} onClick={() => setStep(3)}>Next</button>
         </>
       )}
       {step === 2 && !needsPlan && (
@@ -304,6 +307,14 @@ function Onboarding(): ReactElement {
             <div className="empty"><p className="empty__note">{settings.profile.preferences.map((p) => p.label).join(" · ")}</p></div>
           </Section>
           <p className="lead">All of these can be changed in Settings at any time.</p>
+          <button className="primary-action" onClick={() => setStep(3)}>Next</button>
+        </>
+      )}
+      {step === 3 && (
+        <>
+          <h2 className="food-title">How it works</h2>
+          <div className="card"><Guide /></div>
+          <p className="lead">You can see this again any time in Settings → How to use the app.</p>
           <button className="primary-action" onClick={() => void finish()}>Start using the app</button>
         </>
       )}

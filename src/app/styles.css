@@ -708,3 +708,11 @@ ul.flags[data-testid="recipe-flags"] { margin: 0 0 16px; padding: 12px 14px; bor
   .row, .cook__steps li { break-inside: avoid; }
   .cook__steps .amt, .cook__also { color: #000 !important; }
 }
+
+/* How to use the app */
+.guide { list-style: none; margin: 0; padding: 6px 16px; }
+.guide__step { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; }
+.guide__step + .guide__step { border-top: 0.5px solid var(--separator); }
+.guide__num { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 600; font-size: 14px; display: grid; place-items: center; margin-top: 1px; }
+.guide__title { display: block; font-weight: 600; margin-bottom: 2px; }
+.guide__text { display: block; color: var(--text-2); font-size: 15px; line-height: 1.4; }

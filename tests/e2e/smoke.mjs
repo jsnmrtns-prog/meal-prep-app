@@ -94,6 +94,10 @@ await check("a new device starts blank: the setup makes your first meal plan, wi
     await p.getByLabel("Calories per meal").fill("700");
     await p.getByLabel("Protein per meal").fill("60");
     await p.screenshot({ path: join(outDir, "onboarding-plan.png"), animations: "disabled" });
+    await p.getByRole("button", { name: "Next" }).click();
+    await p.getByText("How it works").waitFor();
+    assert.equal(await p.getByTestId("guide").locator("li").count(), 5);
+    await p.screenshot({ path: join(outDir, "onboarding-guide.png"), animations: "disabled" });
     await p.getByRole("button", { name: "Start using the app" }).click();
     await p.getByRole("button", { name: "Import a recipe" }).waitFor();
     await p.getByText("700 kcal · at least 60 g protein · at least 50 g carbs · 6 meals", { exact: false }).waitFor();
@@ -116,10 +120,19 @@ await check("first run shows setup, then the home screen", async () => {
   await page.getByText("Any food allergies?").waitFor();
   await page.getByRole("button", { name: "No allergies, next" }).click();
   await page.getByText("Light garlic", { exact: false }).waitFor();
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByTestId("guide").waitFor();
   await page.getByRole("button", { name: "Start using the app" }).click();
   await page.getByRole("heading", { level: 1, name: "Meal Prep" }).waitFor();
   await page.getByRole("button", { name: "Import a recipe" }).waitFor();
   await page.screenshot({ path: join(outDir, "home.png"), animations: "disabled" });
+  // The same guide stays in Settings.
+  await page.goto(`${url}#/settings`);
+  await page.getByRole("link", { name: "How to use the app" }).click();
+  await page.getByRole("heading", { level: 1, name: "How to Use" }).waitFor();
+  assert.equal(await page.getByTestId("guide").locator("li").count(), 5);
+  await page.screenshot({ path: join(outDir, "settings-guide.png"), animations: "disabled" });
+  await page.goto(`${url}#/home`);
 });
 
 await check("install hint shows in a Safari tab", async () => {

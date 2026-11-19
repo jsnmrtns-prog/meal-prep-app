@@ -69,6 +69,9 @@ export function SettingsMenu(): ReactElement {
   const checked = settings.packages.filter((p) => p.verified).length;
   return (
     <>
+      <Section title="Help">
+        <LinkRow href="#/settings/guide" label="How to use the app" />
+      </Section>
       <Section title="Your profile">
         <LinkRow href="#/settings/allergies" label="Allergies and foods to avoid" value={allergies === 0 ? "None" : `${allergies}`} />
         <LinkRow href="#/settings/preferences" label="Ingredient preferences" value={`${settings.profile.preferences.length}`} />
