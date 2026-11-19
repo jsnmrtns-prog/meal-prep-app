@@ -119,6 +119,16 @@ export interface Recipe {
   printedPerServing?: PrintedNutrition;
   /** The finished batch's weight, if you weighed it. Container weights then use this. */
   measuredCookedBatchGrams?: number;
+  /** The original recipe as imported, kept unchanged for reference. */
+  source?: RecipeSource;
+}
+
+export interface RecipeSource {
+  kind: "paste" | "pdf" | "docx" | "text-file" | "ai";
+  /** The text exactly as it was read (or pasted). */
+  text: string;
+  fileName?: string;
+  importedAt: string;
 }
 
 export type PreferenceMode = "exclude" | "reduce" | "allow";

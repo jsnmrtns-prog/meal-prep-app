@@ -14,3 +14,8 @@ export * from "./presets.ts";
 export * from "./swaps.ts";
 export * from "./optimizer.ts";
 export * from "./userdata.ts";
+export * from "./importer/parse.ts";
+export * from "./importer/pdflines.ts";
+export * from "./importer/match.ts";
+export * from "./importer/aiblock.ts";
+export * from "./importer/docx.ts";

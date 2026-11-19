@@ -1,0 +1,1160 @@
+{
+ "note": "Hand-written expectations for the built-in recipe reader (M6 gate). Names are matched case-insensitively; flags must match exactly.",
+ "recipes": {
+  "01-web-chicken-burrito-bowls": {
+   "title": "Chicken Burrito Bowls",
+   "servings": 4,
+   "steps": 5,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 1.5,
+     "unit": "lb",
+     "name": "boneless skinless chicken breasts",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "uncooked white rice",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "count:can",
+     "name": "black beans",
+     "flags": [
+      "package_size"
+     ]
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "frozen corn",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "olive oil",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tsp",
+     "name": "chili powder",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "cumin",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "tsp",
+     "name": "garlic powder",
+     "flags": []
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "salt and pepper",
+     "flags": [
+      "combined",
+      "to_taste"
+     ]
+    },
+    {
+     "amount": 0.25,
+     "unit": "cup",
+     "name": "chopped cilantro",
+     "flags": [
+      "optional"
+     ]
+    }
+   ]
+  },
+  "02-web-beef-broccoli": {
+   "title": "Easy Beef and Broccoli",
+   "servings": 5,
+   "steps": 5,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 1,
+     "unit": "lb",
+     "name": "flank steak",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "cornstarch",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "avocado oil",
+     "flags": [
+      "divided"
+     ]
+    },
+    {
+     "amount": 0.3333333333333333,
+     "unit": "cup",
+     "name": "low sodium soy sauce",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "honey",
+     "flags": []
+    },
+    {
+     "amount": 3,
+     "unit": "count:clove",
+     "name": "garlic",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "sesame oil",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "water",
+     "flags": []
+    },
+    {
+     "amount": 4,
+     "unit": "cup",
+     "name": "broccoli florets",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "cup",
+     "name": "cooked jasmine rice",
+     "flags": []
+    }
+   ]
+  },
+  "03-web-turkey-chili": {
+   "title": "Lean Turkey Chili",
+   "servings": 6,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "olive oil",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "size:medium",
+     "name": "onion",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "lb",
+     "name": "93% lean ground turkey",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "count:can",
+     "name": "crushed tomatoes",
+     "flags": [
+      "package_size"
+     ]
+    },
+    {
+     "amount": 2,
+     "unit": "count:can",
+     "name": "kidney beans",
+     "flags": [
+      "package_size"
+     ]
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "chicken broth",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "chili powder",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "smoked paprika",
+     "flags": []
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "jalape\u00f1os",
+     "flags": [
+      "range"
+     ]
+    }
+   ]
+  },
+  "04-web-salmon-quinoa": {
+   "title": "Lemon Garlic Salmon with Rice",
+   "servings": 4,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 4,
+     "unit": null,
+     "name": "salmon fillets",
+     "flags": [
+      "package_size"
+     ]
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "butter",
+     "flags": []
+    },
+    {
+     "amount": 4,
+     "unit": null,
+     "name": "garlic cloves",
+     "flags": []
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "juice of 1 lemon",
+     "flags": [
+      "unusual"
+     ]
+    },
+    {
+     "amount": 185,
+     "unit": "g",
+     "name": "uncooked long grain white rice",
+     "flags": [
+      "amounts_disagree"
+     ]
+    },
+    {
+     "amount": 2,
+     "unit": "cup",
+     "name": "water",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "lb",
+     "name": "asparagus",
+     "flags": []
+    }
+   ]
+  },
+  "05-web-greek-yogurt-chicken": {
+   "title": "Greek Yogurt Marinated Chicken",
+   "servings": 6,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 2.5,
+     "unit": "lb",
+     "name": "chicken thighs",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "plain nonfat Greek yogurt",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "lemon juice",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "dried oregano",
+     "flags": []
+    },
+    {
+     "amount": 4,
+     "unit": "count:clove",
+     "name": "garlic",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "kosher salt",
+     "flags": []
+    },
+    {
+     "amount": 1.5,
+     "unit": "cup",
+     "name": "dry orzo",
+     "flags": []
+    }
+   ]
+  },
+  "06-web-pasta-bake": {
+   "title": "High Protein Pasta Bake",
+   "servings": 6,
+   "steps": 4,
+   "flags": [
+    "no_servings"
+   ],
+   "ingredients": [
+    {
+     "amount": 16,
+     "unit": "oz",
+     "name": "penne pasta",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "lb",
+     "name": "90% lean ground beef",
+     "flags": []
+    },
+    {
+     "amount": 24,
+     "unit": "oz",
+     "name": "marinara sauce",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "part-skim ricotta",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "cup",
+     "name": "shredded part-skim mozzarella cheese",
+     "flags": []
+    },
+    {
+     "amount": 0.25,
+     "unit": "cup",
+     "name": "grated parmesan cheese",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "Italian seasoning",
+     "flags": []
+    }
+   ]
+  },
+  "07-web-egg-muffins": {
+   "title": "Egg White Breakfast Muffins",
+   "servings": 6,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 12,
+     "unit": "size:large",
+     "name": "eggs",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "cup",
+     "name": "liquid egg whites",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "chopped spinach",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "diced red bell pepper",
+     "flags": []
+    },
+    {
+     "amount": 4,
+     "unit": "oz",
+     "name": "turkey sausage",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "shredded cheddar cheese",
+     "flags": []
+    },
+    {
+     "amount": 0.25,
+     "unit": "tsp",
+     "name": "black pepper",
+     "flags": []
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "Cooking spray",
+     "flags": [
+      "no_amount"
+     ]
+    }
+   ]
+  },
+  "08-printed-pot-roast": {
+   "title": "SUNDAY POT ROAST",
+   "servings": 8,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 3,
+     "unit": "lb",
+     "name": "boneless beef chuck roast",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "vegetable oil",
+     "flags": [
+      "letter_unit"
+     ]
+    },
+    {
+     "amount": 1,
+     "unit": "size:large",
+     "name": "onion",
+     "flags": []
+    },
+    {
+     "amount": 4,
+     "unit": null,
+     "name": "carrots",
+     "flags": []
+    },
+    {
+     "amount": 1.5,
+     "unit": "lb",
+     "name": "red potatoes",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "cup",
+     "name": "beef broth",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "dried thyme",
+     "flags": [
+      "letter_unit"
+     ]
+    },
+    {
+     "amount": 2,
+     "unit": null,
+     "name": "bay leaves",
+     "flags": []
+    }
+   ]
+  },
+  "09-printed-shrimp-stir-fry": {
+   "title": "Shrimp Vegetable Stir-Fry",
+   "servings": 4,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 1,
+     "unit": "lb",
+     "name": "large shrimp",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tsp",
+     "name": "cornstarch",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "canola oil",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "cup",
+     "name": "snap peas",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": null,
+     "name": "red bell pepper",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "size:small",
+     "name": "onion",
+     "flags": []
+    },
+    {
+     "amount": 3,
+     "unit": "tbsp",
+     "name": "oyster sauce",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "rice vinegar",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "cup",
+     "name": "cooked brown rice",
+     "flags": []
+    }
+   ]
+  },
+  "10-printed-meatballs": {
+   "title": "BAKED TURKEY MEATBALLS",
+   "servings": 6,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 2,
+     "unit": "lb",
+     "name": "99% lean ground turkey",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "size:large",
+     "name": "eggs",
+     "flags": []
+    },
+    {
+     "amount": 0.75,
+     "unit": "cup",
+     "name": "panko bread crumbs",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "grated Parmesan",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": null,
+     "name": "garlic cloves",
+     "flags": []
+    },
+    {
+     "amount": 0.25,
+     "unit": "cup",
+     "name": "chopped fresh parsley",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "salt",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "tsp",
+     "name": "pepper",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "count:jar",
+     "name": "marinara sauce",
+     "flags": [
+      "package_size"
+     ]
+    }
+   ]
+  },
+  "11-printed-overnight-oats": {
+   "title": "PROTEIN OVERNIGHT OATS",
+   "servings": 5,
+   "steps": 3,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 5,
+     "unit": "cup",
+     "name": "old-fashioned rolled oats",
+     "flags": []
+    },
+    {
+     "amount": 5,
+     "unit": "count:scoop",
+     "name": "vanilla protein powder",
+     "flags": []
+    },
+    {
+     "amount": 5,
+     "unit": "cup",
+     "name": "unsweetened almond milk",
+     "flags": []
+    },
+    {
+     "amount": 2.5,
+     "unit": "cup",
+     "name": "plain nonfat Greek yogurt",
+     "flags": []
+    },
+    {
+     "amount": 5,
+     "unit": "tbsp",
+     "name": "chia seeds",
+     "flags": [
+      "letter_unit"
+     ]
+    },
+    {
+     "amount": 2.5,
+     "unit": "cup",
+     "name": "blueberries",
+     "flags": []
+    }
+   ]
+  },
+  "12-printed-lentil-soup": {
+   "title": "RED LENTIL SOUP",
+   "servings": 6,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "olive oil",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "size:large",
+     "name": "onion",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": null,
+     "name": "carrots",
+     "flags": []
+    },
+    {
+     "amount": 3,
+     "unit": null,
+     "name": "garlic cloves",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "cup",
+     "name": "red lentils",
+     "flags": []
+    },
+    {
+     "amount": 8,
+     "unit": "cup",
+     "name": "vegetable broth",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "count:can",
+     "name": "diced tomatoes",
+     "flags": [
+      "package_size"
+     ]
+    },
+    {
+     "amount": 2,
+     "unit": "tsp",
+     "name": "ground cumin",
+     "flags": []
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "Juice of 1 lemon",
+     "flags": [
+      "unusual"
+     ]
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "Salt",
+     "flags": [
+      "to_taste"
+     ]
+    }
+   ]
+  },
+  "13-handwritten-moms-chicken-rice": {
+   "title": "Mom's chicken & rice",
+   "servings": 4,
+   "steps": 4,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 2,
+     "unit": "lb",
+     "name": "chicken thighs",
+     "flags": [
+      "ocr_fix"
+     ]
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "onion chopped",
+     "flags": [
+      "ocr_fix"
+     ]
+    },
+    {
+     "amount": 1.5,
+     "unit": "cup",
+     "name": "white rice",
+     "flags": [
+      "ocr_fix"
+     ]
+    },
+    {
+     "amount": 3,
+     "unit": "cup",
+     "name": "chicken broth",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "butter",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "paprika",
+     "flags": []
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "salt + pepper",
+     "flags": [
+      "combined",
+      "no_amount"
+     ]
+    }
+   ]
+  },
+  "14-handwritten-tacos": {
+   "title": "Taco night",
+   "servings": 5,
+   "steps": 3,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 1,
+     "unit": "lb",
+     "name": "ground beef 93/7",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "count:packet",
+     "name": "taco seasoning",
+     "flags": []
+    },
+    {
+     "amount": 0.6666666666666666,
+     "unit": "cup",
+     "name": "water",
+     "flags": []
+    },
+    {
+     "amount": 10,
+     "unit": null,
+     "name": "corn tortillas",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "shredded lettuce",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "shredded cheddar cheese",
+     "flags": [
+      "joined_line"
+     ]
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "salsa",
+     "flags": []
+    }
+   ]
+  },
+  "15-handwritten-pancakes": {
+   "title": "Protein pancakes",
+   "servings": 2,
+   "steps": 2,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "oats",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": null,
+     "name": "eggs",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "cottage cheese",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "count:scoop",
+     "name": "protein powder",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "baking powder",
+     "flags": [
+      "letter_unit"
+     ]
+    },
+    {
+     "amount": 1,
+     "unit": "count:pinch",
+     "name": "salt",
+     "flags": [
+      "unusual"
+     ]
+    }
+   ]
+  },
+  "16-handwritten-stew": {
+   "title": "Beef stew (Grandma)",
+   "servings": 6,
+   "steps": 2,
+   "flags": [
+    "no_servings"
+   ],
+   "ingredients": [
+    {
+     "amount": 2,
+     "unit": "lb",
+     "name": "stew beef",
+     "flags": []
+    },
+    {
+     "amount": 3,
+     "unit": "tbsp",
+     "name": "flour",
+     "flags": [
+      "letter_unit"
+     ]
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "oil",
+     "flags": [
+      "letter_unit"
+     ]
+    },
+    {
+     "amount": 4,
+     "unit": null,
+     "name": "potatos cubed",
+     "flags": []
+    },
+    {
+     "amount": 3,
+     "unit": null,
+     "name": "carrots",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": null,
+     "name": "onion",
+     "flags": []
+    },
+    {
+     "amount": 4,
+     "unit": "cup",
+     "name": "beef broth",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "worcestershire",
+     "flags": [
+      "letter_unit"
+     ]
+    }
+   ]
+  },
+  "17-handwritten-burgers": {
+   "title": "Turkey burgers",
+   "servings": 4,
+   "steps": 2,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 1.25,
+     "unit": "lb",
+     "name": "ground turkey 93%",
+     "flags": [
+      "ocr_fix"
+     ]
+    },
+    {
+     "amount": 0.25,
+     "unit": "cup",
+     "name": "bread crumbs",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": null,
+     "name": "egg",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "dijon mustard",
+     "flags": [
+      "letter_unit"
+     ]
+    },
+    {
+     "amount": 2,
+     "unit": "count:clove",
+     "name": "garlic minced",
+     "flags": []
+    },
+    {
+     "amount": 4,
+     "unit": null,
+     "name": "whole wheat buns",
+     "flags": []
+    }
+   ]
+  },
+  "18-handwritten-fried-rice": {
+   "title": "fried rice",
+   "servings": 4,
+   "steps": 3,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 3,
+     "unit": "cup",
+     "name": "cooked rice",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": null,
+     "name": "eggs",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "frozen peas & carrots",
+     "flags": [
+      "combined"
+     ]
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "green onions",
+     "flags": [
+      "range"
+     ]
+    },
+    {
+     "amount": 3,
+     "unit": "tbsp",
+     "name": "soy sauce",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tbsp",
+     "name": "sesame oil",
+     "flags": []
+    },
+    {
+     "amount": 8,
+     "unit": "oz",
+     "name": "cooked ham or chicken diced",
+     "flags": [
+      "alternatives"
+     ]
+    }
+   ]
+  },
+  "19-handwritten-smoothie": {
+   "title": "Green smoothie",
+   "servings": 2,
+   "steps": 1,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 1,
+     "unit": null,
+     "name": "banana",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "spinach",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "cup",
+     "name": "almond milk",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "cup",
+     "name": "Greek yogurt",
+     "flags": []
+    },
+    {
+     "amount": null,
+     "unit": "tbsp",
+     "name": "honey",
+     "flags": [
+      "letter_unit",
+      "range"
+     ]
+    },
+    {
+     "amount": null,
+     "unit": null,
+     "name": "handful of ice",
+     "flags": [
+      "no_amount"
+     ]
+    }
+   ]
+  },
+  "20-handwritten-sheet-pan": {
+   "title": "SHEET PAN SAUSAGE + VEG",
+   "servings": 4,
+   "steps": 2,
+   "flags": [],
+   "ingredients": [
+    {
+     "amount": 14,
+     "unit": "oz",
+     "name": "smoked turkey sausage sliced",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": null,
+     "name": "sweet potatos diced",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "count:head",
+     "name": "broccoli in florets",
+     "flags": []
+    },
+    {
+     "amount": 2,
+     "unit": "tbsp",
+     "name": "olive oil",
+     "flags": []
+    },
+    {
+     "amount": 1,
+     "unit": "tsp",
+     "name": "garlic powder",
+     "flags": []
+    },
+    {
+     "amount": 0.5,
+     "unit": "tsp",
+     "name": "chili flakes",
+     "flags": []
+    }
+   ]
+  }
+ }
+}

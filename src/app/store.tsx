@@ -74,7 +74,7 @@ async function loadEverything(): Promise<{ settings: Settings; recipes: SavedRec
     return { settings, recipes };
   }
   const packages = withSeedPackages(stored.packages);
-  if (packages.length === stored.packages.length) return { settings: stored, recipes: storedRecipes };
+  if (JSON.stringify(packages) === JSON.stringify(stored.packages)) return { settings: stored, recipes: storedRecipes };
   const settings = { ...stored, packages };
   await write((kv) => kv.put(settings, SETTINGS_KEY));
   return { settings, recipes: storedRecipes };

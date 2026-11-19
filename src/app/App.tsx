@@ -3,6 +3,7 @@ import { ENGINE_VERSION, MAJOR_ALLERGENS, describePreset, type Allergen } from "
 import { HomeIcon, ImportIcon, RecipesIcon, SettingsIcon, ShoppingIcon } from "./icons.tsx";
 import { FoodDetailScreen, FoodSearchScreen } from "./FoodLookup.tsx";
 import { loadFoodDb } from "./foodData.ts";
+import { ImportReviewScreen, ImportScreen } from "./ImportScreens.tsx";
 import { RecipeEditorScreen } from "./RecipeEditor.tsx";
 import { RecipeLibrary, RecipeReportScreen, RecipeVersionsScreen } from "./RecipeReport.tsx";
 import {
@@ -47,6 +48,7 @@ type Screen =
   | { kind: "recipe"; id: string; presetId: string | null }
   | { kind: "recipe-edit"; id: string | null }
   | { kind: "recipe-versions"; id: string }
+  | { kind: "import-review" }
   | { kind: "settings"; page: string; id: string | null };
 
 interface Route {
@@ -71,6 +73,7 @@ export function routeFromHash(hash: string): Route {
     const id = Number(b);
     return { tab: "settings", screen: b && Number.isInteger(id) ? { kind: "food", fdcId: id } : { kind: "foods" } };
   }
+  if (a === "import" && b === "review") return { tab: "import", screen: { kind: "import-review" } };
   if (a === "recipes" && b) {
     if (b === "new") return { tab: "recipes", screen: { kind: "recipe-edit", id: null } };
     if (c === "edit") return { tab: "recipes", screen: { kind: "recipe-edit", id: b } };
@@ -89,6 +92,7 @@ function titleFor(route: Route): string {
     case "recipe": return "Nutrition Report";
     case "recipe-edit": return s.id ? "Edit Recipe" : "New Recipe";
     case "recipe-versions": return "Versions";
+    case "import-review": return "Check the Import";
     case "settings":
       if (s.page === "presets" && s.id) return "Edit Preset";
       if (s.page === "labels" && s.id) return s.id === "new" ? "New Label Food" : "Edit Label Food";
@@ -139,6 +143,7 @@ function Shell(): ReactElement {
         {s.kind === "recipe" && <RecipeReportScreen key={key} id={s.id} presetId={s.presetId} />}
         {s.kind === "recipe-edit" && <RecipeEditorScreen key={key} id={s.id} />}
         {s.kind === "recipe-versions" && <RecipeVersionsScreen key={key} id={s.id} />}
+        {s.kind === "import-review" && <ImportReviewScreen key={key} />}
         {s.kind === "settings" && <SettingsPage key={key} page={s.page} id={s.id} />}
         {s.kind === "tab" && tab === "home" && <HomeScreen />}
         {s.kind === "tab" && tab === "import" && <ImportScreen />}
@@ -265,26 +270,6 @@ function Onboarding(): ReactElement {
         </>
       )}
     </div>
-  );
-}
-
-function ImportScreen(): ReactElement {
-  return (
-    <>
-      <p className="lead">The app reads recipes itself and does all the math. No AI app needed.</p>
-      <Section title="How import will work">
-        <ol className="steps">
-          <li>Paste the recipe text (copy it from a photo with Live Text, a website or notes), or open a PDF.</li>
-          <li>The app splits out each amount and ingredient and flags anything unclear.</li>
-          <li>You review it, confirm the USDA food for each ingredient, and save.</li>
-        </ol>
-      </Section>
-      <button className="primary-action" disabled>
-        Paste or open a recipe
-      </button>
-      <p className="footnote">Optional shortcut: have ChatGPT or Claude format a recipe, then paste the result here.</p>
-      <p className="footnote">Arrives in milestone M6. Manual entry arrives in M5.</p>
-    </>
   );
 }
 

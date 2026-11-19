@@ -31,6 +31,8 @@ await build({
   outdir: join(dist, "assets"),
   bundle: true,
   format: "esm",
+  splitting: true, // pdf.js loads only when a PDF is opened
+  chunkNames: "chunks/[name]-[hash]",
   target: ["safari17"],
   jsx: "automatic",
   minify: true,
@@ -44,6 +46,9 @@ await build({
   },
   logLevel: "warning",
 });
+
+// pdf.js reads PDFs in a separate worker script.
+await cp(join(root, "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs"), join(dist, "assets/pdf.worker.min.js"));
 
 async function listFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true });

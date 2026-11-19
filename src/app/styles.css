@@ -583,3 +583,29 @@ select.input { appearance: none; -webkit-appearance: none; background-image: lin
 
 .onboarding__step { color: var(--text-2); font-size: 13px; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.02em; }
 .onboarding .card { margin-bottom: 20px; }
+
+/* ---------- M6: import ---------- */
+.input--tall { min-height: 180px; font-size: 16px; }
+.more--padded { padding: 0 16px 12px; }
+.more--section { margin: 0 0 24px; padding: 12px 16px; border-radius: 14px; background: var(--card); }
+.prompt { white-space: pre-wrap; word-break: break-word; font-size: 13px; line-height: 1.4; margin: 10px 0 0; padding: 10px; border-radius: 10px; background: var(--bg); max-height: 320px; overflow: auto; }
+.flags { list-style: none; margin: 6px 0 0; padding: 0; }
+.flag { font-size: 14px; line-height: 1.35; margin: 4px 0 0; }
+.flag--fix { color: #a12626; }
+.flag--check { color: #8a5a00; }
+@media (prefers-color-scheme: dark) { .flag--fix { color: #f19a9a; } .flag--check { color: #e9c46a; } }
+.warning-box .flags, .card > .flags { padding: 0 16px; }
+ul.flags[data-testid="recipe-flags"] { margin: 0 0 16px; padding: 12px 14px; border-radius: 12px; background: rgba(200, 50, 50, 0.08); }
+.review-row { padding: 12px 16px 14px; border-left: 4px solid #d9822b; }
+.review-row--done { border-left-color: var(--accent); }
+.review-row + .review-row { border-top: 0.5px solid var(--separator); }
+.review-row__raw { margin: 0; font-weight: 600; font-size: 16px; }
+.review-row__actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
+.review-row__actions .small-button { margin-top: 0; }
+.badge--inline-left { margin-right: 8px; vertical-align: 1px; }
+.search-field--inline { margin: 8px 0 4px; background: var(--bg); border: 0.5px solid var(--separator); }
+.review-row .option { padding-left: 0; padding-right: 0; }
+.needs { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.link-button--inline { margin: 0; padding: 0; display: inline; font-size: inherit; }
+.field-row--end { align-items: flex-end; }
+.field-row--end .small-button { margin-bottom: 4px; }

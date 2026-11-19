@@ -128,3 +128,11 @@ test("new seed package sizes are added without touching yours", () => {
   assert.equal(merged.length, defaultSettings().packages.length);
   assert.ok(merged.slice(0, 3).every((p) => p.verified));
 });
+
+test("newly linked USDA foods are added to your package entries without changing your sizes", () => {
+  const mine = defaultSettings().packages.map((p) => (p.key === "white-rice-2lb" ? { ...p, fdcIds: [168877, 169756], verified: true } : p));
+  const merged = withSeedPackages(mine);
+  const rice = merged.find((p) => p.key === "white-rice-2lb")!;
+  assert.deepEqual(rice.fdcIds, [168877, 169756, 2512381]);
+  assert.equal(rice.verified, true);
+});

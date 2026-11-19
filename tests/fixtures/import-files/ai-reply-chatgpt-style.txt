@@ -1,0 +1,28 @@
+Here's the recipe transcribed in the format you asked for:
+
+```json
+{
+  "format": "meal-prep-recipe-v1",
+  "title": "Mom's chicken & rice",
+  "servings": 4,
+  "ingredients": [
+    { "original": "2 Ibs chicken thighs", "amount": 2, "amountMax": null, "unit": "lbs", "item": "chicken thighs", "prep": null, "group": null, "optional": false },
+    { "original": "l/2 c onion chopped", "amount": 0.5, "amountMax": null, "unit": "c", "item": "onion", "prep": "chopped", "group": null, "optional": false },
+    { "original": "1 l/2 cups white rice", "amount": 1.5, "amountMax": null, "unit": "cups", "item": "white rice", "prep": null, "group": null, "optional": false },
+    { "original": "3 cups chicken broth", "amount": 2, "amountMax": null, "unit": "cups", "item": "chicken broth", "prep": null, "group": null, "optional": false },
+    { "original": "2 tbs butter", "amount": 2, "amountMax": null, "unit": "tbsp", "item": "butter", "prep": null, "group": null, "optional": false },
+    { "original": "1 tsp paprika", "amount": 1, "amountMax": null, "unit": "tsp", "item": "paprika", "prep": null, "group": null, "optional": false },
+    { "original": "salt + pepper", "amount": null, "amountMax": null, "unit": null, "item": "salt and pepper", "prep": null, "group": null, "optional": false }
+  ],
+  "steps": [
+    "brown the chicken thighs in the butter",
+    "add onion and cook till soft",
+    "stir in rice, broth and paprika, cover",
+    "bake 350 for 1 hour"
+  ],
+  "notes": [],
+  "unclear": ["No amount is given for the salt and pepper."]
+}
+```
+
+Let me know if you'd like any changes!

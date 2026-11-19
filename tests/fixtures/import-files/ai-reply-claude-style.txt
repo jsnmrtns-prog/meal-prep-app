@@ -1,0 +1,21 @@
+```json
+{
+  "format": "meal-prep-recipe-v1",
+  "title": "Protein pancakes",
+  "servings": 2,
+  "ingredients": [
+    {"original": "1 c oats", "amount": 1, "amountMax": null, "unit": "cup", "item": "oats", "prep": null, "group": null, "optional": false},
+    {"original": "2 eggs", "amount": 2, "amountMax": null, "unit": null, "item": "eggs", "prep": null, "group": null, "optional": false},
+    {"original": "1/2 c cottage cheese", "amount": 0.5, "amountMax": null, "unit": "cup", "item": "cottage cheese", "prep": null, "group": null, "optional": false},
+    {"original": "1 scoop protein powder", "amount": 1, "amountMax": null, "unit": "scoop", "item": "protein powder", "prep": null, "group": null, "optional": false},
+    {"original": "1 t baking powder", "amount": 1, "amountMax": null, "unit": "tsp", "item": "baking powder", "prep": null, "group": null, "optional": false},
+    {"original": "a pinch of salt", "amount": 1, "amountMax": null, "unit": "pinch", "item": "salt", "prep": null, "group": null, "optional": false}
+  ],
+  "steps": [
+    "blend oats eggs cottage cheese protein powder baking powder and salt",
+    "cook on griddle 2-3 min a side"
+  ],
+  "notes": [],
+  "unclear": ["\"1 t\" could mean teaspoon or tablespoon; read as teaspoon."]
+}
+```

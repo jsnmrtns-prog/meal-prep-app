@@ -179,6 +179,10 @@ export function recipeProblems(r: unknown, where = "Recipe"): string[] {
   const name = isStr(r.name) && r.name ? `"${r.name}"` : where;
   if (!Number.isInteger(r.portions) || (r.portions as number) < 1) e.push(`${name}: servings must be a whole number of at least 1`);
   if (!Array.isArray(r.steps) || !r.steps.every((s) => isObj(s) && isStr(s.text))) e.push(`${name}: steps are damaged`);
+  if (r.source !== undefined) {
+    const src = r.source;
+    if (!isObj(src) || !["paste", "pdf", "docx", "text-file", "ai"].includes(src.kind as string) || !isStr(src.text) || !isStr(src.importedAt)) e.push(`${name}: original recipe text is damaged`);
+  }
   if (!Array.isArray(r.lines)) return [...e, `${name}: ingredients are missing`];
   const ids = new Set<string>();
   r.lines.forEach((l: unknown, i: number) => {
@@ -283,8 +287,17 @@ export function checkBackup(data: unknown): BackupCheck {
   return { ok: true, backup: data as unknown as Backup };
 }
 
-/** Package list with any newly seeded sizes added (yours are kept as you set them). */
+/**
+ * Package list with any newly seeded sizes added. Your sizes and "checked"
+ * marks are kept; newly linked USDA foods are added to existing entries.
+ */
 export function withSeedPackages(packages: PackageEntry[]): PackageEntry[] {
+  const seed = new Map(SEED_PACKAGES.map((p) => [p.key, p]));
   const keys = new Set(packages.map((p) => p.key));
-  return [...packages, ...clone(SEED_PACKAGES).filter((p) => !keys.has(p.key))];
+  const merged = packages.map((p) => {
+    const s = seed.get(p.key);
+    const extra = s ? s.fdcIds.filter((id) => !p.fdcIds.includes(id)) : [];
+    return extra.length ? { ...p, fdcIds: [...p.fdcIds, ...extra] } : p;
+  });
+  return [...merged, ...clone(SEED_PACKAGES).filter((p) => !keys.has(p.key))];
 }

@@ -340,6 +340,80 @@ await check("backup exports, a damaged file is refused, and restore brings data 
   await page.getByTestId("library").getByRole("link", { name: /Chicken and Rice Bowl/ }).waitFor();
 });
 
+await check("M6: a pasted web recipe is read, every line checked, and saved with its original text", async () => {
+  const text = await readFile(new URL("../fixtures/import/01-web-chicken-burrito-bowls.txt", import.meta.url), "utf8");
+  await page.goto(`${url}#/import`);
+  await page.getByLabel("Recipe text").fill(text);
+  await page.getByRole("button", { name: "Read recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "Check the Import" }).waitFor();
+  assert.equal(await page.getByLabel("Recipe name").inputValue(), "Chicken Burrito Bowls");
+  assert.equal(await page.getByLabel("Servings").inputValue(), "4");
+  const rows = page.locator('[data-testid^="review-row-"]');
+  assert.equal(await rows.count(), 10);
+  // Flags shown where the app wasn't sure.
+  await page.getByTestId("review-row-2").getByText(/Uses the package size given/).waitFor();
+  await page.getByTestId("review-row-8").getByText(/Says "to taste"/).waitFor();
+  await page.getByTestId("review-blockers").getByText("10 lines need checking below.").waitFor();
+  await page.screenshot({ path: join(outDir, "import-review.png"), animations: "disabled", fullPage: true });
+  // Leave out salt and pepper; check every other line.
+  await page.getByTestId("review-row-8").getByRole("button", { name: "Leave out" }).click();
+  for (let i = 0; i < 10; i++) {
+    if (i === 8) continue;
+    const row = page.getByTestId(`review-row-${i}`);
+    const size = row.getByLabel(`Size ${i + 1}`);
+    if (await size.count()) await size.selectOption({ index: 1 });
+    else if (await row.getByLabel(`Grams ${i + 1}`).count()) {
+      await row.getByLabel(`Grams ${i + 1}`).fill("100");
+      await row.getByRole("button", { name: "Use grams" }).click();
+    }
+    await row.getByLabel(`Line ${i + 1} checked`).click();
+    await row.getByRole("button", { name: "Change" }).waitFor();
+  }
+  await page.getByRole("button", { name: "Continue to the recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "New Recipe" }).waitFor();
+  await page.getByTestId("from-import").waitFor();
+  const status = await page.getByTestId("editor-status").locator("strong").textContent();
+  assert.ok(status === "Verified with assumptions" || status === "Verified", `status ${status}`);
+  await page.getByRole("button", { name: "Save recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByRole("heading", { name: "Chicken Burrito Bowls" }).waitFor();
+  for (const id of [1, 2, 3, 4, 5]) assert.notEqual(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Failed");
+  await page.getByTestId("source").locator("summary").click();
+  await page.getByTestId("source").getByText("▢ 1 ½ lbs boneless skinless chicken breasts").waitFor();
+  await page.screenshot({ path: join(outDir, "import-saved.png"), animations: "disabled", fullPage: true });
+});
+
+await check("M6: a PDF with two columns of ingredients opens and reads", async () => {
+  await page.goto(`${url}#/import`);
+  await page.getByLabel("Recipe file").setInputFiles(new URL("../fixtures/import-files/two-column.pdf", import.meta.url).pathname);
+  await page.getByText("Read from two-column.pdf", { exact: false }).waitFor({ timeout: 20000 });
+  const text = await page.getByLabel("Recipe text").inputValue();
+  assert.match(text, /SPICY CHICKEN PASTA/);
+  assert.ok(text.indexOf("tomato passata") < text.indexOf("280g (10oz) penne"), "left column is read before the right one");
+  await page.getByRole("button", { name: "Read recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "Check the Import" }).waitFor();
+  assert.equal(await page.locator('[data-testid^="review-row-"]').count(), 9);
+  assert.equal(await page.getByLabel("Recipe name").inputValue(), "SPICY CHICKEN PASTA");
+});
+
+await check("M6: the AI shortcut shows the prompt and checks a pasted AI reply", async () => {
+  await page.goto(`${url}#/import`);
+  await page.getByTestId("ai-shortcut").getByText("Show the prompt").click();
+  await page.getByTestId("ai-prompt").getByText(/meal-prep-recipe-v1/).first().waitFor();
+  const reply = await readFile(new URL("../fixtures/import-files/ai-reply-chatgpt-style.txt", import.meta.url), "utf8");
+  await page.getByLabel("Recipe text").fill(reply);
+  await page.getByRole("button", { name: "Read recipe" }).click();
+  await page.getByRole("heading", { level: 1, name: "Check the Import" }).waitFor();
+  assert.equal(await page.getByLabel("Recipe name").inputValue(), "Mom's chicken & rice");
+  await page.getByTestId("review-row-3").getByText(/The AI read this as 2 cups, but the app reads 3 cup/).waitFor();
+  await page.getByTestId("recipe-flags").getByText(/The AI wasn't sure/).waitFor();
+  // A damaged reply is refused with a reason.
+  await page.goto(`${url}#/import`);
+  await page.getByLabel("Recipe text").fill('```json\n{"format":"meal-prep-recipe-v1","title":"x","ingredients":[],"steps":[]}\n```');
+  await page.getByRole("button", { name: "Read recipe" }).click();
+  await page.getByTestId("import-error").getByText("No ingredients in the block.").waitFor();
+});
+
 await check("manifest is valid for Home Screen install", async () => {
   const res = await page.request.get(`${url}manifest.webmanifest`);
   assert.equal(res.status(), 200);

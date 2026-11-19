@@ -16,6 +16,7 @@ import {
   type Recipe,
   type Settings,
 } from "../engine/index.ts";
+import { takeDraft } from "./importState.ts";
 import { STATUS_TEXT, analyse, prepared } from "./RecipeReport.tsx";
 import { useUserData } from "./store.tsx";
 import { BackLink, Field, NumberInput, go, useEngine, type Engine } from "./ui.tsx";
@@ -114,7 +115,9 @@ export function RecipeEditorScreen({ id }: { id: string | null }): ReactElement 
   const { recipes, settings, saveRecipe } = useUserData();
   const { engine } = useEngine();
   const existing = id ? recipes.find((r) => r.id === id) : undefined;
-  const [draft, setDraft] = useState<Recipe>(() => (existing ? JSON.parse(JSON.stringify(existing.recipe)) as Recipe : emptyRecipe()));
+  // A new recipe may start from an import that was just reviewed.
+  const [draft, setDraft] = useState<Recipe>(() => (existing ? JSON.parse(JSON.stringify(existing.recipe)) as Recipe : takeDraft() ?? emptyRecipe()));
+  const fromImport = !existing && draft.source !== undefined;
   const [editing, setEditing] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -177,7 +180,7 @@ export function RecipeEditorScreen({ id }: { id: string | null }): ReactElement 
     setSaving(true);
     setSaveError(null);
     try {
-      const savedId = await saveRecipe(toSave, existing?.origin ?? "manual");
+      const savedId = await saveRecipe(toSave, existing?.origin ?? (fromImport ? "imported" : "manual"));
       go(`/recipes/${encodeURIComponent(savedId)}`);
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : String(e));
@@ -189,6 +192,7 @@ export function RecipeEditorScreen({ id }: { id: string | null }): ReactElement 
   return (
     <>
       <BackLink href={existing ? `#/recipes/${encodeURIComponent(existing.id)}` : "#/recipes"}>{existing ? "Cancel" : "My Recipes"}</BackLink>
+      {fromImport && <p className="lead" data-testid="from-import">Imported and checked. Look over the result below, then tap Save recipe.</p>}
       <section className="section">
         <h2 className="section__title">Recipe</h2>
         <div className="card card--form">

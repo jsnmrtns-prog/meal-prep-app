@@ -248,6 +248,7 @@ export function RecipeReportScreen({ id, presetId }: { id: string; presetId: str
         <ContainerSection portioning={data.portioning} />
         <AuditSection report={data.report} />
         <NotesSection notes={recipe.notes} />
+        <SourceSection recipe={recipe} />
       </>
     );
   }
@@ -506,6 +507,18 @@ function StepsSection({ recipe }: { recipe: Recipe }): ReactElement | null {
       </div>
       <p className="footnote">Scaled amounts will be written into the steps in M7.</p>
     </section>
+  );
+}
+
+function SourceSection({ recipe }: { recipe: Recipe }): ReactElement | null {
+  const src = recipe.source;
+  if (!src) return null;
+  const how = { paste: "Pasted", pdf: "From a PDF", docx: "From a Word file", "text-file": "From a text file", ai: "From the AI shortcut" }[src.kind];
+  return (
+    <details className="more more--section" data-testid="source">
+      <summary>Original recipe ({how}{src.fileName ? `: ${src.fileName}` : ""}, {new Date(src.importedAt).toLocaleDateString()})</summary>
+      <pre className="prompt">{src.text}</pre>
+    </details>
   );
 }
 
