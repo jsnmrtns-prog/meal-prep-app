@@ -1,14 +1,17 @@
-import { useMemo, useState, type ReactElement } from "react";
+import { useMemo, useState, type ReactElement, type ReactNode } from "react";
 import {
   BIG_CHANGE,
   applyPreferences,
   auditRecipe,
   buildShoppingList,
   calculateRecipe,
+  cookingSteps,
   describePreset,
+  stepsDivide,
   optimizeRecipe,
   portionRecipe,
   type AuditReport,
+  type IngredientLine,
   type CalcResult,
   type MacroPreset,
   type OptimizedPlan,
@@ -238,15 +241,17 @@ export function RecipeReportScreen({ id, presetId }: { id: string; presetId: str
     return (
       <>
         {header}
-        <p className="lead">{recipe.portions} servings · {r0(data.calc.batchGrams)} g of ingredients (raw/dry)</p>
-        <StatusCard report={data.report} />
-        <PerPortion calc={data.calc} printed={recipe.printedPerServing} title="Per serving" />
-        <PreferenceSection changes={prep.changes} />
-        <StepsSection recipe={prep.recipe} />
-        <IngredientSection data={data} />
-        <ShoppingSection shopping={data.shopping} />
-        <ContainerSection portioning={data.portioning} />
-        <AuditSection report={data.report} />
+        <CookView data={data} perMeal={perPortionOf(data.calc)} notes={[]} />
+        <Fold title="Shopping list" testId="shopping-fold"><ShoppingSection shopping={data.shopping} /></Fold>
+        <Fold title="Nutrition & checks" testId="details-fold">
+          <p className="lead">{recipe.portions} servings · {r0(data.calc.batchGrams)} g of ingredients (raw/dry)</p>
+          <StatusCard report={data.report} />
+          <PerPortion calc={data.calc} printed={recipe.printedPerServing} title="Per serving" />
+          <PreferenceSection changes={prep.changes} />
+          <IngredientSection data={data} />
+          <ContainerSection portioning={data.portioning} />
+          <AuditSection report={data.report} />
+        </Fold>
         <NotesSection notes={recipe.notes} />
         <SourceSection recipe={recipe} />
       </>
@@ -304,16 +309,6 @@ function PlanView({ plan, engine, recipe, options }: { plan: OptimizedPlan; engi
   const big = moved.filter((c) => c.factor < BIG_CHANGE.below || c.factor > BIG_CHANGE.above);
   return (
     <>
-      <StatusCard report={data.report} />
-      <section className="section" data-testid="targets">
-        <h3 className="section__title">Per meal vs. your targets</h3>
-        <div className="card">
-          {plan.targets.map((t) => <TargetRow key={t.key} t={t} />)}
-          <div className="row"><span className="row__label">Carbs</span><span className="row__value">{r1(plan.perMeal.carbs)} g</span></div>
-          <div className="row"><span className="row__label">Fat</span><span className="row__value">{r1(plan.perMeal.fat)} g</span></div>
-        </div>
-        <p className="footnote">Recalculated from USDA data after rounding to kitchen amounts, then re-checked by audit 4.</p>
-      </section>
       {big.length > 0 && (
         <div className="status status--warn" data-testid="big-change">
           <strong>Big change from the original</strong>
@@ -322,39 +317,127 @@ function PlanView({ plan, engine, recipe, options }: { plan: OptimizedPlan; engi
         </div>
       )}
       {options}
-      <section className="section" data-testid="changes">
-        <h3 className="section__title">What changed, per meal</h3>
-        <div className="card">
-          {moved.map((c) => (
-            <div key={c.lineId} className="ingredient">
-              <div className="ingredient__top">
-                <span>{cap(c.name)}</span>
-                <span className="ingredient__grams">{pctChange(c.factor)}</span>
-              </div>
-              <div className="ingredient__meta">
-                {c.afterGramsPerMeal < 28 && c.beforeGramsPerMeal < 28
-                  ? `${grams(c.beforeGramsPerMeal)} → ${grams(c.afterGramsPerMeal)}`
-                  : `${imperial(c.beforeGramsPerMeal)} → ${imperial(c.afterGramsPerMeal)} (${grams(c.beforeGramsPerMeal)} → ${grams(c.afterGramsPerMeal)})`}
-              </div>
-              <div className="ingredient__source">{REASON[c.lever]}{c.swappedFrom ? ` · swapped from ${c.swappedFrom}` : ""}</div>
-            </div>
-          ))}
-        </div>
-        <p className="footnote">Everything else keeps its original amount per meal, rounded to kitchen sizes. How it was solved: {plan.method}.</p>
-      </section>
-      {plan.stepNotes.length > 0 && (
-        <section className="section" data-testid="step-notes">
-          <h3 className="section__title">Following the original steps</h3>
-          <div className="card"><div className="empty">{plan.stepNotes.map((n) => <p key={n} className="note">{n}</p>)}</div></div>
+      <CookView data={data} perMeal={plan.perMeal} notes={plan.stepNotes.filter((n) => !/^Divide into /.test(n))} targets={plan.targets} />
+      <Fold title="Shopping list" testId="shopping-fold"><ShoppingSection shopping={data.shopping} /></Fold>
+      <Fold title="Nutrition & checks" testId="details-fold">
+        <StatusCard report={data.report} />
+        <section className="section" data-testid="targets">
+          <h3 className="section__title">Per meal vs. your targets</h3>
+          <div className="card">
+            {plan.targets.map((t) => <TargetRow key={t.key} t={t} />)}
+            {!plan.targets.some((t) => t.key === "carbs") && <div className="row"><span className="row__label">Carbs</span><span className="row__value">{r1(plan.perMeal.carbs)} g</span></div>}
+            <div className="row"><span className="row__label">Fat</span><span className="row__value">{r1(plan.perMeal.fat)} g</span></div>
+          </div>
+          <p className="footnote">Recalculated from USDA data after rounding to kitchen amounts, then re-checked by audit 4.</p>
         </section>
-      )}
-      <StepsSection recipe={plan.recipe} />
-      <IngredientSection data={data} title={`Ingredients (${plan.recipe.portions} meals)`} />
-      <ShoppingSection shopping={data.shopping} />
-      <ContainerSection portioning={data.portioning} />
-      <AuditSection report={data.report} />
+        <section className="section" data-testid="changes">
+          <h3 className="section__title">What changed, per meal</h3>
+          <div className="card">
+            {moved.map((c) => (
+              <div key={c.lineId} className="ingredient">
+                <div className="ingredient__top">
+                  <span>{cap(c.name)}</span>
+                  <span className="ingredient__grams">{pctChange(c.factor)}</span>
+                </div>
+                <div className="ingredient__meta">
+                  {c.afterGramsPerMeal < 28 && c.beforeGramsPerMeal < 28
+                    ? `${grams(c.beforeGramsPerMeal)} → ${grams(c.afterGramsPerMeal)}`
+                    : `${imperial(c.beforeGramsPerMeal)} → ${imperial(c.afterGramsPerMeal)} (${grams(c.beforeGramsPerMeal)} → ${grams(c.afterGramsPerMeal)})`}
+                </div>
+                <div className="ingredient__source">{REASON[c.lever]}{c.swappedFrom ? ` · swapped from ${c.swappedFrom}` : ""}</div>
+              </div>
+            ))}
+          </div>
+          <p className="footnote">Everything else keeps its original amount per meal, rounded to kitchen sizes. How it was solved: {plan.method}.</p>
+        </section>
+        <IngredientSection data={data} title={`Ingredients (${plan.recipe.portions} meals)`} />
+        <ContainerSection portioning={data.portioning} />
+        <AuditSection report={data.report} />
+      </Fold>
       <NotesSection notes={recipe.notes} />
     </>
+  );
+}
+
+function Fold({ title, testId, children }: { title: string; testId: string; children: ReactNode }): ReactElement {
+  return (
+    <details className="more more--section fold" data-testid={testId}>
+      <summary>{title}</summary>
+      <div className="fold__body">{children}</div>
+    </details>
+  );
+}
+
+const perPortionOf = (calc: CalcResult) => ({ kcal: calc.perPortion.kcal.value, protein: calc.perPortion.protein.value, carbs: calc.perPortion.carbs.value, fat: calc.perPortion.fat.value });
+
+/** A count label as you'd say it: "1 lime yields" → "lime", "slice (2/3 oz)" → "slices". */
+function countLabel(label: string, n: number): string {
+  let l = label.replace(/\s*\(.*$/, "").replace(/^1\s+/, "").replace(/\s+yields?$/i, "").replace(/,.*$/, "").trim();
+  if (n !== 1 && /^(?:slice|piece|clove|lime|lemon|orange|bun|tortilla|wrap|strip|fillet|breast|thigh|can|stalk|sprig|leaf)$/i.test(l)) l += "s";
+  return l;
+}
+
+/** The amount as written into a cooking step or the ingredient list. */
+function cookAmount(line: IngredientLine, g: number, inStep = false): string {
+  const q = line.quantity;
+  const dry = /\b(?:uncooked|dry|dried)\b/i.test(line.name) && /\b(?:rice|pasta|noodles|quinoa|oats|couscous|lentils|beans)\b/i.test(line.name) ? " uncooked" : "";
+  if (q.kind === "mass") return `${g >= 100 ? (inStep ? `${imperial(g)} / ${grams(g)}` : weight(g)) : grams(g)}${dry}`.replace(/\.0 oz/g, " oz");
+  if (q.kind === "volume") return `${amountText(q.amount)} ${UNIT_TEXT[q.unit] ?? q.unit}`;
+  return `${amountText(q.amount)} ${countLabel(q.portionLabel, q.amount)}`;
+}
+
+function CookView({ data, perMeal, notes, targets }: { data: Computed; perMeal: { kcal: number; protein: number; carbs: number; fat: number }; notes: string[]; targets?: TargetResult[] }): ReactElement {
+  const recipe = data.recipe;
+  const gramsOf = new Map(data.calc.lines.map((l) => [l.lineId, l.grams]));
+  const lineOf = new Map(recipe.lines.map((l) => [l.id, l]));
+  const amt = (id: string) => cookAmount(lineOf.get(id)!, gramsOf.get(id) ?? 0);
+  const steps = cookingSteps(recipe, data.portioning.portions);
+  const s = STATUS_TEXT[data.report.status];
+  const ok = (key: string) => targets?.find((t) => t.key === key)?.ok;
+  const tick = (key: string) => (ok(key) === true ? " ✓" : ok(key) === false ? " ✗" : "");
+  let lastGroup: string | undefined = "\u0000";
+  return (
+    <section className="section cook" data-testid="cook">
+      <div className="card cook__summary" data-testid="cook-summary">
+        <p className="cook__makes">Makes {data.portioning.portions} containers · about {weight(data.portioning.perContainerGrams)} each</p>
+        <p className="cook__macros">
+          <strong>{r0(perMeal.kcal)} kcal{tick("kcal")}</strong> · P {r0(perMeal.protein)} g{tick("protein")} · C {r0(perMeal.carbs)} g{tick("carbs")} · F {r0(perMeal.fat)} g <span className="cook__per">per container</span>
+        </p>
+        <span className={`badge badge--${s.tone}`}>{s.label}</span>
+      </div>
+
+      <h3 className="section__title">Ingredients</h3>
+      <div className="card" data-testid="cook-ingredients">
+        {recipe.lines.map((l) => {
+          const head = l.group !== lastGroup && l.group ? <div className="list-head">{l.group}</div> : null;
+          lastGroup = l.group;
+          return (
+            <div key={l.id}>
+              {head}
+              <div className="row cook__ing">
+                <span className="row__label">{l.name}{l.optional ? <span className="row__sub">optional</span> : null}</span>
+                <span className="row__value">{amt(l.id)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {notes.length > 0 && <div className="cook__notes">{notes.map((n) => <p key={n} className="note">{n}</p>)}</div>}
+
+      <h3 className="section__title">Steps</h3>
+      <div className="card">
+        <ol className="steps steps--card cook__steps" data-testid="cook-steps">
+          {steps.map((st, i) => (
+            <li key={i}>
+              {st.parts.map((p, k) => (p.kind === "text" ? <span key={k}>{p.text}</span> : <strong key={k} className="amt"> ({cookAmount(lineOf.get(p.lineId)!, gramsOf.get(p.lineId) ?? 0, true)})</strong>))}
+              {st.also.length > 0 && <span className="cook__also">Also: {st.also.map((id) => `${lineOf.get(id)!.name} (${amt(id)})`).join(", ")}</span>}
+            </li>
+          ))}
+          {!stepsDivide(recipe) && <li>Divide into <strong className="amt">{data.portioning.portions} containers</strong>, about {weight(data.portioning.perContainerGrams)} each. Weigh the finished batch for exact portions.</li>}
+        </ol>
+      </div>
+    </section>
   );
 }
 
@@ -497,19 +580,6 @@ function AuditSection({ report }: { report: AuditReport }): ReactElement {
   );
 }
 
-function StepsSection({ recipe }: { recipe: Recipe }): ReactElement | null {
-  if (recipe.steps.length === 0) return null;
-  return (
-    <section className="section" data-testid="steps">
-      <h3 className="section__title">Instructions (original wording)</h3>
-      <div className="card">
-        <ol className="steps steps--card">{recipe.steps.map((st, i) => <li key={i}>{st.text}</li>)}</ol>
-      </div>
-      <p className="footnote">Scaled amounts will be written into the steps in M7.</p>
-    </section>
-  );
-}
-
 function SourceSection({ recipe }: { recipe: Recipe }): ReactElement | null {
   const src = recipe.source;
   if (!src) return null;
@@ -600,7 +670,7 @@ function ShoppingSection({ shopping }: { shopping: ShoppingList }): ReactElement
           </div>
         ))}
       </div>
-      {unverified && <p className="footnote">Package sizes are typical U.S. sizes, not verified for your store. You'll be able to edit them in Settings (M5).</p>}
+      {unverified && <p className="footnote">Package sizes are typical U.S. sizes. Change them under Settings → Packages if your store's differ.</p>}
     </section>
   );
 }

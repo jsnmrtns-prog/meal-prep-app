@@ -53,6 +53,12 @@ const context = await browser.newContext({
     "Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1",
 });
 const page = await context.newPage();
+// The report's "Shopping list" and "Nutrition & checks" folds start closed for you; the older checks look inside them.
+// The cooking-view check below closes them again to see the screen as you do.
+await page.addInitScript(() => {
+  const open = () => document.querySelectorAll("details.fold:not([data-seen])").forEach((d) => { if (!sessionStorage.getItem("keepFoldsClosed")) d.open = true; d.setAttribute("data-seen", "1"); });
+  new MutationObserver(open).observe(document, { subtree: true, childList: true });
+});
 page.setDefaultTimeout(10000);
 page.on("crash", () => console.log("  [page crashed]"));
 browser.on("disconnected", () => console.log("  [browser disconnected]"));
@@ -185,10 +191,10 @@ await check("My Recipes lists both reference recipes with calculated values", as
 
 await check("nutrition report shows status, printed comparison, sources and checks", async () => {
   await page.getByRole("link", { name: /Teriyaki Chicken Fried Rice/ }).click();
-  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Recipe" }).waitFor();
   await page.getByTestId("recipe-status").getByText("Estimate").waitFor();
   await page.getByText("515 kcal").waitFor(); // what the recipe says
-  await page.getByText("588 kcal").waitFor(); // calculated
+  await page.getByTestId("details-fold").getByText("588 kcal").waitFor(); // calculated
   await page.getByText(/Stand-in: Alcoholic beverage, rice \(sake\) for mirin/).waitFor();
   await page.getByText("Kept 50%: 3 → 1.5").waitFor();
   for (const id of [2, 3, 4]) assert.equal(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Passed");
@@ -219,6 +225,25 @@ await check("home lists the two macro presets", async () => {
   await page.getByText("850 kcal · 75–85 g protein · at least 60 g carbs · 6 meals · ±2%").waitFor();
 });
 
+await check("the recipe opens on a simple cooking view: summary, ingredients, steps with the amounts written in; details folded", async () => {
+  await page.goto(`${url}#/recipes/teriyaki-chicken-fried-rice`);
+  await page.evaluate(() => sessionStorage.setItem("keepFoldsClosed", "1"));
+  await page.reload();
+  const cook = page.getByTestId("cook");
+  await cook.getByText("Makes 5 containers", { exact: false }).waitFor();
+  await cook.getByText("588 kcal", { exact: false }).waitFor();
+  assert.ok((await page.getByTestId("cook-ingredients").locator(".row").count()) >= 10);
+  assert.ok((await page.getByTestId("cook-steps").locator(".amt").count()) >= 5, "amounts are written into the steps");
+  assert.equal(await page.getByTestId("shopping-fold").getAttribute("open"), null, "shopping list starts folded");
+  assert.equal(await page.getByTestId("details-fold").getAttribute("open"), null, "nutrition & checks start folded");
+  await page.screenshot({ path: join(outDir, "cook-view.png"), animations: "disabled", fullPage: true });
+  await page.getByTestId("preset-picker").getByRole("link", { name: "850 kcal" }).click();
+  await page.getByTestId("cook-summary").getByText("Makes 6 containers", { exact: false }).waitFor();
+  await page.getByTestId("cook-summary").getByText(/kcal ✓/).waitFor();
+  await page.screenshot({ path: join(outDir, "cook-view-850.png"), animations: "disabled", fullPage: true });
+  await page.evaluate(() => sessionStorage.removeItem("keepFoldsClosed"));
+});
+
 await check("teriyaki at 750 kcal: thighs leave no room for 50 g carbs, so options are offered; chicken breast meets every target", async () => {
   await page.goto(`${url}#/recipes/teriyaki-chicken-fried-rice`);
   await page.getByTestId("preset-picker").getByRole("link", { name: "750 kcal" }).click();
@@ -229,8 +254,9 @@ await check("teriyaki at 750 kcal: thighs leave no room for 50 g carbs, so optio
   await page.getByTestId("options").getByRole("button", { name: /Use chicken breast instead of thighs/ }).click();
   await page.getByTestId("picked-option").getByText("Option: Use chicken breast instead of thighs").waitFor();
   for (const t of ["kcal", "protein", "carbs"]) assert.equal(await page.getByTestId(`target-${t}`).locator(".badge").textContent(), "Met", t);
-  await page.getByTestId("step-notes").getByText("Divide into 6 containers (the original recipe makes 5 servings).").waitFor();
-  await page.getByTestId("step-notes").getByText(/chicken breast wherever the steps say/).waitFor();
+  await page.getByTestId("cook-summary").getByText("Makes 6 containers", { exact: false }).waitFor();
+  await page.getByTestId("cook-steps").getByText(/Divide into 6 servings/).waitFor();
+  await page.getByTestId("cook").getByText(/chicken breast wherever the steps say/).waitFor();
   await page.getByTestId("ingredients").getByText("Chicken, breast, boneless, skinless, raw", { exact: false }).first().waitFor();
   for (const id of [1, 2, 3, 4, 5]) assert.notEqual(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Failed");
   await page.screenshot({ path: join(outDir, "scaled-750-breast.png"), animations: "disabled", fullPage: true });
@@ -277,7 +303,7 @@ await check("M5 gate: a typed-in recipe is verified and still there after reopen
   assert.match(await status.locator("strong").textContent(), /^Verified/);
   await page.screenshot({ path: join(outDir, "editor.png"), animations: "disabled", fullPage: true });
   await page.getByRole("button", { name: "Save recipe" }).click();
-  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Recipe" }).waitFor();
   await page.getByRole("heading", { name: "Chicken and Rice Bowl" }).waitFor();
   assert.match(await page.getByTestId("recipe-status").locator("strong").textContent(), /^Verified/);
   for (const id of [1, 2, 3, 4, 5]) assert.notEqual(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Failed");
@@ -297,7 +323,7 @@ await check("editing keeps the previous version, and it can be restored", async 
   await page.getByTestId("recipe-actions").getByRole("link", { name: "Versions (1)" }).click();
   await page.getByText("4 servings", { exact: false }).waitFor();
   await page.getByRole("button", { name: "Restore" }).click();
-  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Recipe" }).waitFor();
   await page.getByText("4 servings ·", { exact: false }).waitFor();
 });
 
@@ -397,7 +423,7 @@ await check("M6: a pasted web recipe is read, every line checked, and saved with
   await page.getByTestId("editor-status").scrollIntoViewIfNeeded();
   await page.screenshot({ path: join(outDir, "import-editor-checks.png"), animations: "disabled", fullPage: false });
   await page.getByRole("button", { name: "Save recipe" }).click();
-  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Recipe" }).waitFor();
   await page.getByRole("heading", { name: "Chicken Burrito Bowls" }).waitFor();
   for (const id of [1, 2, 3, 4, 5]) assert.notEqual(await page.getByTestId(`audit-${id}`).locator(".badge").textContent(), "Failed");
   await page.getByTestId("source").locator("summary").click();
@@ -419,7 +445,7 @@ await check("importing a recipe you already have offers to replace it, and you e
   await clearNeeds();
   await page.getByRole("button", { name: "Continue to the recipe" }).click();
   await page.getByRole("button", { name: "Save recipe" }).click();
-  await page.getByRole("heading", { level: 1, name: "Nutrition Report" }).waitFor();
+  await page.getByRole("heading", { level: 1, name: "Recipe" }).waitFor();
   await page.goto(`${url}#/recipes`);
   await page.getByRole("heading", { level: 1, name: "My Recipes" }).waitFor();
   await page.screenshot({ path: join(outDir, "recipes-after-dup.png"), animations: "disabled", fullPage: true });

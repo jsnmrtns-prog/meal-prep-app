@@ -91,7 +91,7 @@ function titleFor(route: Route): string {
   switch (s.kind) {
     case "foods": return "Food Lookup";
     case "food": return "Food Details";
-    case "recipe": return "Nutrition Report";
+    case "recipe": return "Recipe";
     case "recipe-edit": return s.id ? "Edit Recipe" : "New Recipe";
     case "recipe-versions": return "Versions";
     case "import-review": return "Check the Import";

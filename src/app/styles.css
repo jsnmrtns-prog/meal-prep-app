@@ -674,3 +674,15 @@ ul.flags[data-testid="recipe-flags"] { margin: 0 0 16px; padding: 12px 14px; bor
 .duplicate .chips { margin-bottom: 0; }
 .duplicate__text { margin: 0; font-weight: 600; }
 .chip--on { background: var(--accent); color: #fff; }
+.cook__summary { padding: 14px 16px; margin-bottom: 18px; }
+.cook__makes { margin: 0 0 4px; font-size: 15px; color: var(--text-2); }
+.cook__macros { margin: 0 0 8px; font-size: 17px; }
+.cook__per { color: var(--text-2); font-size: 14px; }
+.cook__ing .row__value { font-weight: 600; }
+.cook__notes { margin: 0 0 12px; }
+.cook__steps li { margin-bottom: 10px; line-height: 1.45; }
+.cook__steps .amt { color: var(--accent); white-space: nowrap; }
+.cook__also { display: block; font-size: 14px; color: var(--accent); margin-top: 4px; }
+.fold { margin-top: 12px; }
+.fold > summary { font-size: 17px; font-weight: 600; }
+.fold__body { margin-top: 8px; }
