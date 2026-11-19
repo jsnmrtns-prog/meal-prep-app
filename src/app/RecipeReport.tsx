@@ -396,7 +396,11 @@ export const perPortionOf = (calc: CalcResult) => ({ kcal: calc.perPortion.kcal.
 /** A count label as you'd say it: "1 lime yields" → "lime", "slice (2/3 oz)" → "slices". */
 function countLabel(label: string, n: number): string {
   let l = label.replace(/\s*\(.*$/, "").replace(/^1\s+/, "").replace(/\s+yields?$/i, "").replace(/,.*$/, "").trim();
-  if (n !== 1 && /^(?:slice|piece|clove|lime|lemon|orange|bun|tortilla|wrap|strip|fillet|breast|thigh|can|stalk|sprig|leaf)$/i.test(l)) l += "s";
+  if (n !== 1) {
+    if (/^(?:slice|piece|clove|lime|lemon|orange|bun|tortilla|wrap|strip|fillet|breast|thigh|can|stalk|sprig|pepper|onion|carrot|apple|banana|avocado|egg|cucumber|zucchini|shallot|scallion|jalapeño|jalapeno|bagel|muffin|patty|link|sausage)$/i.test(l)) l = l === "patty" ? "patties" : `${l}s`;
+    else if (/^(?:potato|tomato)$/i.test(l)) l += "es";
+    else if (/^leaf$/i.test(l)) l = "leaves";
+  }
   return l;
 }
 
