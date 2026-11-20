@@ -454,17 +454,7 @@ await check("M6: a pasted web recipe is read, every line checked, and saved with
   await page.getByTestId("review-row-9").click();
   await page.getByTestId("review-needs").getByTestId("review-row-9").getByRole("button", { name: "Leave out" }).click();
   await clearNeeds();
-  await page.getByRole("button", { name: "Continue to the recipe" }).click();
-  await page.getByRole("heading", { level: 1, name: "New Recipe" }).waitFor();
-  await page.getByTestId("from-import").waitFor();
-  const status = await page.getByTestId("editor-status").locator("strong").textContent();
-  assert.ok(status === "Verified with assumptions" || status === "Verified", `status ${status}`);
-  // Nothing to fix; the notes are folded away.
-  assert.equal(await page.getByTestId("editor-fixes").count(), 0);
-  await page.getByTestId("editor-notes").locator("summary").getByText(/nothing you need to do/).waitFor();
-  await page.getByTestId("editor-notes").locator("summary").click();
-  await page.getByTestId("editor-status").scrollIntoViewIfNeeded();
-  await page.screenshot({ path: join(outDir, "import-editor-checks.png"), animations: "disabled", fullPage: false });
+  // Everything checked: Save recipe saves it and opens it, with no extra screen in between.
   await page.getByRole("button", { name: "Save recipe" }).click();
   await page.getByRole("heading", { level: 1, name: "Recipe" }).waitFor();
   await page.getByRole("heading", { name: "Chicken Burrito Bowls" }).waitFor();
@@ -486,7 +476,6 @@ await check("importing a recipe you already have offers to replace it, and you e
   assert.equal(await dup.getByRole("radio", { name: "Replace it" }).getAttribute("aria-checked"), "true");
   await page.screenshot({ path: join(outDir, "import-duplicate.png"), animations: "disabled", fullPage: false });
   await clearNeeds();
-  await page.getByRole("button", { name: "Continue to the recipe" }).click();
   await page.getByRole("button", { name: "Save recipe" }).click();
   await page.getByRole("heading", { level: 1, name: "Recipe" }).waitFor();
   await page.goto(`${url}#/recipes`);

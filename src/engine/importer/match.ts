@@ -363,6 +363,19 @@ export function quantityFor(
     if (hit) return { quantity: { kind: "count", amount, portionLabel: hit.label }, problem: null, options: [] };
   }
   const options = portions.map((x) => ({ label: `${x.label} (${Math.round((x.grams / x.amount) * 10) / 10} g each)`, quantity: { kind: "count" as const, amount, portionLabel: x.label } }));
+  // "1 bunch asparagus", "6 lasagna sheets", "juice of 1 lemon": USDA has no weight for that, but it's a
+  // known kitchen amount. Use the typical weight and say so.
+  // The count word can also end the name: "6 Lasagna Sheets", "2 Celery Stalks".
+  const lastWord = p.name.trim().split(/\s+/).at(-1)?.toLowerCase().replace(/(?:es|s)$/, "") ?? null;
+  const typical = typicalWeight(u?.kind === "count" ? u.noun : lastWord, `${p.name} ${food.description}`);
+  if (typical) {
+    return {
+      quantity: { kind: "mass", amount: g1(amount * typical.grams), unit: "g" },
+      problem: null,
+      options,
+      assumed: `${typical.what} is usually about ${typical.shown}: used ${fmtGrams(amount * typical.grams)}.`,
+    };
+  }
   // No size given: large eggs (what U.S. recipes mean), medium for anything else, or the middle size.
   if (portions.length > 0) {
     const sized = portions.filter((x) => /\b(?:small|medium|large|extra large|jumbo)\b/i.test(x.label));
@@ -380,6 +393,77 @@ export function quantityFor(
   const what = u?.kind === "count" ? `one ${u.noun}` : `one ${p.sizeWord ? `${p.sizeWord} ` : ""}${searchTerms(p.name.split(/\s*\/\s*/)[0]!).at(-1) ?? "item"}`;
   return none(options.length ? `Which USDA size is ${what}? Choose one, or enter grams.` : `USDA has no weight for ${what} of this food: enter grams.`, options);
 }
+
+/**
+ * Typical weights for amounts USDA doesn't measure: a bunch, a head, a sheet, the
+ * juice of a lemon. U.S. grocery-store averages, close enough for meal prep.
+ * [count noun (null = any), food words, grams each, how it reads].
+ */
+const TYPICAL: [RegExp | null, RegExp, number, string][] = [
+  // Juice and zest (when USDA's fruit has no "juice of one" weight).
+  [/^(?:lemon|lime|orange)$/, /\blemon juice\b|\blemons?, juice\b|\bjuice of\b.*\blemon/, 48, "the juice of a lemon|3 tbsp (48 g)"],
+  [/^(?:lemon|lime|orange)$/, /\blime juice\b|\blimes?, juice\b/, 31, "the juice of a lime|2 tbsp (31 g)"],
+  [/^(?:lemon|lime|orange)$/, /\borange juice\b|\boranges?, juice\b/, 86, "the juice of an orange|⅓ cup (86 g)"],
+  [/^wedge$/, /\blemon|\blime/, 8, "a lemon or lime wedge's juice|½ tbsp (8 g)"],
+  // Bunches.
+  [/^bunch$/, /asparagus/, 450, "a bunch of asparagus|1 lb (450 g)"],
+  [/^bunch$/, /broccolini/, 225, "a bunch of broccolini|8 oz (225 g)"],
+  [/^bunch$/, /broccoli/, 600, "a bunch of broccoli|1⅓ lb (600 g)"],
+  [/^bunch$/, /cilantro|coriander/, 80, "a bunch of cilantro|3 oz (80 g)"],
+  [/^bunch$/, /parsley/, 60, "a bunch of parsley|2 oz (60 g)"],
+  [/^bunch$/, /basil|mint|dill|chives|tarragon/, 30, "a bunch of soft herbs|1 oz (30 g)"],
+  [/^bunch$/, /thyme|rosemary|sage|oregano/, 15, "a bunch of woody herbs|½ oz (15 g)"],
+  [/^bunch$/, /green onions?|scallions?|spring onions?|onions?, (?:spring|young)/, 100, "a bunch of green onions|3½ oz (100 g)"],
+  [/^bunch$/, /spinach/, 340, "a bunch of spinach|12 oz (340 g)"],
+  [/^bunch$/, /kale|chard|collard/, 250, "a bunch of leafy greens|9 oz (250 g)"],
+  [/^bunch$/, /celery/, 450, "a bunch of celery|1 lb (450 g)"],
+  [/^bunch$/, /carrots?|beets?|radish/, 450, "a bunch of root vegetables|1 lb (450 g)"],
+  [/^bunch$/, /bananas?/, 600, "a bunch of bananas|5 bananas (600 g)"],
+  [/^bunch$/, /grapes?/, 450, "a bunch of grapes|1 lb (450 g)"],
+  [/^bunch$/, /bok choy|pak choi/, 450, "a bunch of bok choy|1 lb (450 g)"],
+  // Heads.
+  [/^head$/, /garlic/, 50, "a head of garlic|10–12 cloves (50 g)"],
+  [/^head$/, /cauliflower/, 600, "a head of cauliflower|1⅓ lb (600 g)"],
+  [/^head$/, /broccoli/, 600, "a head of broccoli|1⅓ lb (600 g)"],
+  [/^head$/, /cabbage/, 900, "a head of cabbage|2 lb (900 g)"],
+  [/^head$/, /iceberg/, 750, "a head of iceberg lettuce|1⅔ lb (750 g)"],
+  [/^head$/, /lettuce|romaine/, 600, "a head of lettuce|1⅓ lb (600 g)"],
+  [/^head$/, /bok choy|pak choi/, 450, "a head of bok choy|1 lb (450 g)"],
+  [/^head$/, /celery/, 450, "a head of celery|1 lb (450 g)"],
+  // Sheets, stalks, sprigs and other pieces.
+  [/^sheet$/, /lasagn/, 20, "a dried lasagna sheet|20 g"],
+  [/^sheet$/, /nori|seaweed/, 3, "a nori sheet|3 g"],
+  [/^sheet$/, /rice paper/, 9, "a rice paper sheet|9 g"],
+  [/^sheet$/, /filo|phyllo/, 19, "a filo sheet|19 g"],
+  [/^sheet$/, /puff pastry/, 245, "a puff pastry sheet|8½ oz (245 g)"],
+  [/^stalk$/, /celery/, 40, "a celery stalk|40 g"],
+  [/^stalk$/, /lemongrass/, 20, "a lemongrass stalk|20 g"],
+  [/^stalk$/, /broccoli/, 150, "a broccoli stalk|150 g"],
+  [/^sprig$/, /./, 1, "a sprig of herbs|1 g"],
+  [/^(?:knob|thumb|piece)$/, /ginger/, 15, "a thumb of ginger|15 g"],
+  [/^knob$/, /butter/, 14, "a knob of butter|1 tbsp (14 g)"],
+  [/^scoop$/, /protein|whey|casein|powder/, 30, "a scoop of protein powder|30 g"],
+  [/^fillet$/, /salmon|cod|tilapia|fish|haddock|halibut|trout|basa|pollock/, 170, "a fish fillet|6 oz (170 g)"],
+  [/^(?:packet|envelope|sachet)$/, /taco|fajita|chili|seasoning mix|ranch|gravy/, 28, "a seasoning packet|1 oz (28 g)"],
+  [/^(?:can|tin)$/, /tuna|salmon|chicken/, 142, "a small can of tuna or chicken|5 oz (142 g)"],
+  [/^(?:can|tin)$/, /beans?|chickpeas?|garbanzo|lentils?|corn/, 250, "a drained 15 oz can of beans or corn|1½ cups (250 g)"],
+  [/^(?:can|tin)$/, /tomato/, 411, "a can of tomatoes|14½ oz (411 g)"],
+  [/^(?:can|tin)$/, /coconut milk|coconut cream/, 400, "a can of coconut milk|13½ fl oz (400 g)"],
+  [/^(?:can|tin)$/, /broth|stock/, 411, "a can of broth|14½ oz (411 g)"],
+];
+
+function typicalWeight(noun: string | null, words: string): { grams: number; what: string; shown: string } | null {
+  const w = words.toLowerCase();
+  for (const [n, re, grams, text] of TYPICAL) {
+    if (n && !(noun && n.test(noun))) continue;
+    if (!re.test(w)) continue;
+    const [what, shown] = text.split("|") as [string, string];
+    return { grams, what: what.charAt(0).toUpperCase() + what.slice(1), shown };
+  }
+  return null;
+}
+
+const fmtGrams = (g: number) => (g >= 100 ? `${Math.round(g)} g` : `${Math.round(g * 10) / 10} g`);
 
 /** Which steps mention an ingredient (by its main words). */
 export function stepsMentioning(name: string, steps: string[], group?: string | null): number[] {

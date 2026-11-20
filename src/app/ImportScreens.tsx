@@ -14,6 +14,7 @@ import {
   parseRecipeText,
   quantityFor,
   recipeFromImport,
+  recipeProblems,
   recipeIdFor,
   linkSteps,
   suggestFoods,
@@ -343,7 +344,9 @@ export function ImportReviewScreen(): ReactElement {
 }
 
 function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: RecipeSource; engine: Engine }): ReactElement {
-  const { recipes } = useUserData();
+  const { recipes, saveRecipe } = useUserData();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [title, setTitle] = useState(parsed.title ?? "");
   const [servings, setServings] = useState<number | null>(parsed.servings);
   const [steps, setSteps] = useState<string[]>(parsed.steps.length ? parsed.steps : [""]);
@@ -369,7 +372,7 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
   const assumed = doneIdx.filter((i) => rows[i]!.choice === "out" || rows[i]!.parsed.flags.some((f) => !QUIET_FLAGS.has(f.code)) || !!resolved[i]!.q?.assumed).length;
   if (needIdx.length > 0) blockers.push(`${needIdx.length} ${needIdx.length === 1 ? "line needs" : "lines need"} you above.`);
 
-  const finish = () => {
+  const finish = async () => {
     const cleanSteps = steps.map((s) => s.trim()).filter(Boolean);
     const links = linkSteps(rows.map((r) => ({ name: r.parsed.name, group: r.parsed.group })), cleanSteps);
     const lines: ReviewedLine[] = rows.flatMap((r, i) => {
@@ -398,6 +401,21 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
       const div = pr.per === "recipe" ? servings! : 1;
       draft.printedPerServing = { kcal: Math.round(pr.kcal / div), protein: Math.round((pr.protein / div) * 10) / 10, carbs: Math.round((pr.carbs / div) * 10) / 10, fat: Math.round((pr.fat / div) * 10) / 10 };
     }
+    // Everything checked: save it straight away and open the recipe. Only a recipe
+    // that still has a problem goes to the editor to finish.
+    if (recipeProblems(draft).length === 0 && draft.lines.length > 0) {
+      setSaving(true);
+      setSaveError(null);
+      try {
+        const savedId = await saveRecipe(draft, "imported");
+        setImport(null);
+        go(`/recipes/${encodeURIComponent(savedId)}`);
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : String(e));
+        setSaving(false);
+      }
+      return;
+    }
     setDraft(draft);
     setImport(null);
     go("/recipes/new");
@@ -406,7 +424,7 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
   return (
     <>
       <BackLink href="#/import">Import</BackLink>
-      <p className="lead">{needIdx.length === 0 ? "Everything was read. Glance over it and continue." : `${needIdx.length} ${needIdx.length === 1 ? "line needs" : "lines need"} you. The rest look right.`}</p>
+      <p className="lead">{needIdx.length === 0 ? "Everything was read. Glance over it and save." : `${needIdx.length} ${needIdx.length === 1 ? "line needs" : "lines need"} you. The rest look right.`}</p>
       {parsed.flags.length > 0 && <FlagList flags={parsed.flags} testId="recipe-flags" />}
       {duplicate && (
         <div className="card duplicate" data-testid="duplicate">
@@ -487,8 +505,9 @@ function Review({ parsed, source, engine }: { parsed: ParsedRecipe; source: Reci
       </details>
 
       {blockers.length > 0 && <div className="warning-box" data-testid="review-blockers">{blockers.map((b) => <p key={b}>{b}</p>)}</div>}
-      <button className="primary-action" disabled={blockers.length > 0} onClick={finish}>Continue to the recipe</button>
-      <p className="footnote">Next you'll see the full recipe with its checks, and save it.</p>
+      {saveError && <p className="warning">Couldn't save: {saveError}</p>}
+      <button className="primary-action" disabled={blockers.length > 0 || saving} onClick={() => void finish()}>{saving ? "Saving…" : "Save recipe"}</button>
+      <p className="footnote">Saves it to My Recipes and opens it. You can edit it any time.</p>
     </>
   );
 }

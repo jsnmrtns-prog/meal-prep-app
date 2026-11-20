@@ -162,14 +162,14 @@ const COUNT_NOUNS = new Set([
   "pinch", "pinches", "dash", "dashes", "handful", "handfuls", "stick", "sticks", "bag", "bags", "box", "boxes",
   "container", "containers", "fillet", "fillets", "breast", "breasts", "thigh", "thighs", "envelope", "envelopes",
   "scoop", "scoops", "drop", "drops", "splash", "drizzle", "sheet", "sheets", "leaf", "leaves", "ear", "ears",
-  "serving", "servings", "tin", "tins", "carton", "cartons", "pouch", "pouches", "tub", "tubs", "bottle", "bottles", "cube", "cubes",
+  "serving", "servings", "bundle", "bundles", "knob", "knobs", "thumb", "thumbs", "wedge", "wedges", "tin", "tins", "carton", "cartons", "pouch", "pouches", "tub", "tubs", "bottle", "bottles", "cube", "cubes",
 ]);
 const SIZE_WORDS = new Set(["large", "medium", "small", "extra-large", "jumbo", "extra large"]);
 /** Count nouns that are vague amounts rather than measurable units. */
 const VAGUE = new Set(["pinch", "pinches", "dash", "dashes", "handful", "handfuls", "splash", "drizzle", "drop", "drops"]);
 
 const singular = (noun: string) => {
-  const map: Record<string, string> = { leaves: "leaf", boxes: "box", bunches: "bunch", pinches: "pinch", dashes: "dash", pkgs: "package", pkg: "package", packages: "package" };
+  const map: Record<string, string> = { bundle: "bunch", bundles: "bunch", leaves: "leaf", boxes: "box", bunches: "bunch", pinches: "pinch", dashes: "dash", pkgs: "package", pkg: "package", packages: "package" };
   if (map[noun]) return map[noun]!;
   return noun.endsWith("s") && !noun.endsWith("ss") ? noun.slice(0, -1) : noun;
 };
@@ -299,7 +299,9 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
   const flags: ImportFlag[] = [];
   const raw = stripBullet(rawLine).replace(/\s+/g, " ").trim();
   // "Juice of 1 lime": USDA gives the juice from one lime, so count limes.
-  const juice = raw.match(new RegExp(`^juice (?:of|from) (${NUM}|a|an|one|two|three|half)\\s+(?:whole |large |medium |small |fresh )*(lime|lemon|orange)s?\\b\\s*(?:,\\s*(.*))?$`, "i"));
+  const juice = raw.replace(/^(?:the\s+)?(juice (?:of|from)) half (?:a|an)\s+/i, "$1 half ").match(new RegExp(`^(?:the\\s+)?juice (?:of|from) (${NUM}|a|an|one|two|three|half)\\s+(?:whole |large |medium |small |fresh )*(lime|lemon|orange)s?\\b\\s*(?:,\\s*(.*))?$`, "i"))
+    // "1 lemon, juiced", "½ lime (juiced)": the juice, not the whole fruit.
+    ?? raw.match(new RegExp(`^(${NUM}|a|an|one|two|half)\\s+(?:whole |large |medium |small |fresh )*(lime|lemon|orange)s?\\s*,?\\s*\\(?juiced\\)?\\s*(?:,\\s*(.*))?$`, "i"));
   // "Zest of 2 Limes": USDA has the peel by the teaspoon; one fruit gives about a teaspoon of zest.
   const zest = raw.match(new RegExp(`^(?:the\\s+)?zest (?:of|from) (${NUM}|a|an|one|two|half)\\s+(?:whole |large |medium |small )*(lime|lemon|orange)s?\\b`, "i"));
   if (zest) {
@@ -765,8 +767,12 @@ function looksLikeStep(line: string): boolean {
   return t.split(/\s+/).length >= 9 && /[.!]$/.test(t);
 }
 
+/** A line with a bracket left open or closed from another line ("Tortilla (Brand:", "Wrap)"). */
+const unbalanced = (t: string) => (t.match(/\(/g)?.length ?? 0) !== (t.match(/\)/g)?.length ?? 0);
+
 function isGroupHeader(line: string): boolean {
   const t = stripBullet(line);
+  if (unbalanced(t)) return false;
   if (t.length > 40 || t.length < 3) return false;
   if (AMOUNT_START.test(t)) return false;
   if (/:$/.test(t)) return true;
@@ -799,7 +805,7 @@ const bulleted = (line: string) => BULLET.test(line);
  */
 function looksLikeUnmarkedHeader(line: string, next: string | undefined, afterBlank: boolean, prev?: string): boolean {
   const t = stripBullet(line);
-  if (!next || bulleted(line) || looksLikeIngredient(line)) return false;
+  if (!next || bulleted(line) || looksLikeIngredient(line) || unbalanced(t)) return false;
   // "Chicken per Taco" under "Roughly 60g (2.1oz)": the food for an amount on the line above.
   if (/\bper\b/i.test(t) || (prev && parseIngredientLine(prev).name === "")) return false;
   // "Cheese" under "180g Low Fat Cottage": the end of a wrapped line, not a label.
@@ -852,6 +858,7 @@ const VAGUE_AMOUNTS: [RegExp, number, ParsedUnit, string][] = [
   [/\bpinch(?:es)?\b/i, 1 / 16, { kind: "volume", unit: "tsp" }, "a pinch is about 1/16 tsp"],
   [/\bdash(?:es)?\b/i, 1 / 8, { kind: "volume", unit: "tsp" }, "a dash is about 1/8 tsp"],
   [/\bsplash(?:es)?\b/i, 1, { kind: "volume", unit: "tbsp" }, "a splash is about 1 tbsp"],
+  [/\bdrops?\b/i, 1, { kind: "volume", unit: "tsp" }, "a drop is about 1 tsp"],
   [/\bspoonfuls?\b|\bdollops?\b/i, 1, { kind: "volume", unit: "tbsp" }, "a spoonful is about 1 tbsp"],
   [/\bsqueeze\b/i, 1, { kind: "volume", unit: "tsp" }, "a squeeze is about 1 tsp"],
   [/\bdrizzle\b/i, 1, { kind: "volume", unit: "tsp" }, "a drizzle is about 1 tsp"],
@@ -869,7 +876,7 @@ const SPICES = /\b(?:garlic powder|onion powder|paprika|cumin|oregano|thyme|rose
  */
 function suggestAmount(p: ParsedIngredient): ParsedIngredient {
   // "1 handful cilantro", "2 pinches salt": the count word is the vague measure.
-  if (p.unit?.kind === "count" && /^(?:handful|pinch|dash|splash|drizzle|sprinkle|squeeze|spoonful|dollop)$/.test(p.unit.noun)) p = { ...p, unit: null, raw: `${p.raw}`, name: `${p.unit.noun} ${p.name}` };
+  if (p.unit?.kind === "count" && /^(?:handful|pinch|dash|splash|drizzle|sprinkle|squeeze|spoonful|dollop|drop)$/.test(p.unit.noun)) p = { ...p, unit: null, raw: `${p.raw}`, name: `${p.unit.noun} ${p.name}` };
   if (p.amount !== null && p.unit !== null) return p;
   const fixCodes = p.flags.filter((f) => f.severity === "fix").map((f) => f.code);
   if (!fixCodes.length || fixCodes.some((c) => !["no_amount", "to_taste", "unusual", "unknown_unit"].includes(c))) return p;
@@ -894,6 +901,11 @@ function suggestAmount(p: ParsedIngredient): ParsedIngredient {
     else if (SPICES.test(name)) pick = { amount: 1, unit: { kind: "volume", unit: "tsp" }, why: "seasoning to taste, about 1 tsp" };
     else if (/\b(?:cooking|oil|olive oil|avocado oil) spray\b|\bspray\b.*\boil\b|\bcooking spray\b/.test(name)) pick = { amount: 1 / 4, unit: { kind: "volume", unit: "tsp" }, why: "a quick spray is about 1/4 tsp of oil" };
     else if (/\b(?:hot sauce|sriracha|tabasco|lemon juice|lime juice)\b/.test(name)) pick = { amount: 1, unit: { kind: "volume", unit: "tsp" }, why: "to taste, about 1 tsp" };
+    else if (/^(?:fresh |minced |crushed |chopped )*garlic(?: cloves?)?(?:,? (?:minced|crushed|chopped))?$/.test(name)) pick = { amount: 1, unit: { kind: "count", noun: "clove" }, why: "garlic with no amount, about 1 clove" };
+    else if (/\b(?:lemon|lime|orange) zest\b|\bzest of\b/.test(name)) pick = { amount: 1, unit: { kind: "volume", unit: "tsp" }, why: "zest with no amount, about 1 tsp" };
+    else if (/^(?:boiled |boiling |cold |warm |hot |tap |filtered )?water$/.test(name)) pick = { amount: 1, unit: { kind: "volume", unit: "cup" }, why: "water has no calories, so 1 cup is a placeholder" };
+    else if (/\bslices?\b/.test(name) && /\b(?:cheese|tomato|bread|ham|turkey|pickle|onion)\b/.test(name)) pick = { amount: 1, unit: { kind: "count", noun: "slice" }, why: "one slice" };
+    else if (/\blettuce leaf\b|\bleaf of lettuce\b/.test(name)) pick = { amount: 1, unit: { kind: "count", noun: "leaf" }, why: "one leaf" };
   }
   if (!pick) return p;
   const FRAC: Record<number, string> = { 0.0625: "1/16", 0.125: "⅛", 0.25: "¼", 0.5: "½" };
@@ -903,7 +915,7 @@ function suggestAmount(p: ParsedIngredient): ParsedIngredient {
     amount: pick.amount,
     amountMax: null,
     unit: pick.unit,
-    name: p.name.replace(/^(?:a\s+)?(?:big\s+|small\s+|large\s+)?(?:pinch(?:es)?|dash(?:es)?|splash(?:es)?|spoonfuls?|dollops?|squeeze|drizzle|sprinkle|handfuls?)\s+(?:of\s+)?/i, "").replace(/^(?:garnish(?:ed)?(?:\s+with)?|to taste:?)\s+/i, "").replace(/\s+(?:for garnish|to garnish)$/i, "") || p.name,
+    name: p.name.replace(/^(?:a\s+)?(?:big\s+|small\s+|large\s+)?(?:pinch(?:es)?|dash(?:es)?|splash(?:es)?|drops?|spoonfuls?|dollops?|squeeze|drizzle|sprinkle|handfuls?)\s+(?:of\s+)?/i, "").replace(/^(?:garnish(?:ed)?(?:\s+with)?|to taste:?)\s+/i, "").replace(/\s+(?:for garnish|to garnish)$/i, "") || p.name,
     flags: [
       ...p.flags.filter((f) => f.severity !== "fix"),
       { code: "suggested", severity: "check", message: `No amount given: using ${shown}. Change it if you use more or less.` },
@@ -1145,7 +1157,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
       lastInlineStep = false;
       if (!sawStepHeader && !looksLikeIngredient(line) && stepLike) {
         mode = "steps";
-      } else if (prev && !looksLikeIngredient(line) && (openParen || (/^\(/.test(bare) && !bulleted(rawLine)))) {
+      } else if (prev && !looksLikeIngredient(line) && (openParen || (/^\(/.test(bare) && !bulleted(rawLine)) || (unbalanced(bare) && !bulleted(rawLine)))) {
         // "(or butter of choice)" under "20g Butter", or the rest of "(or any" on the next line.
         prev.text = `${prev.text} ${bare}`;
         prev.joined = true;
