@@ -67,3 +67,26 @@ Steps
   assert.equal(r.ingredients[1]!.amount, 100);
   assert.match(r.ingredients[1]!.name, /Evaporated Milk$/);
 });
+
+test("a wrapped cookbook list: a section name between lines isn't glued to the food above, and an optional note line stays out", () => {
+  const r = parseRecipeText(`Grilled Chicken Alfredo Pasta
+INGREDIENTS (4 SERVINGS)
+Cooking & Finishing
+– 20g (1oz) Reduced Fat Butter
+Pasta
+Creamy Tomato Alfredo Sauce –
+– 80g (2.8oz) White Onion, chopped
+300g (10.6oz) Light Evaporated
+Milk (or regular milk)
+30g (1.1oz) Parmigiano Reggiano, grated
+Optional Pasta Water if the
+sauce is too thick
+210g (7.4oz)Uncooked Fettuccine
+Pasta (or pasta of choice)
+
+INSTRUCTIONS
+1. Cook the pasta.`);
+  const names = r.ingredients.map((i) => i.name);
+  assert.deepEqual(names, ["Reduced Fat Butter", "White Onion", "Light Evaporated Milk", "Parmigiano Reggiano", "Uncooked Fettuccine Pasta"]);
+  assert.ok(r.ingredients.every((i) => i.amount !== null));
+});

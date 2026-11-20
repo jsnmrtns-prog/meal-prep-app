@@ -299,7 +299,7 @@ export function parseIngredientLine(rawLine: string, group: string | null = null
   const flags: ImportFlag[] = [];
   const raw = stripBullet(rawLine).replace(/\s+/g, " ").trim();
   // "Juice of 1 lime": USDA gives the juice from one lime, so count limes.
-  const juice = raw.replace(/^(?:the\s+)?(juice (?:of|from)) half (?:a|an)\s+/i, "$1 half ").match(new RegExp(`^(?:the\\s+)?juice (?:of|from) (${NUM}|a|an|one|two|three|half)\\s+(?:whole |large |medium |small |fresh )*(lime|lemon|orange)s?\\b\\s*(?:,\\s*(.*))?$`, "i"))
+  const juice = raw.replace(/\b(\d+) and (\d\/\d)\b/, "$1 $2").replace(/^(?:the\s+)?(juice (?:of|from)) half (?:a|an)\s+/i, "$1 half ").match(new RegExp(`^(?:the\\s+)?juice (?:of|from) (${NUM}|a|an|one|two|three|half)\\s+(?:whole |large |medium |small |fresh )*(lime|lemon|orange)s?\\b\\s*(?:,\\s*(.*))?$`, "i"))
     // "1 lemon, juiced", "½ lime (juiced)": the juice, not the whole fruit.
     ?? raw.match(new RegExp(`^(${NUM}|a|an|one|two|half)\\s+(?:whole |large |medium |small |fresh )*(lime|lemon|orange)s?\\s*,?\\s*\\(?juiced\\)?\\s*(?:,\\s*(.*))?$`, "i"));
   // "Zest of 2 Limes": USDA has the peel by the teaspoon; one fruit gives about a teaspoon of zest.
@@ -792,8 +792,11 @@ const NOTE_START = /^(?:any |use |such as|e\.g\.|like |ideally|preferably|if |ho
 /** Words that finish a food name wrapped onto a second line. */
 const CONTINUES_NAME = /^(?:reggiano|cheese|yog(?:h)?urt|milk|cream|breasts?|thighs?|fillets?|powder|flakes|seeds|juice|sauce|paste|oil|stock|broth|onions?|peppers?|beef|chicken|turkey|pork|rice|pasta|noodles|beans|tomatoes|potatoes|cheddar|mozzarella|parmesan|seasoning|mix|syrup|vinegar|leaves)$/i;
 
+/** The last word of a whole food name: what follows it isn't more of the name. */
+const COMPLETE_FOOD = /^(?:butter|oil|salt|herbs|flakes|powder|paprika|garlic|onions?|passata|cheese|milk|cream|breasts?|thighs?|rice|pasta|noodles|beans|stock|broth|sauce|paste|seasoning|eggs?|whites|water|juice|vinegar|syrup|honey|sugar|flour|spinach|lettuce|tomato(?:es)?|peppers?|carrots?|mince|beef|chicken|turkey|pork|salmon|tuna|shrimp|tofu|yog(?:h)?urt|mayo|mayonnaise|mustard|ketchup|sriracha|cumin|oregano|thyme|parsley|cilantro|basil|ginger|lime|lemon|zest|leaves|seeds|nuts|oats|bread|tortillas?|wraps?|buns?)$/i;
+
 /** A line that stops mid-name: the next line finishes it ("Low Fat Cottage" / "Cheese"). */
-const WRAP_END = /(?:,|\bday-old|\band|\bor|\bof|\bwith|\b&|\bmixed|\bboneless|\bskinless|\bshredded|\bchopped|\bgrated|\bfrozen|\bfresh|\bfreshly|\bground|\blow|\breduced|\bfat|\bfree|\bplain|\bpart|\bcottage|\bgreek|\bdiced|\bsliced|\bmedium|\blarge|\bsmall|\bwhite|\bcooked|\buncooked|\bdry|\braw|\blean|\bsmoked|\bevaporated|\blight|\bextra|\bvirgin|\bwhole|\bsour|\bheavy|\bbrown|\bsweet|\bred|\bgreen|\byellow|\bchicken|\bbeef|\bturkey|\bpork|\bcream|\b\(brand:?|-)$/i;
+const WRAP_END = /(?:,|\bday-old|\band|\bor|\bof|\bwith|\bif(?: the)?|\bthe|\bis|\btoo|\b&|\bmixed|\bboneless|\bskinless|\bshredded|\bchopped|\bgrated|\bfrozen|\bfresh|\bfreshly|\bground|\blow|\breduced|\bfat|\bfree|\bplain|\bpart|\bcottage|\bgreek|\bdiced|\bsliced|\bmedium|\blarge|\bsmall|\bwhite|\bcooked|\buncooked|\bdry|\braw|\blean|\bsmoked|\bevaporated|\blight|\bextra|\bvirgin|\bwhole|\bsour|\bheavy|\bbrown|\bsweet|\bred|\bgreen|\byellow|\bchicken|\bbeef|\bturkey|\bpork|\bcream|\b\(brand:?|-)$/i;
 
 /** True when a line is written as a list bullet. */
 const bulleted = (line: string) => BULLET.test(line);
@@ -1177,7 +1180,27 @@ export function parseRecipeText(text: string): ParsedRecipe {
           continue;
         }
         // "20g Parmigiano" / "Reggiano": a food name finished on the next line.
-        const finishesName = prev && !bulleted(rawLine) && !looksLikeIngredient(line) && bare.split(/\s+/).length <= 2 && CONTINUES_NAME.test(bare) && AMOUNT_START.test(stripBullet(prev.text)) && !afterBlank;
+        // Not when the line above already ends in a whole food ("20g Reduced Fat Butter" / "Pasta" is a new section).
+        const bareName = bare.replace(/\s*\([^)]*\)?\s*/g, " ").trim();
+        const prevLast = stripBullet(prev?.text ?? "").replace(/\([^)]*\)?/g, " ").trim().split(/\s+/).at(-1) ?? "";
+        const prevComplete = COMPLETE_FOOD.test(prevLast);
+        const finishesName = prev && !bulleted(rawLine) && !looksLikeIngredient(line) && bareName.split(/\s+/).length <= 2 && CONTINUES_NAME.test(bareName) && !prevComplete && AMOUNT_START.test(stripBullet(prev.text)) && !afterBlank;
+        // "Optional Pasta Water if the": a new (optional) ingredient, even without a bullet.
+        if (/^optional\b/i.test(bare) && prev) {
+          ingredientLines.push({ text: line, group, joined: false, bulleted: true });
+          continue;
+        }
+        // In a bulleted list, a short Title Case line with no bullet and no amount, under a line that's
+        // already a whole ingredient, heads a new section ("Pasta" above "Creamy Tomato Alfredo Sauce").
+        const words = bareName.split(/\s+/);
+        if (prev?.bulleted && !bulleted(rawLine) && !finishesName && prevComplete && !looksLikeIngredient(line) && !/[\d½¼¾⅓⅔⅛]/.test(bare) &&
+          !/^(?:powder|flakes|seeds|juice|sauce|paste|oil|leaves|cheese|milk|cream)\b|\b(?:per|juice of|zest of)\b/i.test(bare) && !WRAP_END.test(prev.text) && !unbalanced(prev.text) &&
+          words.length <= 4 && words.every((w) => /^[A-Z&]/.test(w) || w.length <= 3) && !/[,.;:/]/.test(bare) && !/^(?:and|or|with|\+|&)\s/i.test(bare) &&
+          nextLine(li) !== undefined && !isSectionHeading(nextLine(li)!) && !looksLikeStep(nextLine(li)!)) {
+          group = cleanHeader(bare.replace(/\s*[–-]+\s*$/, ""));
+          groupNames.add(normName(group));
+          continue;
+        }
         // "300g day-old" / "cooked white rice (300g": the name goes on, and its only amount is in brackets.
         const outsideParens = bare.replace(/\([^)]*\)?/g, " ");
         const nameGoesOn = prev && midName && !bulleted(rawLine) && /^[a-z]/.test(bare) && !looksLikeIngredient(outsideParens) && !AMOUNT_START.test(bare);
