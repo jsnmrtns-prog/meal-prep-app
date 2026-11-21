@@ -28,6 +28,7 @@ export type FlagCode =
   | "combined"
   | "unusual"
   | "no_title"
+  | "servings_range"
   | "no_servings"
   | "no_steps"
   | "no_ingredients"
@@ -281,6 +282,8 @@ function snapDecimal(n: number | null, text: string): number | null {
  */
 export function tidyLine(line: string): string {
   let t = line.replace(/\s+/g, " ").trim();
+  // "4 - 6 SERVING(S)" (recipe websites)
+  t = t.replace(/\b(serving|portion|cup|piece|clove|slice)\(s\)/gi, "$1s");
   // A stray bracket inside an amount: "45g (3 (Tbsp) sesame oil" → "45g (3 Tbsp) sesame oil".
   t = t.replace(/\((\s*[\d¼½¾⅓⅔⅛.\/ ]+?)\s*\(\s*(?=[A-Za-z]+\))/g, "($1 ");
   t = t.replace(/\b(?:[A-Z] ){2,}[A-Z]\b/g, (m) => m.replace(/ /g, ""));
@@ -295,9 +298,32 @@ export function tidyLine(line: string): string {
 // ---------- one ingredient ----------
 
 /** Reads one ingredient line. */
+/** "2 qt. broth", "1 pint cream", "1 gallon water": written in cups, which the app measures. */
+function bigVolumes(t: string): string {
+  return t.replace(/^(\d+(?:\.\d+)?|\d+\/\d+|\d+\s+\d+\/\d+|[½¼¾])\s*(qts?\.?|quarts?|pts?\.?|pints?|gal\.?|gallons?)(?=\s|$)/i, (_m, n: string, u: string) => {
+    const amount = n.trim().split(/\s+/).reduce((s, part) => {
+      const f = { "½": 0.5, "¼": 0.25, "¾": 0.75 }[part as "½"];
+      if (f !== undefined) return s + f;
+      const [a, b] = part.split("/");
+      return s + (b ? Number(a) / Number(b) : Number(a));
+    }, 0);
+    const cups = amount * (/^q/i.test(u) ? 4 : /^p/i.test(u) ? 2 : 16);
+    return `${Math.round(cups * 100) / 100} ${cups === 1 ? "cup" : "cups"}`;
+  });
+}
+
+/** "2 bone-in, skin-on chicken thighs": the describing words go after the food, as its prep. */
+function leadingDescriptors(t: string): string {
+  const m = t.match(/^((?:\S+\s+){1,2}?)((?:(?:bone-in|boneless|skin-on|skinless|fresh|frozen|raw|cooked|uncooked|thawed),?\s+){1,3})(.+)$/i);
+  if (!m || !/,/.test(m[2]!)) return t;
+  const descriptors = m[2]!.replace(/,?\s+$/, "").replace(/,\s*/g, ", ");
+  const [food, rest] = m[3]!.split(/,\s*(.*)/s) as [string, string | undefined];
+  return `${m[1]}${food}, ${descriptors}${rest ? `, ${rest}` : ""}`;
+}
+
 export function parseIngredientLine(rawLine: string, group: string | null = null): ParsedIngredient {
   const flags: ImportFlag[] = [];
-  const raw = stripBullet(rawLine).replace(/\s+/g, " ").trim();
+  const raw = leadingDescriptors(bigVolumes(stripBullet(rawLine).replace(/\s+/g, " ").trim()));
   // "Juice of 1 lime": USDA gives the juice from one lime, so count limes.
   const juice = raw.replace(/\b(\d+) and (\d\/\d)\b/, "$1 $2").replace(/^(?:the\s+)?(juice (?:of|from)) half (?:a|an)\s+/i, "$1 half ").match(new RegExp(`^(?:the\\s+)?juice (?:of|from) (${NUM}|a|an|one|two|three|half)\\s+(?:whole |large |medium |small |fresh )*(lime|lemon|orange)s?\\b\\s*(?:,\\s*(.*))?$`, "i"))
     // "1 lemon, juiced", "½ lime (juiced)": the juice, not the whole fruit.
@@ -698,7 +724,7 @@ function toBase(n: number, u: ParsedUnit): number | null {
 
 // ---------- whole recipe ----------
 
-const H_INGREDIENTS = /^(?:ingredients?|what you(?:'|’)?ll need|you will need|shopping list)\s*(?:\([^)]*\))?\s*:?(?:\s*\d+(?:\/\d+)?x)*$/i;
+const H_INGREDIENTS = /^(?:ingredients?(?:\s+(?:directions|instructions|method|steps|preparation))?|what you(?:'|’)?ll need|you will need|shopping list)\s*(?:\([^)]*\))?\s*:?(?:\s*\d+(?:\/\d+)?x)*$/i;
 const H_STEPS = /^(?:instructions?|directions?|method|steps?|preparation|prep(?:aration)? steps|how to make(?: it)?|cooking instructions)\s*(?:\([^)]*\))?\s*:?$/i;
 const H_NOTES = /^(?:(?:important|helpful|cooking|recipe|chef(?:'|’)?s|meal[- ]prep|storage|serving|top|quick|pro|my)\s+)*(?:notes?|tips?|storage|substitutions?|storage (?:and|&) reheating)\s*:?$/i;
 const H_EQUIPMENT = /^(?:equipment|tools|kitchen tools|equipment needed|you will need these tools)\s*:?$/i;
@@ -721,15 +747,17 @@ function cleanTitle(t: string): string {
 /** "STEP 1" on a line of its own: the following lines are that step. */
 const STEP_MARKER = /^step\s*(\d{1,2})\s*[:.]?$/i;
 /** A running page header or table-of-contents link, not a recipe name. */
-const NOT_TITLE = /\bcook\s?book\b|\btable of contents\b|^page\s+\d|^recipe\s*(?:#|no\.?|number)?\s*\d+$|^tap icons\b/i;
+const NOT_TITLE = /^per\s+(?:serving|portion|burrito|wrap|taco|bowl|piece|slice|container|meal|sandwich|pizza|roll|bite|muffin|cookie|bar|\w+\s*\(makes)|^shopping\s*list$|^shoppinglist$|^grocery list$|\bcook\s?book\b|\btable of contents\b|^page\s+\d|^recipe\s*(?:#|no\.?|number)?\s*\d+$|^tap icons\b/i;
+/** Web page clutter above a recipe: breadcrumbs ("Meals & Cooking > Recipes"), bylines, review badges. Only before the recipe starts. */
+const PAGE_CLUTTER = /^[^\d>]{2,40}(?:\s>\s[^\d>]{2,40})+$|^[Bb]y\s+[A-Z][\w.'’-]+(?:\s+[A-Z][\w.'’-]+){0,3}(?:\s|$)|^(?:approved by|tested by|reviewed by|updated|published|i made it|made it\?|leave a (?:review|comment)|read reviews)\b/i;
 /** Website and print-page clutter around a recipe card. */
-const JUNK = /^(?:go back|print(?: recipe)?|pin(?: recipe| it)?|save(?: recipe)?|email(?: link)?|go back email link|jump to (?:recipe|video)|share(?: this recipe)?|rate this recipe|prevent (?:your )?screen from (?:sleeping|going dark)|cook mode|\d+(?:\.\d+)?\s*(?:from|out of)\s*\d+\s*(?:votes?|ratings?|reviews?)|[\d.,]+\s*(?:votes?|ratings?|reviews?)|no ratings yet|\$[\d.]+ (?:recipe|serving)\b.*|(?:recipe|photo|photos) by\b.*|(?:author|by|course|cuisine|keyword|keywords|diet|method|equipment|category|calories|cost)\s*:.*|.*\bthis post may contain affiliate links\b.*|skip to (?:main )?content|minutes?|mins?|hours?|hrs?|\d+\s*(?:min|mins|minutes|hrs?|hours?)|see how we calculate.*|page|#\s?\d+|#\w+(?:\s+#\w+)*|nutritional|information|nutritional information|total|(?:calories|carbs|carbohydrates|fats?|protein|fibre|fiber|sugars?|sodium)\s*:?\s*\d+(?:\.\d+)?\s*(?:g|kcal|mg)?|\d+(?:\.\d+)?\s*(?:g\s*)?(?:calories|kcal|protein|carbs|fat)|.*\d+\s*(?:calories|kcal)\b.*\|.*|(?:\d+(?:\/\d+)?x\s*){2,})$/i;
+const JUNK = /^(?:go back|print(?: recipe)?|pin(?: recipe| it)?|save(?: recipe)?|email(?: link)?|go back email link|jump to (?:recipe|video)|share(?: this recipe)?|rate this recipe|prevent (?:your )?screen from (?:sleeping|going dark)|cook mode|\d+(?:\.\d+)?\s*(?:from|out of)\s*\d+\s*(?:votes?|ratings?|reviews?)|[\d.,]+\s*(?:votes?|ratings?|reviews?)|no ratings yet|\$[\d.]+ (?:recipe|serving)\b.*|(?:recipe|photo|photos) by\b.*|(?:author|by|course|cuisine|keyword|keywords|diet|method|equipment|category|calories|cost)\s*:.*|.*\bthis post may contain affiliate links\b.*|skip to (?:main )?content|minutes?|mins?|hours?|hrs?|\d+\s*(?:min|mins|minutes|hrs?|hours?)|\d+\s*(?:hrs?|hours?)\s*\d+\s*(?:min|mins|minutes)|https?:\/\/\S+|www\.\S+|\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d{1,2}[:\s]\d{2}\s*[ap]m|yields?\s*:?|servings?\s*:|see how we calculate.*|page|#\s?\d+|#\w+(?:\s+#\w+)*|nutritional|information|nutritional information|total|(?:calories|carbs|carbohydrates|fats?|protein|fibre|fiber|sugars?|sodium)\s*:?\s*\d+(?:\.\d+)?\s*(?:g|kcal|mg)?|\d+(?:\.\d+)?\s*(?:g\s*)?(?:calories|kcal|protein|carbs|fat)|.*\d+\s*(?:calories|kcal)\b.*\|.*|(?:\d+(?:\/\d+)?x\s*){2,})$/i;
 /** Section labels in ingredient lists that are still a single food, never a heading. */
 const FOODISH = /\b(?:salt|pepper|oil|water|ice|parsley|cilantro|coriander|basil|garnish|spray|butter|sugar|flour|lemon|lime|chives|dill|mint)\b/i;
 const CONTINUE = /^(?:continued?|cont(?:'|’)?d\.?|cont\.)\s*(?:from (?:previous|last) page)?$/i;
 const H_NUTRITION = /^(?:nutrition(?: facts| information| info)?|macros|per serving|nutritional information)\b.*$/i;
 const SERVINGS = /\b(?:serves|servings?|yield|yields|makes|portions?)\b\s*:?\s*(\d+)(?:\s*(?:-|–|to)\s*(\d+))?/i;
-const SERVINGS_AFTER = /\b(\d+)\s*(?:servings|portions|meals|containers)\b/i;
+const SERVINGS_AFTER = /\b(\d+)(?:\s*(?:-|–|to)\s*(\d+))?\s*(?:servings|portions|meals|containers)\b/i;
 const META = /^(?:prep|cook|total|active|inactive|rest|bake|chill|marinate|cooking|baking)\s*time(?:\b|(?=\d))|^(?:prep|cook|total|ready in)\s*:|^(?:course|cuisine|author|keyword|calories|difficulty|equipment)\s*:/i;
 const STEP_PREFIX = /^\s*(?:step\s*)?(\d{1,2})\s*[.):]\s*(?=[A-Za-z(])|^\s*step\s+(\d{1,2})\s*:?\s*/i;
 const FOOTER = /^(?:(?:back|return) to (?:the )?(?:table of )?contents\b.*|page \d+(?: of \d+)?|\d{1,3})$/i;
@@ -793,7 +821,7 @@ const NOTE_START = /^(?:any |use |such as|e\.g\.|like |ideally|preferably|if |ho
 const CONTINUES_NAME = /^(?:reggiano|cheese|yog(?:h)?urt|milk|cream|breasts?|thighs?|fillets?|powder|flakes|seeds|juice|sauce|paste|oil|stock|broth|onions?|peppers?|beef|chicken|turkey|pork|rice|pasta|noodles|beans|tomatoes|potatoes|cheddar|mozzarella|parmesan|seasoning|mix|syrup|vinegar|leaves)$/i;
 
 /** The last word of a whole food name: what follows it isn't more of the name. */
-const COMPLETE_FOOD = /^(?:butter|oil|salt|herbs|flakes|powder|paprika|garlic|onions?|passata|cheese|milk|cream|breasts?|thighs?|rice|pasta|noodles|beans|stock|broth|sauce|paste|seasoning|eggs?|whites|water|juice|vinegar|syrup|honey|sugar|flour|spinach|lettuce|tomato(?:es)?|peppers?|carrots?|mince|beef|chicken|turkey|pork|salmon|tuna|shrimp|tofu|yog(?:h)?urt|mayo|mayonnaise|mustard|ketchup|sriracha|cumin|oregano|thyme|parsley|cilantro|basil|ginger|lime|lemon|zest|leaves|seeds|nuts|oats|bread|tortillas?|wraps?|buns?)$/i;
+const COMPLETE_FOOD = /^(?:sprigs?|ribs?|stalks?|cloves?|slices?|shells|quarters|butter|oil|salt|herbs|flakes|powder|paprika|garlic|onions?|passata|cheese|milk|cream|breasts?|thighs?|rice|pasta|noodles|beans|stock|broth|sauce|paste|seasoning|eggs?|whites|water|juice|vinegar|syrup|honey|sugar|flour|spinach|lettuce|tomato(?:es)?|peppers?|carrots?|mince|beef|chicken|turkey|pork|salmon|tuna|shrimp|tofu|yog(?:h)?urt|mayo|mayonnaise|mustard|ketchup|sriracha|cumin|oregano|thyme|parsley|cilantro|basil|ginger|lime|lemon|zest|leaves|seeds|nuts|oats|bread|tortillas?|wraps?|buns?)$/i;
 
 /** A line that stops mid-name: the next line finishes it ("Low Fat Cottage" / "Cheese"). */
 const WRAP_END = /(?:,|\bday-old|\band|\bor|\bof|\bwith|\bif(?: the)?|\bthe|\bis|\btoo|\b&|\bmixed|\bboneless|\bskinless|\bshredded|\bchopped|\bgrated|\bfrozen|\bfresh|\bfreshly|\bground|\blow|\breduced|\bfat|\bfree|\bplain|\bpart|\bcottage|\bgreek|\bdiced|\bsliced|\bmedium|\blarge|\bsmall|\bwhite|\bcooked|\buncooked|\bdry|\braw|\blean|\bsmoked|\bevaporated|\blight|\bextra|\bvirgin|\bwhole|\bsour|\bheavy|\bbrown|\bsweet|\bred|\bgreen|\byellow|\bchicken|\bbeef|\bturkey|\bpork|\bcream|\b\(brand:?|-)$/i;
@@ -937,6 +965,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
   let title: string | null = null;
   let servings: number | null = null;
   let servingsRange = false;
+  let servingsMax: number | null = null;
   let itemServings: string | null = null;
   let titleOpen = false;
   const notes: string[] = [];
@@ -961,7 +990,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
     let run: number[] = [];
     for (let k = 0; k < firstHeader; k++) {
       const t = stripBullet(lines[k]!.trim());
-      const caps = t.length > 1 && t === t.toUpperCase() && /[A-Z]{2}/.test(t) && t.split(/\s+/).length <= 5 && !JUNK.test(t) && !FOOTER.test(t) && !META.test(t) && !/\d/.test(t);
+      const caps = t.length > 1 && t === t.toUpperCase() && /[A-Z]{2}/.test(t) && t.split(/\s+/).length <= 5 && !JUNK.test(t) && !FOOTER.test(t) && !META.test(t) && !NOT_TITLE.test(t) && !/\d/.test(t);
       if (caps) run.push(k);
       else if (t !== "" || run.length) {
         if (run.length) runs.push(run);
@@ -977,6 +1006,21 @@ export function parseRecipeText(text: string): ParsedRecipe {
   }
   const firstIngredientHeader = lines.findIndex((l) => H_INGREDIENTS.test(stripBullet(l.trim())));
   const nextLine = (i: number) => lines.slice(i + 1).find((l) => l.trim() !== "" && !FOOTER.test(l.trim()));
+  // A narrow ingredient column (a web page printed to PDF): every ingredient wraps over several short
+  // lines ("2 bone-in," / "skin-on" / "chicken leg" / "quarters or" / "breasts").
+  const narrow = (() => {
+    if (firstIngredientHeader < 0) return false;
+    const section: string[] = [];
+    for (const l of lines.slice(firstIngredientHeader + 1)) {
+      const t = stripBullet(l.trim());
+      if (H_STEPS.test(t) || STEP_MARKER.test(t) || H_NOTES.test(t)) break;
+      if (t) section.push(t);
+    }
+    if (section.length < 8) return false;
+    const lens = section.map((t) => t.length).sort((a, b) => a - b);
+    const withAmount = section.filter((t) => AMOUNT_START.test(t)).length;
+    return lens[Math.floor(lens.length / 2)]! <= 16 && withAmount <= section.length / 2;
+  })();
 
   for (let li = 0; li < lines.length; li++) {
     const rawLine = lines[li]!;
@@ -990,7 +1034,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
     if (labelled && (line.length > 60 || JUNK.test(line) || META.test(line))) {
       // "Course: Dinner … Servings: 4Calories: 421kcal": the servings inside a run-together details line.
       servings = Number(labelled[1]);
-      servingsRange = Boolean(labelled[2]);
+      servingsRange = Boolean(labelled[2]); servingsMax = labelled[2] ? Number(labelled[2]) : null;
       continue;
     }
     if (FOOTER.test(line) || JUNK.test(line)) continue;
@@ -1019,13 +1063,13 @@ export function parseRecipeText(text: string): ParsedRecipe {
       group = null;
       if (servings === null && s) {
         servings = Number(s[1]);
-        servingsRange = Boolean(s[2]);
+        servingsRange = Boolean(s[2]); servingsMax = s[2] ? Number(s[2]) : null;
       }
       // "Ingredients (2 Burgers)", "(6-8 Tacos)": one item counts as one serving.
       const items: RegExpMatchArray | null = servings === null ? bare.match(/\((?:for |makes |approx\.?\s*)?(\d+)\s*(?:-|–|to)?\s*(\d+)?\s*(?:medium |large |small |mini |spicy )?(wraps?|burgers?|bowls?|tacos?|pancakes?|muffins?|cookies?|bars?|pizzas?|burritos?|sandwich(?:es)?|quesadillas?|bites?|balls?|slices?|pieces?|portions?|people)\)/i) : null;
       if (items) {
         servings = Number(items[1]);
-        servingsRange = Boolean(items[2]);
+        servingsRange = Boolean(items[2]); servingsMax = items[2] ? Number(items[2]) : null;
         itemServings = items[3]!.toLowerCase();
       }
       continue;
@@ -1055,7 +1099,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
     const servingsOnly = /^(?:for |makes |serves )?\d+\s*(?:-|–|to)?\s*\d*\s*(?:servings?|portions?|people|meals)\b\.?$/i.test(bare);
     if (servings === null && s && line.length <= 60 && !looksLikeStep(line) && (servingsOnly || !(mode === "ingredients" && looksLikeIngredient(line)))) {
       servings = Number(s[1]);
-      servingsRange = Boolean(s[2]);
+      servingsRange = Boolean(s[2]); servingsMax = s[2] ? Number(s[2]) : null;
       if (mode !== "steps") continue;
     }
     if (H_NUTRITION.test(bare) && (mode !== "steps" || bare.split(/\s+/).length <= 3)) {
@@ -1071,6 +1115,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
       else continue;
     }
 
+    if (mode === "start" && PAGE_CLUTTER.test(bare)) continue;
     if (mode === "start" && titleOpen) {
       // A name printed over two lines ("Honey Garlic Butter" / "chicken Mac n cheese").
       titleOpen = false;
@@ -1174,6 +1219,15 @@ export function parseRecipeText(text: string): ParsedRecipe {
         // a line without a bullet in a bulleted list, or anything following a line that ends mid-phrase.
         // A note on its own line under the ingredient ("large, halved and sliced", "drained", "we like just bouillon").
         const midName = prev ? WRAP_END.test(prev.text) && !/,$/.test(prev.text) : false;
+        if (narrow && prev && !looksLikeIngredient(line) && !bulleted(rawLine)) {
+          const p = prev.text.trim();
+          const last = p.replace(/\([^)]*\)/g, " ").trim().split(/\s+/).at(-1) ?? "";
+          const ends = !unbalanced(p) && (/\)$/.test(p) || (COMPLETE_FOOD.test(last) && !/[,-]$/.test(p)));
+          if (!(ends && /^[A-Z]/.test(bare))) {
+            prev.text = /-$/.test(p) ? `${p}${bare}` : `${p} ${bare}`;
+            continue;
+          }
+        }
         if (prev && !midName && !looksLikeIngredient(line) && !bulleted(rawLine) && /^[a-z]/.test(bare) && (bare.includes(",") || NOTE_START.test(bare)) && !/,$/.test(prev.text)) {
           prev.text = /,|\(/.test(stripBullet(prev.text).replace(/^\S+\s+\S+/, "")) ? `${prev.text}; ${bare}` : `${prev.text}, ${bare}`;
           prev.joined = true;
@@ -1184,7 +1238,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
         const bareName = bare.replace(/\s*\([^)]*\)?\s*/g, " ").trim();
         const prevLast = stripBullet(prev?.text ?? "").replace(/\([^)]*\)?/g, " ").trim().split(/\s+/).at(-1) ?? "";
         const prevComplete = COMPLETE_FOOD.test(prevLast);
-        const finishesName = prev && !bulleted(rawLine) && !looksLikeIngredient(line) && bareName.split(/\s+/).length <= 2 && CONTINUES_NAME.test(bareName) && !prevComplete && AMOUNT_START.test(stripBullet(prev.text)) && !afterBlank;
+        const finishesName = prev && !bulleted(rawLine) && !looksLikeIngredient(line) && bareName.split(/\s+/).length <= 2 && CONTINUES_NAME.test(bareName) && (!prevComplete || /^(?:powder|flakes|seeds|sauce|juice|paste|salt|oil|cheese|milk|cream)\b/i.test(bareName)) && AMOUNT_START.test(stripBullet(prev.text)) && !afterBlank;
         // "Optional Pasta Water if the": a new (optional) ingredient, even without a bullet.
         if (/^optional\b/i.test(bare) && prev) {
           ingredientLines.push({ text: line, group, joined: false, bulleted: true });
@@ -1294,7 +1348,12 @@ export function parseRecipeText(text: string): ParsedRecipe {
   const flags: ImportFlag[] = [];
   if (!title) flags.push({ code: "no_title", severity: "fix", message: "No recipe name found: enter one." });
   if (servings === null) flags.push({ code: "no_servings", severity: "fix", message: "How many servings the recipe makes wasn't found: enter it." });
-  else if (servingsRange) flags.push({ code: "no_servings", severity: "fix", message: "Servings are given as a range: enter the number this recipe makes." });
+  else if (servingsRange && servingsMax !== null && servingsMax > servings) {
+    // "Serves 4–6": use the middle and say so.
+    const low = servings;
+    servings = Math.round((low + servingsMax) / 2);
+    flags.push({ code: "servings_range", severity: "check", message: `Gives a range (${low}–${servingsMax} servings): using the middle, ${servings}. Change it if needed.` });
+  } else if (servingsRange) flags.push({ code: "no_servings", severity: "fix", message: "Servings are given as a range: enter the number this recipe makes." });
   else if (itemServings) flags.push({ code: "no_servings", severity: "check", message: `Makes ${servings} ${itemServings}: counted as ${servings} serving${servings === 1 ? "" : "s"}. Change it if a serving is different.` });
   if (ingredients.length === 0) flags.push({ code: "no_ingredients", severity: "fix", message: "No ingredients found. Check that the ingredient list was included." });
   if (steps.length === 0) flags.push({ code: "no_steps", severity: "fix", message: "No instructions found: add them." });
@@ -1403,7 +1462,10 @@ function expandSubRecipes(list: ParsedIngredient[]): ParsedIngredient[] {
       });
       continue;
     }
-    if (p.unit?.kind === "count" && p.unit.noun === "serving") {
+    // A serving of something sold in standard pieces: a Laughing Cow wedge, a scoop of protein powder.
+    if (p.unit?.kind === "count" && p.unit.noun === "serving" && /laughing cow|cheese wedge/i.test(p.name)) p.unit = { kind: "count", noun: "wedge" };
+    else if (p.unit?.kind === "count" && p.unit.noun === "serving" && /\bprotein powder|\bwhey\b|\bcasein\b/i.test(p.name)) p.unit = { kind: "count", noun: "scoop" };
+    else if (p.unit?.kind === "count" && p.unit.noun === "serving") {
       p.flags.push({ code: "unusual", severity: "fix", message: `"Serving" isn't a measurable amount: enter the grams (check the product label).` });
     }
     out.push(p);

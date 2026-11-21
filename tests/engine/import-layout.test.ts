@@ -57,9 +57,14 @@ test("cookbook layout: section labels, each-lists and a mix used by the serving"
   assert.ok(r.ingredients[11]!.flags.some((f) => f.code === "split_line"));
 });
 
-test("a serving of something that isn't in the recipe asks for grams", () => {
-  const p = parseRecipeText("Ingredients\n2 servings protein powder\nInstructions\nShake.").ingredients[0]!;
+test("a serving of something that isn't in the recipe asks for grams, unless it's sold in standard pieces", () => {
+  const p = parseRecipeText("Ingredients\n2 servings granola\nInstructions\nShake.").ingredients[0]!;
   assert.ok(p.flags.some((f) => f.severity === "fix" && /grams/.test(f.message)));
+  const powder = parseRecipeText("Ingredients\n2 servings protein powder\nInstructions\nShake.").ingredients[0]!;
+  assert.deepEqual(powder.unit, { kind: "count", noun: "scoop" });
+  const cow = parseRecipeText("Ingredients\n5 Servings Light Laughing Cow Cheese\nInstructions\nMix.").ingredients[0]!;
+  assert.deepEqual(cow.unit, { kind: "count", noun: "wedge" });
+  assert.ok(!cow.flags.some((f) => f.severity === "fix"));
 });
 
 test("matching: common names find the right USDA food", () => {

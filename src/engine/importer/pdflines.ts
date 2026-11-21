@@ -50,13 +50,22 @@ export function piecesToLines(pages: TextPiece[][]): string[] {
       if (last && Math.abs(last.y - p.y) <= Math.max(2, Math.min(p.height, last.height) * 0.4)) last.pieces.push(p);
       else rows.push({ y: p.y, height: p.height, pieces: [p] });
     }
+    // Where several rows start at the same place, right of the page's left edge, a column starts there.
+    // A narrow gutter (a web page printed to PDF) is still a column break at one of those places.
+    const starts = new Map<number, number>();
+    for (const r of rows) {
+      const x0 = Math.round(Math.min(...r.pieces.map((p) => p.x)));
+      starts.set(x0, (starts.get(x0) ?? 0) + 1);
+    }
+    const leftEdge = Math.min(...starts.keys());
+    const columnStarts = [...starts].filter(([x, n]) => n >= 4 && x > leftEdge + 40).map(([x]) => x);
     /** Where a row splits into columns: the start of each piece after a wide gap. */
     const splitsOf = (r: Row): number[] => {
-      const s = [...r.pieces].sort((a, b) => a.x - b.x);
+      const s = [...r.pieces].filter((p) => p.str.trim() !== "").sort((a, b) => a.x - b.x);
       const xs: number[] = [];
       for (let k = 1; k < s.length; k++) {
         const gap = s[k]!.x - (s[k - 1]!.x + s[k - 1]!.width);
-        if (gap > Math.max(15, s[k]!.height * 1.5)) xs.push(s[k]!.x);
+        if (gap > Math.max(15, s[k]!.height * 1.5) || (gap > 8 && !/^[•z\-–*»·o▪■●]$/.test(s[k - 1]!.str.trim()) && columnStarts.some((c) => Math.abs(c - s[k]!.x) <= 3))) xs.push(s[k]!.x);
       }
       return xs;
     };

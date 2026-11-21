@@ -57,6 +57,39 @@ function isIntroPage(p: PageInfo): boolean {
   return !isRecipePage(p) && !p.hasIngredientHeading && p.title !== null && p.text.length < 1500 && (p.printed !== null || /\b(?:serving|makes|serves)\b/i.test(p.text));
 }
 
+const PAGE_OF = /\bpage \d+ of \d+\b/i;
+/** Print clutter at the foot of a web page: the address, the date it was printed, "Page 1 of 2". */
+const PRINT_FOOTER = /^\s*(?:https?:\/\/\S+|www\.\S+|\d{1,2}\/\d{1,2}\/\d{2,4},?\s+\d{1,2}[:\s]\d{2}\s*[ap]m|page \d+ of \d+|[:.]?)\s*$/i;
+
+const trimFooter = (text: string) => {
+  const lines = text.split("\n");
+  while (lines.length && PRINT_FOOTER.test(lines.at(-1)!)) lines.pop();
+  return lines;
+};
+
+const STEP_START = /^\s*(?:step\s*1\b|1\s*[.)]\s|(?:instructions?|directions?|method|how to make(?: it)?|preparation)\s*:?\s*$)/i;
+
+/**
+ * Joins a page whose two columns (ingredients on the left, steps on the right) carry on to the next
+ * page: the next page's ingredient lines go after this page's ingredients, the rest after its steps.
+ */
+function continueColumns(first: string, second: string): string {
+  const head = trimFooter(first);
+  const blocks = trimFooter(second).join("\n").split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+  const ingredients: string[] = [];
+  const rest: string[] = [];
+  for (const b of blocks) {
+    const r = parseRecipeText(`Ingredients\n${b}`);
+    if (rest.length === 0 && r.ingredients.length >= 2 && r.steps.length === 0) ingredients.push(b);
+    else rest.push(b);
+  }
+  const at = head.findIndex((l) => STEP_START.test(l));
+  if (ingredients.length && at > 0) head.splice(at, 0, ...ingredients, "");
+  else rest.unshift(...ingredients);
+  // The step cut off at the foot of the page goes on with the first lines over the page.
+  return `${head.join("\n").replace(/\s+$/, "")}\n${rest.join("\n\n")}`;
+}
+
 /** A page that only carries on the steps of the page before. */
 const isContinuation = (p: PageInfo) => !p.hasIngredientHeading && p.ingredients < 3 && (p.steps >= 1 || STEP_HEADING.test(p.text) || /^\s*[»>]*\s*continued?\b/im.test(p.text));
 
@@ -88,11 +121,21 @@ export function findRecipes(pageTexts: string[]): BookRecipe[] {
     if (prev && isIntroPage(prev) && (p.title === null || p.printed === null) && !out.some((r) => r.pages.includes(prev.page))) used.push(prev);
     used.push(p);
     const next = pages[i + 1];
+    let text: string;
     if (next && p.steps === 0 && isContinuation(next) && !isIntroPage(next)) {
       used.push(next);
       i++;
+      text = used.map((u) => u.text).join("\n\n");
+    } else if (next && p.steps > 0 && next.title === null && !next.hasIngredientHeading && !isIntroPage(next) && (PAGE_OF.test(p.text) || /^\s*https?:\/\/\S+\s*$/m.test(p.text))) {
+      // A web page printed to PDF: the ingredient and step columns both carry on to the next page.
+      used.push(next);
+      i++;
+      text = continueColumns(used.slice(0, -1).map((u) => u.text).join("\n\n"), next.text);
+    } else {
+      text = used.map((u) => u.text).join("\n\n");
     }
-    const text = used.map((u) => u.text).join("\n\n");
+    // A book's weekly shopping list looks like a long ingredient list, but it isn't a recipe.
+    if (/^\s*(?:weekly |the )?(?:shopping\s*list|grocery list)\s*:?\s*$/im.test(text.split("\n").filter((l) => l.trim()).slice(0, 4).join("\n"))) continue;
     const r = parseRecipeText(text);
     // Tips pages and shopping guides can look like ingredient lists; a recipe has both ingredients and steps.
     if (r.ingredients.length < 3 || r.steps.length === 0) continue;

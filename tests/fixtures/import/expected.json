@@ -331,10 +331,10 @@
   },
   "06-web-pasta-bake": {
    "title": "High Protein Pasta Bake",
-   "servings": 6,
+   "servings": 7,
    "steps": 4,
    "flags": [
-    "no_servings"
+    "servings_range"
    ],
    "ingredients": [
     {
@@ -915,10 +915,10 @@
   },
   "16-handwritten-stew": {
    "title": "Beef stew (Grandma)",
-   "servings": 6,
+   "servings": 7,
    "steps": 2,
    "flags": [
-    "no_servings"
+    "servings_range"
    ],
    "ingredients": [
     {

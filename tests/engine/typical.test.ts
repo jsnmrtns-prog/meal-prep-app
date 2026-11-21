@@ -3,7 +3,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { FoodDb, parseIngredientLine, parseRecipeText, quantityFor, suggestFoods, wantFor, type FoodDbFile } from "../../src/engine/index.ts";
+import { FoodDb, findRecipes, parseIngredientLine, parseRecipeText, quantityFor, suggestFoods, wantFor, type FoodDbFile } from "../../src/engine/index.ts";
 
 const db = new FoodDb(JSON.parse(readFileSync(new URL("../../public/data/fooddb.json", import.meta.url), "utf8")) as FoodDbFile);
 const resolve = (line: string) => {
@@ -89,4 +89,83 @@ INSTRUCTIONS
   const names = r.ingredients.map((i) => i.name);
   assert.deepEqual(names, ["Reduced Fat Butter", "White Onion", "Light Evaporated Milk", "Parmigiano Reggiano", "Uncooked Fettuccine Pasta"]);
   assert.ok(r.ingredients.every((i) => i.amount !== null));
+});
+
+test("a web page printed to PDF: breadcrumb and byline skipped, narrow ingredient column joined, both columns carried over to page 2", () => {
+  const page1 = `Dinners > Soups
+
+Easy Turkey
+Rice Soup
+By Sam Cook PUBLISHED: JAN 8, 2026
+
+Approved by the Test Kitchen
+
+YIELDS:
+4 - 6 SERVING(S)
+
+PREP TIME:
+10 MINS
+
+TOTAL TIME:
+1 HR 5 MINS
+
+Ingredients Directions
+
+1 lb. lean
+ground
+turkey
+1 medium
+yellow
+onion,
+finely
+chopped
+2 celery
+ribs, thinly
+sliced
+3 garlic
+cloves,
+minced
+
+Step 1
+In a large pot, brown the turkey
+with the onion, celery and
+garlic, about 8 minutes.
+Step 2
+Add the broth and rice and simmer
+until the rice is
+
+https://www.example.com/recipes/easy-turkey-rice-soup/
+
+11/20/26, 8:23 PM
+Page 1 of 2`;
+  const page2 = `1 qt. low-
+sodium
+chicken
+broth
+4 thyme
+sprigs
+Kosher salt
+3/4 cup
+long-grain
+white rice
+
+tender, about 20 minutes more.
+Step 3
+Season and serve.
+
+https://www.example.com/recipes/easy-turkey-rice-soup/
+
+11/20/26, 8:23 PM
+Page 2 of 2`;
+  const found = findRecipes([page1, page2]);
+  assert.equal(found.length, 1);
+  assert.deepEqual(found[0]!.pages, [1, 2]);
+  const r = parseRecipeText(found[0]!.text);
+  assert.equal(r.title, "Easy Turkey Rice Soup");
+  assert.equal(r.servings, 5);
+  assert.deepEqual(r.ingredients.map((i) => i.name), ["lean ground turkey", "yellow onion", "celery ribs", "garlic cloves", "low-sodium chicken broth", "thyme sprigs", "Kosher salt", "long-grain white rice"]);
+  assert.deepEqual(r.ingredients[4]!.unit, { kind: "volume", unit: "cup" });
+  assert.equal(r.ingredients[4]!.amount, 4);
+  assert.equal(r.steps.length, 3);
+  assert.match(r.steps[1]!, /until the rice is tender, about 20 minutes more\.$/);
 });
